@@ -15,6 +15,12 @@ export async function HeaderApp() {
           <Link href="/peringatan" className="text-muted-foreground hover:text-foreground">
             Papan Peringatan
           </Link>
+          <Link href="/sebaran" className="text-muted-foreground hover:text-foreground">
+            Sebaran
+          </Link>
+          <Link href="/log-impor" className="text-muted-foreground hover:text-foreground">
+            Log Impor
+          </Link>
           <Link href="/pengaturan" className="text-muted-foreground hover:text-foreground">
             Pengaturan
           </Link>
