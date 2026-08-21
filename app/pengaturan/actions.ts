@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { imporLog } from "@/lib/db/schema";
-import { setAmbangHari } from "@/lib/pengaturan";
+import { setAmbangHari, setAmbangHariPengingat, setEmailPengingat } from "@/lib/pengaturan";
 import { normalisasiDanSimpan } from "@/lib/sumber-data/normalizer";
 import { GalatValidasiImpor, parseBerkasEkspor } from "@/lib/sumber-data/sumber-impor";
 
@@ -20,6 +20,27 @@ export async function ubahAmbangHari(formData: FormData) {
   revalidatePath("/pengaturan");
   revalidatePath("/peringatan");
   revalidatePath("/");
+}
+
+export async function ubahPengingatImpor(formData: FormData) {
+  const email = formData.get("email");
+  const ambangHari = formData.get("ambangHariPengingat");
+  const angka = Number(ambangHari);
+
+  if (!Number.isFinite(angka) || !Number.isInteger(angka) || angka <= 0) {
+    throw new Error("Ambang hari pengingat harus berupa bilangan bulat positif.");
+  }
+  if (typeof email !== "string") {
+    throw new Error("Alamat email tidak valid.");
+  }
+  // Boleh kosong (fitur nonaktif), tapi kalau diisi harus bentuk email wajar.
+  if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    throw new Error("Format alamat email tidak valid.");
+  }
+
+  await Promise.all([setEmailPengingat(email.trim()), setAmbangHariPengingat(angka)]);
+
+  revalidatePath("/pengaturan");
 }
 
 export interface StatusUnggah {
@@ -60,6 +81,7 @@ export async function unggahBerkas(
       alasanPenolakan: alasan,
     });
 
+    revalidatePath("/log-impor");
     return { berhasil: false, pesan: `Berkas ditolak. ${alasan}` };
   }
 
@@ -76,6 +98,7 @@ export async function unggahBerkas(
   revalidatePath("/");
   revalidatePath("/peringatan");
   revalidatePath("/pengaturan");
+  revalidatePath("/log-impor");
 
   return {
     berhasil: true,

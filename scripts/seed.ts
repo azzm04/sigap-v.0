@@ -14,16 +14,22 @@ async function main() {
   );
   const { db } = await import("../lib/db");
   const { pengaturan } = await import("../lib/db/schema");
-  const { KUNCI_AMBANG_HARI } = await import("../lib/pengaturan");
+  const { KUNCI_AMBANG_HARI, KUNCI_AMBANG_HARI_PENGINGAT, KUNCI_EMAIL_PENGINGAT } = await import(
+    "../lib/pengaturan"
+  );
 
   const baris = await sumberDummy.ambilGL();
   const hasil = await normalisasiDanSimpan(baris);
 
-  // Isi ambang hari peringatan hanya kalau belum pernah diisi — jangan timpa
-  // nilai yang mungkin sudah diubah petugas lewat halaman pengaturan.
+  // Isi hanya kalau belum pernah diisi — jangan timpa nilai yang mungkin
+  // sudah diubah petugas lewat halaman pengaturan.
   await db
     .insert(pengaturan)
-    .values({ kunci: KUNCI_AMBANG_HARI, nilai: "14" })
+    .values([
+      { kunci: KUNCI_AMBANG_HARI, nilai: "14" },
+      { kunci: KUNCI_AMBANG_HARI_PENGINGAT, nilai: "2" },
+      { kunci: KUNCI_EMAIL_PENGINGAT, nilai: "" },
+    ])
     .onConflictDoNothing({ target: pengaturan.kunci });
 
   console.log(
