@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HeaderApp } from "@/app/header-app";
 import { ambilDetailGL, ambilRiwayatTahapan } from "@/lib/gl/detail";
+import { hitungStagnasi } from "@/lib/gl/stagnasi";
 import { ambilTinjauan } from "@/lib/gl/tinjauan";
 import { formatRupiah, formatTanggal, formatWaktu, hitungUmurHari } from "@/lib/format";
 import { tandaiDitinjau } from "./actions";
@@ -36,6 +37,8 @@ export default async function DetailGLPage({
   if (!detail) notFound();
 
   const umurHari = hitungUmurHari(detail.tglGl);
+  const stagnasi = hitungStagnasi(riwayat, detail.tglGl);
+  const diabaikanAktif = catatanTinjauan.find((c) => c.diabaikan) ?? null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,10 +49,35 @@ export default async function DetailGLPage({
           ← Kembali ke daftar GL
         </Link>
 
+        {diabaikanAktif && (
+          <div className="flex flex-col gap-1 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+            <p className="font-medium text-foreground">
+              Status Pembayaran ditandai Paid secara manual lewat Abaikan, bukan dari berkas impor.
+            </p>
+            <p className="text-muted-foreground">
+              Alasan: {diabaikanAktif.alasanAbaikan ?? diabaikanAktif.catatan} — oleh{" "}
+              {diabaikanAktif.namaPengguna}, {formatWaktu(diabaikanAktif.ditinjauPada)}
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-foreground">{detail.namaKorban}</h2>
-            <span className="text-sm text-muted-foreground">Umur GL: {umurHari} hari</span>
+            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+              <span>Umur GL: {umurHari} hari</span>
+              <span>
+                Stagnasi: {stagnasi.hariDiTahapan} hari di tahapan ini
+                {stagnasi.berdasarkanUmur && (
+                  <span
+                    title="Riwayat tahapan belum menangkap kapan GL ini masuk tahapan saat ini, jadi dipakai umur GL sebagai perkiraan."
+                    className="ml-1 rounded bg-muted px-1.5 py-0.5 text-xs"
+                  >
+                    berdasarkan umur
+                  </span>
+                )}
+              </span>
+            </div>
           </div>
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
