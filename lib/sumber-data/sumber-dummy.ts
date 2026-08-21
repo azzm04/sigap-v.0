@@ -9,6 +9,12 @@ import type { BarisGL, SumberData } from "./index";
 
 const JUMLAH_BARIS = 600;
 const SEED = 20260101;
+// Dipakai di id_jaminan hanya untuk format yang realistis (mirip pola
+// tanggal di ID Jaminan asli). SENGAJA tetap, TIDAK boleh dari tglGl/hari
+// ini -- tglGl bergeser tiap hari seiring umurHari dihitung ulang, kalau
+// dipakai di kunci alami maka id_jaminan berubah tiap hari dan seeder jadi
+// tidak idempoten (baris lama tidak ketemu lagi, dianggap baru semua).
+const PREFIX_ID_TETAP = "20260101";
 
 function buatRng(seed: number) {
   let a = seed >>> 0;
@@ -184,7 +190,7 @@ export const sumberDummy: SumberData = {
         tipeCidera,
         namaRumahSakit,
         loket,
-        idJaminan: `${keIso(tglGl).replace(/-/g, "")}${String(i + 1).padStart(6, "0")}.0826.d${i
+        idJaminan: `${PREFIX_ID_TETAP}${String(i + 1).padStart(6, "0")}.0826.d${i
           .toString(36)
           .padStart(3, "0")}`,
         namaKorban: `${pilih(rng, NAMA_DEPAN)} ${pilih(rng, NAMA_BELAKANG)}`,
