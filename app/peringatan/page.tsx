@@ -33,8 +33,14 @@ export default async function PapanPeringatanPage() {
                   Nama Korban
                 </th>
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground">Loket</th>
+                <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                  Nama Rumah Sakit
+                </th>
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground">Tgl GL</th>
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground">Tahapan</th>
+                <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                  Status Pembayaran
+                </th>
                 <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                   Umur (hari)
                 </th>
@@ -44,7 +50,7 @@ export default async function PapanPeringatanPage() {
             <tbody>
               {baris.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                  <td colSpan={9} className="px-3 py-8 text-center text-muted-foreground">
                     Tidak ada GL yang perlu ditinjau saat ini.
                   </td>
                 </tr>
@@ -61,8 +67,10 @@ export default async function PapanPeringatanPage() {
                   </td>
                   <td className="px-3 py-2 whitespace-nowrap">{b.namaKorban}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{b.loket}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{b.namaRumahSakit ?? "-"}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{formatTanggal(b.tglGl)}</td>
                   <td className="px-3 py-2 whitespace-nowrap">{b.tahapan}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{b.statusPembayaran}</td>
                   <td className="px-3 py-2 font-medium whitespace-nowrap text-destructive">
                     {b.umurHari}
                   </td>

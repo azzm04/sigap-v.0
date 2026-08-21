@@ -9,8 +9,10 @@ export interface BarisPeringatan {
   idJaminan: string;
   namaKorban: string;
   loket: string;
+  namaRumahSakit: string | null;
   tglGl: string;
   tahapan: string;
+  statusPembayaran: string;
   umurHari: number;
 }
 
@@ -33,6 +35,7 @@ export async function ambilPapanPeringatan(): Promise<HasilPeringatan> {
       idJaminan: glMirror.idJaminan,
       namaKorban: glMirror.namaKorban,
       loket: glMirror.loket,
+      namaRumahSakit: glMirror.namaRumahSakit,
       tglGl: glMirror.tglGl,
       tahapan: glMirror.tahapan,
       tipeKlaim: glMirror.tipeKlaim,
@@ -61,12 +64,14 @@ export async function ambilPapanPeringatan(): Promise<HasilPeringatan> {
     // Prioritas belum jelas (akhiran "00" — lihat CLAUDE.md bagian 7 dan 8),
     // jadi urutkan berdasarkan umur tertinggi sampai dikonfirmasi.
     .sort((a, b) => b.umurHari - a.umurHari)
-    .map(({ idJaminan, namaKorban, loket, tglGl, tahapan, umurHari }) => ({
+    .map(({ idJaminan, namaKorban, loket, namaRumahSakit, tglGl, tahapan, statusPembayaran, umurHari }) => ({
       idJaminan,
       namaKorban,
       loket,
+      namaRumahSakit,
       tglGl,
       tahapan,
+      statusPembayaran,
       umurHari,
     }));
 
