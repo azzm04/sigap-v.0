@@ -14,9 +14,7 @@ async function main() {
   );
   const { db } = await import("../lib/db");
   const { pengaturan } = await import("../lib/db/schema");
-  const { KUNCI_AMBANG_HARI, KUNCI_AMBANG_HARI_PENGINGAT, KUNCI_EMAIL_PENGINGAT } = await import(
-    "../lib/pengaturan"
-  );
+  const { KUNCI_AMBANG_HARI } = await import("../lib/pengaturan");
 
   const baris = await sumberDummy.ambilGL();
   const hasil = await normalisasiDanSimpan(baris);
@@ -25,11 +23,7 @@ async function main() {
   // sudah diubah petugas lewat halaman pengaturan.
   await db
     .insert(pengaturan)
-    .values([
-      { kunci: KUNCI_AMBANG_HARI, nilai: "14" },
-      { kunci: KUNCI_AMBANG_HARI_PENGINGAT, nilai: "2" },
-      { kunci: KUNCI_EMAIL_PENGINGAT, nilai: "" },
-    ])
+    .values([{ kunci: KUNCI_AMBANG_HARI, nilai: "14" }])
     .onConflictDoNothing({ target: pengaturan.kunci });
 
   console.log(

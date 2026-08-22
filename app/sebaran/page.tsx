@@ -1,83 +1,153 @@
-import { HeaderApp } from "@/app/header-app";
-import { ambilSebaranLoket, ambilSebaranRumahSakit } from "@/lib/gl/sebaran";
-import { GrafikSebaranLoket, GrafikSebaranRumahSakit } from "./grafik-sebaran";
+import { AppShell } from "@/components/layout/app-shell";
+import { LompatHalaman } from "@/components/gl/lompat-halaman";
+import { PilihanUkuranHalaman } from "@/components/gl/ukuran-halaman";
+import { DistribusiRumahSakit } from "@/components/sebaran/distribusi-rumah-sakit";
+import { Card } from "@/components/ui/card";
+import { Pagination } from "@/components/ui/pagination";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { ambilPapanPeringatan } from "@/lib/gl/peringatan";
+import {
+  ambilSebaranRumahSakit,
+  ambilTotalGLAktif,
+  ambilTotalRumahSakitMitra,
+} from "@/lib/gl/sebaran";
+import { PILIHAN_UKURAN_HALAMAN } from "@/lib/gl/ukuran-halaman";
 
-function TabelSebaran({
-  label,
-  data,
-}: {
-  label: string;
-  data: { nama: string; jumlah: number }[];
-}) {
-  const total = data.reduce((jumlah, d) => jumlah + d.jumlah, 0);
+const UKURAN_HALAMAN_DEFAULT = 10;
+const JUMLAH_TOP = 10;
 
-  return (
-    <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/50">
-          <tr>
-            <th className="px-3 py-2 text-left font-medium text-muted-foreground">{label}</th>
-            <th className="px-3 py-2 text-right font-medium text-muted-foreground">Jumlah GL</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((d) => (
-            <tr key={d.nama} className="border-t border-border">
-              <td className="px-3 py-2">{d.nama}</td>
-              <td className="px-3 py-2 text-right">{d.jumlah.toLocaleString("id-ID")}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr className="border-t border-border font-medium">
-            <td className="px-3 py-2">Total</td>
-            <td className="px-3 py-2 text-right">{total.toLocaleString("id-ID")}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  );
+function sanitisasiUkuran(nilai: number | undefined): number {
+  return nilai && (PILIHAN_UKURAN_HALAMAN as readonly number[]).includes(nilai)
+    ? nilai
+    : UKURAN_HALAMAN_DEFAULT;
 }
 
-export default async function SebaranPage() {
-  const [sebaranLoket, sebaranRumahSakit] = await Promise.all([
-    ambilSebaranLoket(),
+export default async function SebaranPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ halaman?: string; ukuran?: string }>;
+}) {
+  const sp = await searchParams;
+  const halamanDiminta = sp.halaman ? Number(sp.halaman) : 1;
+  const ukuran = sanitisasiUkuran(sp.ukuran ? Number(sp.ukuran) : undefined);
+
+  const [semuaRumahSakit, totalMitra, totalGLAktif, peringatan] = await Promise.all([
     ambilSebaranRumahSakit(),
+    ambilTotalRumahSakitMitra(),
+    ambilTotalGLAktif(),
+    ambilPapanPeringatan({ ukuran: 1 }),
   ]);
 
+  const totalBaris = semuaRumahSakit.length;
+  const totalHalaman = Math.max(1, Math.ceil(totalBaris / ukuran));
+  const halaman = Math.min(Math.max(1, halamanDiminta), totalHalaman);
+  const barisHalaman = semuaRumahSakit.slice((halaman - 1) * ukuran, halaman * ukuran);
+
   return (
-    <div className="min-h-screen bg-background">
-      <HeaderApp />
+    <AppShell>
+      <div className="flex flex-col gap-6 p-8">
+        <PageHeader
+          title="Sebaran Data Rumah Sakit"
+          description="Analisis distribusi Guarantee Letter berdasarkan rumah sakit mitra."
+        />
 
-      <main className="flex flex-col gap-6 p-6">
-        <div>
-          <h2 className="text-lg font-semibold text-foreground">Sebaran GL</h2>
-          <p className="text-sm text-muted-foreground">
-            Sebaran GL aktif (tipe klaim GL, status Active) per loket dan per rumah sakit,
-            terurut dari yang paling banyak.
-          </p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <StatCard label="Total Rumah Sakit Mitra" value={totalMitra.toLocaleString("id-ID")} />
+          <StatCard
+            label="Total GL Aktif"
+            value={totalGLAktif.toLocaleString("id-ID")}
+            hint={
+              <span className="text-status-late">
+                {peringatan.total.toLocaleString("id-ID")} Perlu Ditinjau
+              </span>
+            }
+          />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
-            <h3 className="text-sm font-semibold text-foreground">Per Loket</h3>
-            <GrafikSebaranLoket data={sebaranLoket} />
-            <TabelSebaran
-              label="Loket"
-              data={sebaranLoket.map((d) => ({ nama: d.loket, jumlah: d.jumlah }))}
-            />
-          </section>
+        <Card title={`Distribusi per Rumah Sakit (Top ${JUMLAH_TOP})`}>
+          <DistribusiRumahSakit data={semuaRumahSakit.slice(0, JUMLAH_TOP)} />
+        </Card>
 
-          <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
-            <h3 className="text-sm font-semibold text-foreground">Per Rumah Sakit</h3>
-            <GrafikSebaranRumahSakit data={sebaranRumahSakit} />
-            <TabelSebaran
-              label="Rumah Sakit"
-              data={sebaranRumahSakit.map((d) => ({ nama: d.namaRumahSakit, jumlah: d.jumlah }))}
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="border-b border-border px-4 py-3">
+            <h2 className="text-base font-semibold text-foreground">Detail Rekapitulasi Rumah Sakit</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-surface-table-header">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold text-foreground">Nama Rumah Sakit</th>
+                  <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
+                    Loket/Area
+                  </th>
+                  <th className="px-3 py-2 text-right font-semibold whitespace-nowrap text-foreground">
+                    Total GL
+                  </th>
+                  <th className="px-3 py-2 text-right font-semibold whitespace-nowrap text-foreground">
+                    Persentase
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {barisHalaman.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-8 text-center text-muted-foreground">
+                      Belum ada data rumah sakit dari GL aktif.
+                    </td>
+                  </tr>
+                )}
+                {barisHalaman.map((rs) => (
+                  <tr
+                    key={`${rs.namaRumahSakit}-${rs.loket}`}
+                    className="border-t border-border transition-colors hover:bg-muted/40"
+                  >
+                    <td className="px-3 py-2.5 font-medium text-foreground">{rs.namaRumahSakit}</td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">{rs.loket}</td>
+                    <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                      {rs.jumlah.toLocaleString("id-ID")}
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap text-primary">
+                      {totalGLAktif === 0 ? "0.0%" : `${((rs.jumlah / totalGLAktif) * 100).toFixed(1)}%`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <PilihanUkuranHalaman
+              ukuran={ukuran}
+              total={totalBaris}
+              basePath="/sebaran"
+              labelSatuan="Rumah Sakit"
             />
-          </section>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <LompatHalaman
+                halamanAktif={halaman}
+                totalHalaman={totalHalaman}
+                ukuran={ukuran}
+                basePath="/sebaran"
+              />
+              <div className="flex justify-center sm:contents">
+                <Pagination
+                  halamanAktif={halaman}
+                  totalHalaman={totalHalaman}
+                  buatUrl={(h) => `/sebaran?ukuran=${ukuran}&halaman=${h}`}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
+
+        <p className="text-xs text-muted-foreground">
+          Kolom Loket/Area ditampilkan apa adanya dari berkas ekspor. Apakah loket 0400601
+          mencakup seluruh cabang Semarang termasuk Pati masih menunggu konfirmasi klien.
+        </p>
+      </div>
+    </AppShell>
   );
 }

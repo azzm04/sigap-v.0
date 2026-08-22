@@ -1,10 +1,13 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "./db";
 import { imporLog } from "./db/schema";
 
-export interface BarisImporLog {
+export type JenisLogData = "impor" | "hapus" | "pulihkan" | "hapus_permanen";
+
+export interface BarisLogData {
   id: number;
-  namaBerkas: string;
+  jenis: JenisLogData;
+  namaBerkas: string | null;
   diimporPada: Date;
   jumlahBaris: number;
   jumlahBaru: number;
@@ -15,20 +18,24 @@ export interface BarisImporLog {
 
 const BATAS_RIWAYAT = 100;
 
-// Tahap 2 (CLAUDE.md bagian 6): "Halaman log impor yang lebih rinci".
-// Tidak memuat data pribadi (nama berkas dan angka agregat saja), aman
-// ditampilkan apa adanya.
-export async function ambilRiwayatImpor(): Promise<BarisImporLog[]> {
-  return db.select().from(imporLog).orderBy(desc(imporLog.diimporPada)).limit(BATAS_RIWAYAT);
+// Log Data: gabungan riwayat impor, "Hapus Semua Data", dan pemulihan lewat
+// halaman Sampah -- lihat lib/db/schema.ts, kolom jenis di imporLog. Tidak
+// memuat data pribadi (nama berkas dan angka agregat saja), aman ditampilkan
+// apa adanya.
+export async function ambilRiwayatLogData(): Promise<BarisLogData[]> {
+  const baris = await db.select().from(imporLog).orderBy(desc(imporLog.diimporPada)).limit(BATAS_RIWAYAT);
+  return baris.map((b) => ({ ...b, jenis: b.jenis as JenisLogData }));
 }
 
-// Dipakai pengingat impor (Tahap 2): kapan unggahan BERHASIL terakhir kali,
-// bukan sekadar percobaan (yang bisa saja ditolak).
+// Dipakai label "Terakhir diperbarui" di Kelola Data: kapan unggahan
+// BERHASIL terakhir kali, bukan sekadar percobaan (yang bisa saja ditolak).
+// Disaring jenis="impor" supaya baris "Hapus Semua Data"/"Pulihkan" tidak
+// ikut dianggap impor.
 export async function ambilWaktuImporTerakhirBerhasil(): Promise<Date | null> {
   const [baris] = await db
     .select({ diimporPada: imporLog.diimporPada })
     .from(imporLog)
-    .where(eq(imporLog.berhasil, true))
+    .where(and(eq(imporLog.jenis, "impor"), eq(imporLog.berhasil, true)))
     .orderBy(desc(imporLog.diimporPada))
     .limit(1);
 

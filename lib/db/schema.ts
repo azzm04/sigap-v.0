@@ -36,6 +36,15 @@ export const glMirror = pgTable("gl_mirror", {
   diimporPada: timestamp("diimpor_pada", { withTimezone: true })
     .notNull()
     .defaultNow(),
+
+  // Soft delete: diisi saat petugas menekan "Hapus Semua Data" di Kelola
+  // Data. Semua query tampilan WAJIB menyaring baris dengan dihapusPada
+  // IS NULL. Baris yang dihapus dengan waktu yang sama dianggap satu
+  // "batch" yang bisa dipulihkan bersama dari halaman Sampah. Kalau ID
+  // Jaminan yang sama muncul lagi di impor berikutnya, kolom ini otomatis
+  // dikosongkan lagi (lihat lib/sumber-data/normalizer.ts) — berkas ekspor
+  // tetap jadi sumber kebenaran paling baru.
+  dihapusPada: timestamp("dihapus_pada", { withTimezone: true }),
 });
 
 // Riwayat perubahan antar-impor. Baris baru hanya disisipkan saat ada nilai yang berubah.
@@ -52,10 +61,14 @@ export const glSnapshot = pgTable("gl_snapshot", {
     .defaultNow(),
 });
 
-// Catatan tiap unggahan berkas ekspor.
+// Log Data: catatan tiap aktivitas yang mengubah gl_mirror secara massal --
+// unggahan impor, "Hapus Semua Data", dan pemulihan lewat halaman Sampah --
+// disatukan di sini supaya semuanya bisa dianalisis dari satu riwayat.
+// Dibedakan lewat kolom jenis; nama_berkas cuma relevan untuk jenis "impor".
 export const imporLog = pgTable("impor_log", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
-  namaBerkas: text("nama_berkas").notNull(),
+  jenis: text("jenis").notNull().default("impor"),
+  namaBerkas: text("nama_berkas"),
   diimporPada: timestamp("diimpor_pada", { withTimezone: true })
     .notNull()
     .defaultNow(),

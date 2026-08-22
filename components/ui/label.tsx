@@ -4,7 +4,13 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Label({ className, ...props }: React.ComponentProps<"label">) {
+function Label({
+  className,
+  required,
+  hint,
+  children,
+  ...props
+}: React.ComponentProps<"label"> & { required?: boolean; hint?: React.ReactNode }) {
   return (
     <label
       data-slot="label"
@@ -13,7 +19,11 @@ function Label({ className, ...props }: React.ComponentProps<"label">) {
         className
       )}
       {...props}
-    />
+    >
+      {children}
+      {required && <span className="text-destructive">*</span>}
+      {hint && <span className="text-xs font-normal text-muted-foreground">{hint}</span>}
+    </label>
   )
 }
 

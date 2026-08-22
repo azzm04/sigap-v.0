@@ -41,9 +41,12 @@ export async function normalisasiDanSimpan(
         await tx.insert(glMirror).values({ ...b, diimporPada: new Date() });
         jumlahBaru++;
       } else {
+        // dihapusPada dikosongkan lagi kalau ID Jaminan ini pernah dihapus
+        // (soft delete) lewat "Hapus Semua Data" tapi muncul lagi di impor
+        // ini -- berkas ekspor tetap jadi sumber kebenaran paling baru.
         await tx
           .update(glMirror)
-          .set({ ...b, diimporPada: new Date() })
+          .set({ ...b, diimporPada: new Date(), dihapusPada: null })
           .where(eq(glMirror.idJaminan, b.idJaminan));
         if (berubah) jumlahBerubah++;
       }

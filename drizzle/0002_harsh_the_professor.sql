@@ -1,0 +1,1 @@
+ALTER TABLE "gl_mirror" ADD COLUMN "dihapus_pada" timestamp with time zone;

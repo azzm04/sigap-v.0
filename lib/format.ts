@@ -24,6 +24,11 @@ export function formatWaktu(waktu: Date): string {
   return `${bagian} WIB`;
 }
 
+/** Tanggal hari ini di zona WIB, format ISO "YYYY-MM-DD" — dipakai untuk membandingkan "sudah dilihat hari ini atau belum". */
+export function tanggalHariIniWIB(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
+}
+
 /** umur_hari = tanggal_hari_ini - Tgl GL, satuan hari kalender (CLAUDE.md bagian 7) */
 export function hitungUmurHari(iso: string): number {
   const [tahun, bulan, hari] = iso.split("-").map(Number);

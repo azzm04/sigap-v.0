@@ -1,8 +1,15 @@
-import { and, asc, count, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, isNull, lte, or } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror } from "../db/schema";
+import { PILIHAN_UKURAN_HALAMAN } from "./ukuran-halaman";
 
-const UKURAN_HALAMAN = 20;
+const UKURAN_HALAMAN_DEFAULT = 25;
+
+function sanitisasiUkuran(nilai: number | undefined): number {
+  return nilai && (PILIHAN_UKURAN_HALAMAN as readonly number[]).includes(nilai)
+    ? nilai
+    : UKURAN_HALAMAN_DEFAULT;
+}
 
 export interface FilterDaftarGL {
   loket?: string;
@@ -15,6 +22,8 @@ export interface FilterDaftarGL {
   /** Dicocokkan ke Nama Korban atau Nomor ID Jaminan */
   cari?: string;
   halaman?: number;
+  /** Jumlah baris per halaman, harus salah satu dari PILIHAN_UKURAN_HALAMAN */
+  ukuran?: number;
 }
 
 export interface BarisDaftarGL {
@@ -23,29 +32,47 @@ export interface BarisDaftarGL {
   loket: string;
   namaRumahSakit: string | null;
   tglGl: string;
+  tipeKlaim: string;
+  tipeCidera: string;
+  nomorSuratJaminan: string | null;
   glStatus: string;
   tahapan: string;
+  statusVerifikasi: string | null;
   statusPembayaran: string;
   nilaiDiajukan: number;
   nilaiDisetujui: number;
+  jumlahPembayaran: number;
+  tglPembayaran: string | null;
 }
 
 export interface HasilDaftarGL {
   baris: BarisDaftarGL[];
   total: number;
   halaman: number;
+  /** Ukuran halaman yang sudah disanitisasi (bukan sekadar echo dari filter) */
+  ukuran: number;
   totalHalaman: number;
 }
 
 // Daftar nilai enum untuk dropdown filter dibaca langsung dari data yang
 // benar-benar ada, bukan daftar tetap di kode (CLAUDE.md aturan keras #3).
 export async function ambilOpsiFilter() {
+  const kondisiAktif = isNull(glMirror.dihapusPada);
   const [loket, tahapan, statusPembayaran] = await Promise.all([
-    db.selectDistinct({ nilai: glMirror.loket }).from(glMirror).orderBy(asc(glMirror.loket)),
-    db.selectDistinct({ nilai: glMirror.tahapan }).from(glMirror).orderBy(asc(glMirror.tahapan)),
+    db
+      .selectDistinct({ nilai: glMirror.loket })
+      .from(glMirror)
+      .where(kondisiAktif)
+      .orderBy(asc(glMirror.loket)),
+    db
+      .selectDistinct({ nilai: glMirror.tahapan })
+      .from(glMirror)
+      .where(kondisiAktif)
+      .orderBy(asc(glMirror.tahapan)),
     db
       .selectDistinct({ nilai: glMirror.statusPembayaran })
       .from(glMirror)
+      .where(kondisiAktif)
       .orderBy(asc(glMirror.statusPembayaran)),
   ]);
 
@@ -59,7 +86,9 @@ export async function ambilOpsiFilter() {
 // Diekspor supaya lib/gl/ekspor.ts memakai aturan penyaringan yang persis
 // sama, bukan menyalin ulang logikanya.
 export function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
-  const kondisi = [];
+  // Baris yang di-soft-delete lewat "Hapus Semua Data" tidak pernah muncul
+  // di tampilan mana pun (lihat lib/db/schema.ts, kolom dihapusPada).
+  const kondisi = [isNull(glMirror.dihapusPada)];
   if (filter.loket) kondisi.push(eq(glMirror.loket, filter.loket));
   if (filter.tahapan) kondisi.push(eq(glMirror.tahapan, filter.tahapan));
   if (filter.statusPembayaran) kondisi.push(eq(glMirror.statusPembayaran, filter.statusPembayaran));
@@ -67,15 +96,17 @@ export function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
   if (filter.sampai) kondisi.push(lte(glMirror.tglGl, filter.sampai));
   if (filter.cari) {
     const pola = `%${filter.cari}%`;
-    kondisi.push(or(ilike(glMirror.namaKorban, pola), ilike(glMirror.idJaminan, pola)));
+    const kondisiCari = or(ilike(glMirror.namaKorban, pola), ilike(glMirror.idJaminan, pola));
+    if (kondisiCari) kondisi.push(kondisiCari);
   }
-  return kondisi.length > 0 ? and(...kondisi) : undefined;
+  return and(...kondisi);
 }
 
 // Query di server, hanya mengambil kolom yang benar-benar ditampilkan di
 // tabel (CLAUDE.md aturan keras #4) — bukan seluruh baris gl_mirror.
 export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftarGL> {
   const halaman = Math.max(1, Math.floor(filter.halaman ?? 1));
+  const ukuran = sanitisasiUkuran(filter.ukuran);
   const kondisi = bangunKondisiDaftarGL(filter);
 
   const [{ nilai: total }] = await db.select({ nilai: count() }).from(glMirror).where(kondisi);
@@ -87,11 +118,17 @@ export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftar
       loket: glMirror.loket,
       namaRumahSakit: glMirror.namaRumahSakit,
       tglGl: glMirror.tglGl,
+      tipeKlaim: glMirror.tipeKlaim,
+      tipeCidera: glMirror.tipeCidera,
+      nomorSuratJaminan: glMirror.nomorSuratJaminan,
       glStatus: glMirror.glStatus,
       tahapan: glMirror.tahapan,
+      statusVerifikasi: glMirror.statusVerifikasi,
       statusPembayaran: glMirror.statusPembayaran,
       nilaiDiajukan: glMirror.nilaiDiajukan,
       nilaiDisetujui: glMirror.nilaiDisetujui,
+      jumlahPembayaran: glMirror.jumlahPembayaran,
+      tglPembayaran: glMirror.tglPembayaran,
     })
     .from(glMirror)
     .where(kondisi)
@@ -99,13 +136,14 @@ export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftar
     // tanpa ini urutan antar-halaman tidak stabil (baris bisa terlewat atau
     // muncul dua kali saat berpindah halaman).
     .orderBy(desc(glMirror.tglGl), desc(glMirror.id))
-    .limit(UKURAN_HALAMAN)
-    .offset((halaman - 1) * UKURAN_HALAMAN);
+    .limit(ukuran)
+    .offset((halaman - 1) * ukuran);
 
   return {
     baris,
     total,
     halaman,
-    totalHalaman: Math.max(1, Math.ceil(total / UKURAN_HALAMAN)),
+    ukuran,
+    totalHalaman: Math.max(1, Math.ceil(total / ukuran)),
   };
 }

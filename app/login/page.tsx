@@ -1,4 +1,4 @@
-import { FormLogin } from "./login-form";
+import { FormLogin } from "@/components/login/login-form";
 
 export default async function HalamanLogin({
   searchParams,

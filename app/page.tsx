@@ -1,4 +1,11 @@
-import Link from "next/link";
+import { AppShell } from "@/components/layout/app-shell";
+import { FilterGL, type NilaiFilterGL } from "@/components/gl/filter-gl";
+import { GrafikSebaranTahapan, GrafikStatusPembayaran, GrafikTrenBulanan } from "@/components/gl/grafik";
+import { KartuRingkasanGL } from "@/components/gl/kartu-ringkasan";
+import { LompatHalaman } from "@/components/gl/lompat-halaman";
+import { TabelGL } from "@/components/gl/tabel-gl";
+import { PilihanUkuranHalaman } from "@/components/gl/ukuran-halaman";
+import { Pagination } from "@/components/ui/pagination";
 import { hitungUmurHari } from "@/lib/format";
 import { ambilDaftarGL, ambilOpsiFilter } from "@/lib/gl/queries";
 import {
@@ -7,11 +14,7 @@ import {
   ambilSebaranTahapan,
   ambilTrenBulanan,
 } from "@/lib/gl/ringkasan";
-import { FilterGL, type NilaiFilterGL } from "./filter-gl";
-import { GrafikSebaranTahapan, GrafikStatusPembayaran, GrafikTrenBulanan } from "./grafik";
-import { HeaderApp } from "./header-app";
-import { KartuRingkasanGL } from "./kartu-ringkasan";
-import { TabelGL } from "./tabel-gl";
+import { ambilAmbangHari } from "@/lib/pengaturan";
 
 function buatUrlHalaman(nilaiFilter: NilaiFilterGL, halaman: number): string {
   const params = new URLSearchParams();
@@ -22,22 +25,14 @@ function buatUrlHalaman(nilaiFilter: NilaiFilterGL, halaman: number): string {
   return `/?${params.toString()}`;
 }
 
-function buatUrlEkspor(nilaiFilter: NilaiFilterGL): string {
-  const params = new URLSearchParams();
-  for (const [kunci, nilai] of Object.entries(nilaiFilter)) {
-    if (nilai) params.set(kunci, nilai);
-  }
-  return `/api/ekspor?${params.toString()}`;
-}
-
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<NilaiFilterGL & { halaman?: string }>;
+  searchParams: Promise<NilaiFilterGL & { halaman?: string; ukuran?: string }>;
 }) {
   const sp = await searchParams;
 
-  const [opsiFilter, hasil, ringkasan, sebaranTahapan, sebaranStatusPembayaran, trenBulanan] =
+  const [opsiFilter, hasil, ringkasan, sebaranTahapan, sebaranStatusPembayaran, trenBulanan, ambangHari] =
     await Promise.all([
       ambilOpsiFilter(),
       ambilDaftarGL({
@@ -48,60 +43,67 @@ export default async function Home({
         sampai: sp.sampai || undefined,
         cari: sp.cari || undefined,
         halaman: sp.halaman ? Number(sp.halaman) : 1,
+        ukuran: sp.ukuran ? Number(sp.ukuran) : undefined,
       }),
       ambilKartuRingkasan(),
       ambilSebaranTahapan(),
       ambilSebaranStatusPembayaran(),
       ambilTrenBulanan(),
+      ambilAmbangHari(),
     ]);
 
   const dataTabel = hasil.baris.map((b) => ({ ...b, umurHari: hitungUmurHari(b.tglGl) }));
+  const nilaiFilterGL: NilaiFilterGL = {
+    cari: sp.cari,
+    loket: sp.loket,
+    tahapan: sp.tahapan,
+    status_pembayaran: sp.status_pembayaran,
+    dari: sp.dari,
+    sampai: sp.sampai,
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <HeaderApp />
-
-      <main className="flex flex-col gap-6 p-6">
+    <AppShell>
+      <div className="flex min-w-0 flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
         <KartuRingkasanGL data={ringkasan} />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <hr className="border-t border-border/60" />
+
+        <div className="flex flex-col gap-4">
           <GrafikSebaranTahapan data={sebaranTahapan} />
-          <GrafikStatusPembayaran data={sebaranStatusPembayaran} />
-          <GrafikTrenBulanan data={trenBulanan} />
-        </div>
-
-        <FilterGL nilai={sp} opsi={opsiFilter} />
-
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{hasil.total} GL ditemukan</p>
-          <a
-            href={buatUrlEkspor(sp)}
-            className="h-8 rounded-lg border border-input px-3 py-1.5 text-sm font-medium hover:bg-muted"
-          >
-            Ekspor Excel
-          </a>
-        </div>
-
-        <TabelGL data={dataTabel} />
-
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            Halaman {hasil.halaman} dari {hasil.totalHalaman}
-          </span>
-          <div className="flex gap-4">
-            {hasil.halaman > 1 && (
-              <Link href={buatUrlHalaman(sp, hasil.halaman - 1)} className="underline">
-                Sebelumnya
-              </Link>
-            )}
-            {hasil.halaman < hasil.totalHalaman && (
-              <Link href={buatUrlHalaman(sp, hasil.halaman + 1)} className="underline">
-                Berikutnya
-              </Link>
-            )}
+          <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
+            <GrafikStatusPembayaran data={sebaranStatusPembayaran} />
+            <GrafikTrenBulanan data={trenBulanan} />
           </div>
         </div>
-      </main>
-    </div>
+
+        <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+          <FilterGL nilai={nilaiFilterGL} opsi={opsiFilter} ukuran={hasil.ukuran} />
+
+          <TabelGL data={dataTabel} ambangHari={ambangHari} className="rounded-none border-0 border-t" />
+
+          <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <PilihanUkuranHalaman ukuran={hasil.ukuran} total={hasil.total} filterAktif={nilaiFilterGL} />
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <LompatHalaman
+                halamanAktif={hasil.halaman}
+                totalHalaman={hasil.totalHalaman}
+                ukuran={hasil.ukuran}
+                filterAktif={nilaiFilterGL}
+              />
+
+              <div className="flex justify-center sm:contents">
+                <Pagination
+                  halamanAktif={hasil.halaman}
+                  totalHalaman={hasil.totalHalaman}
+                  buatUrl={(h) => buatUrlHalaman(sp, h)}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AppShell>
   );
 }

@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror, glSnapshot } from "../db/schema";
 
@@ -48,7 +48,7 @@ export async function ambilDetailGL(idJaminan: string): Promise<DetailGL | null>
       diimporPada: glMirror.diimporPada,
     })
     .from(glMirror)
-    .where(eq(glMirror.idJaminan, idJaminan))
+    .where(and(eq(glMirror.idJaminan, idJaminan), isNull(glMirror.dihapusPada)))
     .limit(1);
 
   return baris ?? null;

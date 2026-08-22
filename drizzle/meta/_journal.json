@@ -15,6 +15,20 @@
       "when": 1787249756728,
       "tag": "0001_colorful_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787387477952,
+      "tag": "0002_harsh_the_professor",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787388634372,
+      "tag": "0003_awesome_the_hunter",
+      "breakpoints": true
     }
   ]
 }

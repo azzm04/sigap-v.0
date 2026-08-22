@@ -1,31 +1,31 @@
-import { HeaderApp } from "@/app/header-app";
-import { ambilAmbangHari, ambilAmbangHariPengingat, ambilEmailPengingat } from "@/lib/pengaturan";
-import { ubahAmbangHari, ubahPengingatImpor } from "./actions";
-import { FormUnggah } from "./form-unggah";
+import { AppShell } from "@/components/layout/app-shell";
+import { FormKataSandi } from "@/components/pengaturan/form-kata-sandi";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { PageHeader } from "@/components/ui/page-header";
+import { ambilAmbangHari } from "@/lib/pengaturan";
+import { ubahAmbangHari } from "./actions";
 
 export default async function PengaturanPage() {
-  const [ambangHari, emailPengingat, ambangHariPengingat] = await Promise.all([
-    ambilAmbangHari(),
-    ambilEmailPengingat(),
-    ambilAmbangHariPengingat(),
-  ]);
+  const ambangHari = await ambilAmbangHari();
 
   return (
-    <div className="min-h-screen bg-background">
-      <HeaderApp />
+    <AppShell>
+      <div className="flex max-w-3xl flex-col gap-6 p-8">
+        <PageHeader
+          title="Pengaturan"
+          description="Kelola ambang batas peringatan dan kata sandi akun."
+        />
 
-      <main className="flex max-w-xl flex-col gap-6 p-6">
-        <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
-          <h2 className="text-base font-semibold text-foreground">Ambang Hari Peringatan</h2>
-          <p className="text-sm text-muted-foreground">
-            GL yang sudah mencapai jumlah hari ini atau lebih (dan memenuhi syarat lain) akan
-            muncul di Papan Peringatan.
-          </p>
+        <Card
+          title="Ambang Hari Peringatan"
+          description="GL yang sudah mencapai jumlah hari ini atau lebih (dan memenuhi syarat lain) akan muncul di Papan Peringatan."
+        >
           <form action={ubahAmbangHari} className="flex items-end gap-3">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="ambangHari" className="text-sm font-medium text-foreground">
+              <Label htmlFor="ambangHari" required>
                 Ambang hari
-              </label>
+              </Label>
               <input
                 id="ambangHari"
                 name="ambangHari"
@@ -34,71 +34,30 @@ export default async function PengaturanPage() {
                 step={1}
                 defaultValue={ambangHari}
                 required
-                className="h-9 w-32 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring"
+                className="h-9 w-32 rounded-lg border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               />
             </div>
             <button
               type="submit"
-              className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/80"
+              className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
             >
-              Simpan
+              Simpan Perubahan
             </button>
           </form>
-        </section>
+        </Card>
 
-        <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
-          <h2 className="text-base font-semibold text-foreground">Pengingat Impor</h2>
-          <p className="text-sm text-muted-foreground">
-            Kirim email pengingat kalau sudah sekian hari tidak ada berkas ekspor yang berhasil
-            diunggah. Kosongkan alamat email untuk menonaktifkan.
-          </p>
-          <form action={ubahPengingatImpor} className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-foreground">
-                Alamat email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                defaultValue={emailPengingat}
-                placeholder="petugas@jasaraharja.co.id"
-                className="h-9 w-64 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring"
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="ambangHariPengingat" className="text-sm font-medium text-foreground">
-                Ambang hari tanpa impor
-              </label>
-              <input
-                id="ambangHariPengingat"
-                name="ambangHariPengingat"
-                type="number"
-                min={1}
-                step={1}
-                defaultValue={ambangHariPengingat}
-                required
-                className="h-9 w-32 rounded-md border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring"
-              />
-            </div>
-            <button
-              type="submit"
-              className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/80"
-            >
-              Simpan
-            </button>
-          </form>
-        </section>
+        <Card
+          title="Ubah Kata Sandi"
+          description="Ganti kata sandi Anda secara berkala untuk menjaga keamanan akun SIGAP."
+        >
+          <FormKataSandi />
+        </Card>
 
-        <section className="flex flex-col gap-3 rounded-lg border border-border p-4">
-          <h2 className="text-base font-semibold text-foreground">Unggah Berkas Ekspor</h2>
-          <p className="text-sm text-muted-foreground">
-            Unggah berkas ekspor .xlsx &ldquo;KLAIM REPORT&rdquo; dari JRCare untuk memperbarui
-            data GL. Berkas diproses langsung dan tidak disimpan di server.
-          </p>
-          <FormUnggah />
-        </section>
-      </main>
-    </div>
+        <p className="text-xs text-muted-foreground">
+          Aplikasi tidak pernah menyentuh DASI atau JRCare secara langsung. Data hanya masuk lewat
+          unggahan berkas ekspor di halaman Kelola Data.
+        </p>
+      </div>
+    </AppShell>
   );
 }

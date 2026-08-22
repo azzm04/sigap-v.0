@@ -1,11 +1,12 @@
 "use server";
 
+import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { imporLog } from "@/lib/db/schema";
-import { setAmbangHari, setAmbangHariPengingat, setEmailPengingat } from "@/lib/pengaturan";
-import { normalisasiDanSimpan } from "@/lib/sumber-data/normalizer";
-import { GalatValidasiImpor, parseBerkasEkspor } from "@/lib/sumber-data/sumber-impor";
+import { pengguna } from "@/lib/db/schema";
+import { setAmbangHari } from "@/lib/pengaturan";
 
 export async function ubahAmbangHari(formData: FormData) {
   const nilai = formData.get("ambangHari");
@@ -22,86 +23,50 @@ export async function ubahAmbangHari(formData: FormData) {
   revalidatePath("/");
 }
 
-export async function ubahPengingatImpor(formData: FormData) {
-  const email = formData.get("email");
-  const ambangHari = formData.get("ambangHariPengingat");
-  const angka = Number(ambangHari);
-
-  if (!Number.isFinite(angka) || !Number.isInteger(angka) || angka <= 0) {
-    throw new Error("Ambang hari pengingat harus berupa bilangan bulat positif.");
-  }
-  if (typeof email !== "string") {
-    throw new Error("Alamat email tidak valid.");
-  }
-  // Boleh kosong (fitur nonaktif), tapi kalau diisi harus bentuk email wajar.
-  if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    throw new Error("Format alamat email tidak valid.");
-  }
-
-  await Promise.all([setEmailPengingat(email.trim()), setAmbangHariPengingat(angka)]);
-
-  revalidatePath("/pengaturan");
-}
-
-export interface StatusUnggah {
+export interface StatusKataSandi {
   berhasil: boolean;
   pesan: string;
 }
 
-// Berkas diproses seluruhnya di memori (arrayBuffer), tidak pernah ditulis ke
-// disk — sesuai CLAUDE.md aturan keras #4 soal data pribadi di berkas ekspor.
-export async function unggahBerkas(
-  _sebelumnya: StatusUnggah | undefined,
+export async function ubahKataSandi(
+  _sebelumnya: StatusKataSandi | undefined,
   formData: FormData,
-): Promise<StatusUnggah> {
-  const berkas = formData.get("berkas");
-
-  if (!(berkas instanceof File) || berkas.size === 0) {
-    return { berhasil: false, pesan: "Pilih berkas .xlsx terlebih dahulu." };
+): Promise<StatusKataSandi> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { berhasil: false, pesan: "Sesi tidak valid, silakan masuk ulang." };
   }
 
-  const namaBerkas = berkas.name;
-  const arrayBuffer = await berkas.arrayBuffer();
+  const sekarang = formData.get("sekarang");
+  const baru = formData.get("baru");
+  const konfirmasi = formData.get("konfirmasi");
 
-  let baris;
-  try {
-    baris = parseBerkasEkspor(arrayBuffer);
-  } catch (error) {
-    const alasan =
-      error instanceof GalatValidasiImpor
-        ? error.masalah.join(" | ")
-        : "Galat tak terduga saat membaca berkas.";
-
-    await db.insert(imporLog).values({
-      namaBerkas,
-      jumlahBaris: 0,
-      jumlahBaru: 0,
-      jumlahBerubah: 0,
-      berhasil: false,
-      alasanPenolakan: alasan,
-    });
-
-    revalidatePath("/log-impor");
-    return { berhasil: false, pesan: `Berkas ditolak. ${alasan}` };
+  if (typeof sekarang !== "string" || typeof baru !== "string" || typeof konfirmasi !== "string") {
+    return { berhasil: false, pesan: "Semua kolom wajib diisi." };
+  }
+  if (baru.length < 8) {
+    return { berhasil: false, pesan: "Kata sandi baru minimal 8 karakter." };
+  }
+  if (baru !== konfirmasi) {
+    return { berhasil: false, pesan: "Konfirmasi kata sandi baru tidak cocok." };
   }
 
-  const hasil = await normalisasiDanSimpan(baris);
+  const [user] = await db
+    .select()
+    .from(pengguna)
+    .where(eq(pengguna.id, Number(session.user.id)))
+    .limit(1);
+  if (!user) {
+    return { berhasil: false, pesan: "Akun tidak ditemukan." };
+  }
 
-  await db.insert(imporLog).values({
-    namaBerkas,
-    jumlahBaris: hasil.jumlahBaris,
-    jumlahBaru: hasil.jumlahBaru,
-    jumlahBerubah: hasil.jumlahBerubah,
-    berhasil: true,
-  });
+  const cocok = await bcrypt.compare(sekarang, user.passwordHash);
+  if (!cocok) {
+    return { berhasil: false, pesan: "Kata sandi saat ini salah." };
+  }
 
-  revalidatePath("/");
-  revalidatePath("/peringatan");
-  revalidatePath("/pengaturan");
-  revalidatePath("/log-impor");
+  const hashBaru = await bcrypt.hash(baru, 10);
+  await db.update(pengguna).set({ passwordHash: hashBaru }).where(eq(pengguna.id, user.id));
 
-  return {
-    berhasil: true,
-    pesan: `Berhasil diimpor: ${hasil.jumlahBaris} baris diproses, ${hasil.jumlahBaru} baru, ${hasil.jumlahBerubah} berubah.`,
-  };
+  return { berhasil: true, pesan: "Kata sandi berhasil diperbarui." };
 }

@@ -1,20 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { HeaderApp } from "@/app/header-app";
+import { AppShell } from "@/components/layout/app-shell";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/ui/field";
 import { ambilDetailGL, ambilRiwayatTahapan } from "@/lib/gl/detail";
 import { hitungStagnasi } from "@/lib/gl/stagnasi";
 import { ambilTinjauan } from "@/lib/gl/tinjauan";
 import { formatRupiah, formatTanggal, formatWaktu, hitungUmurHari } from "@/lib/format";
 import { tandaiDitinjau } from "./actions";
-
-function Field({ label, value }: { label: string; value: string | number | null }) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
-      <dd className="text-sm text-foreground">{value === null || value === "" ? "-" : value}</dd>
-    </div>
-  );
-}
 
 function formatTanggalOpsional(iso: string | null): string {
   return iso ? formatTanggal(iso) : "-";
@@ -22,11 +18,15 @@ function formatTanggalOpsional(iso: string | null): string {
 
 export default async function DetailGLPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ idJaminan: string }>;
+  searchParams: Promise<{ dari?: string }>;
 }) {
   const { idJaminan: idMentah } = await params;
   const idJaminan = decodeURIComponent(idMentah);
+  const { dari } = await searchParams;
+  const dariPeringatan = dari === "peringatan";
 
   const [detail, riwayat, catatanTinjauan] = await Promise.all([
     ambilDetailGL(idJaminan),
@@ -41,18 +41,23 @@ export default async function DetailGLPage({
   const diabaikanAktif = catatanTinjauan.find((c) => c.diabaikan) ?? null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <HeaderApp />
-
-      <main className="flex flex-col gap-6 p-6">
-        <Link href="/" className="text-sm text-muted-foreground underline">
-          ← Kembali ke daftar GL
+    <AppShell
+      asalHref={dariPeringatan ? "/peringatan" : undefined}
+      breadcrumbAkhir={detail.namaKorban}
+    >
+      <div className="flex flex-col gap-6 p-8">
+        <Link
+          href={dariPeringatan ? "/peringatan" : "/"}
+          className="text-sm text-muted-foreground"
+        >
+          ← Kembali ke {dariPeringatan ? "Papan Peringatan" : "daftar GL"}
         </Link>
 
         {diabaikanAktif && (
-          <div className="flex flex-col gap-1 rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm">
+          <div className="flex flex-col gap-1 rounded-lg border border-primary/30 bg-status-info-bg p-4 text-sm">
             <p className="font-medium text-foreground">
-              Status Pembayaran ditandai Paid secara manual lewat Abaikan, bukan dari berkas impor.
+              Status Pembayaran ditandai Paid secara manual lewat Tinjauan Petugas, bukan dari
+              berkas impor.
             </p>
             <p className="text-muted-foreground">
               Alasan: {diabaikanAktif.alasanAbaikan ?? diabaikanAktif.catatan} — oleh{" "}
@@ -61,28 +66,36 @@ export default async function DetailGLPage({
           </div>
         )}
 
-        <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
+        <Card>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-foreground">{detail.namaKorban}</h2>
-            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              <span>Umur GL: {umurHari} hari</span>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
               <span>
-                Stagnasi: {stagnasi.hariDiTahapan} hari di tahapan ini
+                Umur GL:{" "}
+                <span className="font-mono font-semibold text-foreground">{umurHari} hari</span>
+              </span>
+              <span>
+                Stagnasi:{" "}
+                <span className="font-mono font-semibold text-foreground">
+                  {stagnasi.hariDiTahapan} hari
+                </span>{" "}
+                di tahapan ini
                 {stagnasi.berdasarkanUmur && (
-                  <span
+                  <Badge
+                    tone="neutral"
+                    className="ml-1.5"
                     title="Riwayat tahapan belum menangkap kapan GL ini masuk tahapan saat ini, jadi dipakai umur GL sebagai perkiraan."
-                    className="ml-1 rounded bg-muted px-1.5 py-0.5 text-xs"
                   >
                     berdasarkan umur
-                  </span>
+                  </Badge>
                 )}
               </span>
             </div>
           </div>
 
           <dl className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 lg:grid-cols-4">
-            <Field label="Nomor ID Jaminan" value={detail.idJaminan} />
-            <Field label="Nomor Surat Jaminan" value={detail.nomorSuratJaminan} />
+            <Field label="Nomor ID Jaminan" value={detail.idJaminan} mono />
+            <Field label="Nomor Surat Jaminan" value={detail.nomorSuratJaminan} mono />
             <Field label="Loket" value={detail.loket} />
             <Field label="Nama Rumah Sakit" value={detail.namaRumahSakit} />
             <Field label="Tipe Klaim" value={detail.tipeKlaim} />
@@ -90,20 +103,27 @@ export default async function DetailGLPage({
             <Field label="Status GL" value={detail.glStatus} />
             <Field label="Tahapan" value={detail.tahapan} />
             <Field label="Status Verifikasi" value={detail.statusVerifikasi} />
-            <Field label="Status Pembayaran" value={detail.statusPembayaran} />
-            <Field label="Tgl GL" value={formatTanggal(detail.tglGl)} />
-            <Field label="Tgl Diajukan" value={formatTanggalOpsional(detail.tglDiajukan)} />
-            <Field label="Tgl Verifikasi" value={formatTanggalOpsional(detail.tglVerifikasi)} />
-            <Field label="Tgl Pembayaran" value={formatTanggalOpsional(detail.tglPembayaran)} />
-            <Field label="Nilai Diajukan" value={formatRupiah(detail.nilaiDiajukan)} />
-            <Field label="Nilai Disetujui" value={formatRupiah(detail.nilaiDisetujui)} />
-            <Field label="Jumlah Pembayaran" value={formatRupiah(detail.jumlahPembayaran)} />
+            <Field
+              label="Status Pembayaran"
+              value={
+                <Badge tone={detail.statusPembayaran === "Paid" ? "solidOk" : "warn"} pill={detail.statusPembayaran === "Paid"}>
+                  {detail.statusPembayaran}
+                </Badge>
+              }
+            />
+            <Field label="Tgl GL" value={formatTanggal(detail.tglGl)} mono />
+            <Field label="Tgl Diajukan" value={formatTanggalOpsional(detail.tglDiajukan)} mono />
+            <Field label="Tgl Verifikasi" value={formatTanggalOpsional(detail.tglVerifikasi)} mono />
+            <Field label="Tgl Pembayaran" value={formatTanggalOpsional(detail.tglPembayaran)} mono />
+            <Field label="Nilai Diajukan" value={formatRupiah(detail.nilaiDiajukan)} mono />
+            <Field label="Nilai Disetujui" value={formatRupiah(detail.nilaiDisetujui)} mono />
+            <Field label="Jumlah Pembayaran" value={formatRupiah(detail.jumlahPembayaran)} mono />
           </dl>
 
           <p className="text-xs text-muted-foreground">
             Data diimpor terakhir: {formatWaktu(detail.diimporPada)}
           </p>
-        </div>
+        </Card>
 
         <section className="flex flex-col gap-3">
           <h3 className="text-base font-semibold text-foreground">Riwayat Tahapan</h3>
@@ -115,16 +135,16 @@ export default async function DetailGLPage({
             </p>
           )}
 
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50">
+              <thead className="bg-surface-table-header">
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Dicatat pada</th>
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">Tahapan</th>
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                  <th className="px-3 py-2 text-left font-semibold text-foreground">Dicatat pada</th>
+                  <th className="px-3 py-2 text-left font-semibold text-foreground">Tahapan</th>
+                  <th className="px-3 py-2 text-left font-semibold text-foreground">
                     Status Verifikasi
                   </th>
-                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                  <th className="px-3 py-2 text-left font-semibold text-foreground">
                     Status Pembayaran
                   </th>
                 </tr>
@@ -132,7 +152,7 @@ export default async function DetailGLPage({
               <tbody>
                 {riwayat.map((r) => (
                   <tr key={r.id} className="border-t border-border">
-                    <td className="px-3 py-2 whitespace-nowrap">{formatWaktu(r.direkamPada)}</td>
+                    <td className="px-3 py-2 font-mono whitespace-nowrap">{formatWaktu(r.direkamPada)}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{r.tahapan}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{r.statusVerifikasi ?? "-"}</td>
                     <td className="px-3 py-2 whitespace-nowrap">{r.statusPembayaran}</td>
@@ -146,55 +166,57 @@ export default async function DetailGLPage({
         <section className="flex flex-col gap-3">
           <h3 className="text-base font-semibold text-foreground">Tinjauan Petugas</h3>
 
-          <form
-            action={tandaiDitinjau}
-            className="flex flex-col gap-2 rounded-lg border border-border p-4"
-          >
-            <input type="hidden" name="idJaminan" value={detail.idJaminan} />
-            <label htmlFor="catatan" className="text-sm font-medium text-foreground">
-              Catatan
-            </label>
-            <textarea
-              id="catatan"
-              name="catatan"
-              required
-              rows={3}
-              className="rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring"
-              placeholder="Catatan hasil peninjauan GL ini..."
-            />
-            <label className="flex items-center gap-2 text-sm text-foreground">
-              <input type="checkbox" name="perluTindakLanjut" className="h-4 w-4" />
-              Perlu tindak lanjut
-            </label>
-            <button
-              type="submit"
-              className="mt-1 h-8 w-fit rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/80"
-            >
-              Tandai Sudah Ditinjau
-            </button>
-          </form>
+          <Card>
+            <form action={tandaiDitinjau} className="flex flex-col gap-3">
+              <input type="hidden" name="idJaminan" value={detail.idJaminan} />
+              <label htmlFor="catatan" className="text-sm font-medium text-foreground">
+                Catatan
+              </label>
+              <Textarea
+                id="catatan"
+                name="catatan"
+                required
+                rows={3}
+                placeholder="Catatan hasil peninjauan GL ini..."
+              />
+              <Checkbox name="perluTindakLanjut" label="Perlu tindak lanjut" />
+
+              {detail.statusPembayaran !== "Paid" && (
+                <div className="flex flex-col gap-1 rounded-lg border border-status-near/30 bg-status-near-bg p-3">
+                  <Checkbox
+                    name="tandaiSudahDibayar"
+                    label="Tandai juga sebagai Sudah Dibayar (Paid)"
+                  />
+                  <p className="pl-6 text-xs text-muted-foreground">
+                    Centang hanya jika data di pusat juga sudah benar-benar terupdate jadi Paid.
+                    Status pembayaran GL ini langsung berubah di sistem. Kalau berkas impor
+                    berikutnya masih menunjukkan Unpaid, status ini akan tertimpa balik.
+                  </p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="mt-1 h-8 w-fit rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
+              >
+                Tandai Sudah Ditinjau
+              </button>
+            </form>
+          </Card>
 
           {catatanTinjauan.length === 0 ? (
             <p className="text-sm text-muted-foreground">Belum ada catatan tinjauan untuk GL ini.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {catatanTinjauan.map((c) => (
-                <li key={c.id} className="rounded-lg border border-border p-3 text-sm">
+                <li key={c.id} className="rounded-lg border border-border bg-card p-3 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span>
                       {c.namaPengguna} — {formatWaktu(c.ditinjauPada)}
                     </span>
                     <span className="flex gap-2">
-                      {c.diabaikan && (
-                        <span className="rounded bg-destructive/10 px-2 py-0.5 text-destructive">
-                          Diabaikan
-                        </span>
-                      )}
-                      {c.perluTindakLanjut && (
-                        <span className="rounded bg-primary/10 px-2 py-0.5 text-primary">
-                          Perlu tindak lanjut
-                        </span>
-                      )}
+                      {c.diabaikan && <Badge tone="danger">Diabaikan</Badge>}
+                      {c.perluTindakLanjut && <Badge tone="info">Perlu tindak lanjut</Badge>}
                     </span>
                   </div>
                   <p className="mt-1 text-foreground">{c.catatan}</p>
@@ -203,7 +225,7 @@ export default async function DetailGLPage({
             </ul>
           )}
         </section>
-      </main>
-    </div>
+      </div>
+    </AppShell>
   );
 }

@@ -15,12 +15,26 @@ describe("ambilOpsiFilter", () => {
 });
 
 describe("ambilDaftarGL", () => {
-  it("mengembalikan 20 baris per halaman dan total keseluruhan tanpa filter", async () => {
+  it("mengembalikan 25 baris per halaman (default) dan total keseluruhan tanpa filter", async () => {
     const hasil = await ambilDaftarGL({});
 
-    expect(hasil.baris.length).toBeLessThanOrEqual(20);
+    expect(hasil.baris.length).toBeLessThanOrEqual(25);
+    expect(hasil.ukuran).toBe(25);
     expect(hasil.total).toBeGreaterThan(0);
     expect(hasil.halaman).toBe(1);
+  });
+
+  it("menghormati ukuran halaman kalau diberi nilai yang ada di pilihan", async () => {
+    const hasil = await ambilDaftarGL({ ukuran: 5 });
+
+    expect(hasil.ukuran).toBe(5);
+    expect(hasil.baris.length).toBeLessThanOrEqual(5);
+  });
+
+  it("jatuh ke ukuran default kalau nilai ukuran tidak ada di pilihan", async () => {
+    const hasil = await ambilDaftarGL({ ukuran: 13 });
+
+    expect(hasil.ukuran).toBe(25);
   });
 
   it("menyaring hasil berdasarkan loket", async () => {
@@ -57,7 +71,7 @@ describe("ambilDaftarGL", () => {
     const halaman1 = await ambilDaftarGL({ halaman: 1 });
     const halaman2 = await ambilDaftarGL({ halaman: 2 });
 
-    expect(halaman1.total).toBeGreaterThan(20);
+    expect(halaman1.total).toBeGreaterThan(25);
     const idHalaman1 = new Set(halaman1.baris.map((b) => b.idJaminan));
     for (const baris of halaman2.baris) {
       expect(idHalaman1.has(baris.idJaminan)).toBe(false);
