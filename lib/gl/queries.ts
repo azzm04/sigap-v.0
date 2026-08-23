@@ -15,14 +15,10 @@ export interface FilterDaftarGL {
   loket?: string;
   tahapan?: string;
   statusPembayaran?: string;
-  /** ISO "YYYY-MM-DD", batas bawah Tgl GL */
   dari?: string;
-  /** ISO "YYYY-MM-DD", batas atas Tgl GL */
   sampai?: string;
-  /** Dicocokkan ke Nama Korban atau Nomor ID Jaminan */
   cari?: string;
   halaman?: number;
-  /** Jumlah baris per halaman, harus salah satu dari PILIHAN_UKURAN_HALAMAN */
   ukuran?: number;
 }
 
@@ -49,13 +45,10 @@ export interface HasilDaftarGL {
   baris: BarisDaftarGL[];
   total: number;
   halaman: number;
-  /** Ukuran halaman yang sudah disanitisasi (bukan sekadar echo dari filter) */
   ukuran: number;
   totalHalaman: number;
 }
 
-// Daftar nilai enum untuk dropdown filter dibaca langsung dari data yang
-// benar-benar ada, bukan daftar tetap di kode (CLAUDE.md aturan keras #3).
 export async function ambilOpsiFilter() {
   const kondisiAktif = isNull(glMirror.dihapusPada);
   const [loket, tahapan, statusPembayaran] = await Promise.all([
@@ -83,11 +76,7 @@ export async function ambilOpsiFilter() {
   };
 }
 
-// Diekspor supaya lib/gl/ekspor.ts memakai aturan penyaringan yang persis
-// sama, bukan menyalin ulang logikanya.
 export function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
-  // Baris yang di-soft-delete lewat "Hapus Semua Data" tidak pernah muncul
-  // di tampilan mana pun (lihat lib/db/schema.ts, kolom dihapusPada).
   const kondisi = [isNull(glMirror.dihapusPada)];
   if (filter.loket) kondisi.push(eq(glMirror.loket, filter.loket));
   if (filter.tahapan) kondisi.push(eq(glMirror.tahapan, filter.tahapan));
@@ -102,8 +91,6 @@ export function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
   return and(...kondisi);
 }
 
-// Query di server, hanya mengambil kolom yang benar-benar ditampilkan di
-// tabel (CLAUDE.md aturan keras #4) — bukan seluruh baris gl_mirror.
 export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftarGL> {
   const halaman = Math.max(1, Math.floor(filter.halaman ?? 1));
   const ukuran = sanitisasiUkuran(filter.ukuran);
@@ -132,9 +119,6 @@ export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftar
     })
     .from(glMirror)
     .where(kondisi)
-    // id sebagai penentu urutan kedua: banyak baris berbagi tgl_gl yang sama,
-    // tanpa ini urutan antar-halaman tidak stabil (baris bisa terlewat atau
-    // muncul dua kali saat berpindah halaman).
     .orderBy(desc(glMirror.tglGl), desc(glMirror.id))
     .limit(ukuran)
     .offset((halaman - 1) * ukuran);

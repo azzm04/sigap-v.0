@@ -8,9 +8,7 @@ export function PageTitle({
   asalHref,
   akhir,
 }: {
-  /** Halaman asal kalau route ini bisa dibuka dari beberapa konteks (mis. Detail GL dari Papan Peringatan) */
   asalHref?: string;
-  /** Segmen breadcrumb tambahan di akhir, mis. nama entitas pada halaman detail */
   akhir?: string;
 }) {
   const pathname = usePathname();

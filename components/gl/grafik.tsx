@@ -54,19 +54,12 @@ function TooltipTema({
   );
 }
 
-// Angka sumbu bawah cuma penanda skala relatif (dibulatkan ke kelipatan
-// rapi di atas nilai maksimum sungguhan), sama seperti referensi visual.
 function skalaSumbu(maks: number): number[] {
   const kelipatan = [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000];
   const langkah = kelipatan.find((k) => k * 4 >= maks) ?? Math.ceil(maks / 4 / 1000) * 1000;
   return [0, langkah, langkah * 2, langkah * 3, langkah * 4];
 }
 
-// Ditampilkan di dashboard: hanya top-N tahapan (diurutkan jumlah terbanyak
-// oleh ambilSebaranTahapan) sebagai grid kolom sejajar -- daftar tahapan
-// bisa sampai 17 nilai (CLAUDE.md), menumpuknya penuh secara vertikal di
-// dashboard bikin kartu ini terlalu tinggi. Daftar lengkap ada di halaman
-// /tahapan lewat link "Lihat Semua".
 const BATAS_TAHAPAN_DASHBOARD = 5;
 
 export function GrafikSebaranTahapan({ data }: { data: SebaranTahapan[] }) {
@@ -75,12 +68,12 @@ export function GrafikSebaranTahapan({ data }: { data: SebaranTahapan[] }) {
 
   return (
     <Card
-      title={<span className="text-lg">Sebaran per Tahapan</span>}
+      title={<span className="text-base md:text-lg">Sebaran per Tahapan</span>}
       actions={
         data.length > BATAS_TAHAPAN_DASHBOARD ? (
           <Link
             href="/tahapan"
-            className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="flex shrink-0 items-center gap-1 text-xs md:text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             Lihat Semua
             <ArrowRight className="size-3.5" />
@@ -94,12 +87,12 @@ export function GrafikSebaranTahapan({ data }: { data: SebaranTahapan[] }) {
           <div key={d.tahapan} className="flex flex-col gap-2">
             <div className="flex items-baseline justify-between gap-2">
               <span
-                className="truncate font-mono text-xs text-muted-foreground"
+                className="truncate font-mono text-sm text-muted-foreground"
                 title={d.tahapan}
               >
                 {d.tahapan}
               </span>
-              <span className="shrink-0 font-mono text-sm font-bold text-foreground">
+              <span className="shrink-0 font-mono text-xs font-bold text-foreground">
                 {d.jumlah.toLocaleString("id-ID")}
               </span>
             </div>
@@ -117,7 +110,6 @@ export function GrafikSebaranTahapan({ data }: { data: SebaranTahapan[] }) {
 }
 
 // Daftar lengkap (semua tahapan) untuk halaman /tahapan -- gaya bar penuh
-// vertikal yang sebelumnya dipakai langsung di kartu dashboard.
 export function DaftarSebaranTahapan({ data }: { data: SebaranTahapan[] }) {
   const maks = data.reduce((m, d) => Math.max(m, d.jumlah), 0) || 1;
   const sumbu = skalaSumbu(maks);
@@ -131,10 +123,10 @@ export function DaftarSebaranTahapan({ data }: { data: SebaranTahapan[] }) {
             className="group -mx-2 flex flex-col gap-2 rounded-lg px-2 py-1 transition-colors hover:bg-muted/50"
           >
             <div className="flex items-center justify-between">
-              <span className="font-mono text-xs text-muted-foreground transition-colors group-hover:text-foreground">
+              <span className="font-mono text-sm md:text-base text-muted-foreground transition-colors group-hover:text-foreground">
                 {d.tahapan}
               </span>
-              <span className="font-mono text-xs font-bold text-foreground">
+              <span className="font-mono text-xs md:text-sm font-bold text-foreground">
                 {d.jumlah.toLocaleString("id-ID")}
               </span>
             </div>
@@ -152,7 +144,7 @@ export function DaftarSebaranTahapan({ data }: { data: SebaranTahapan[] }) {
       </div>
       <div className="flex justify-between border-t border-border pt-2">
         {sumbu.map((s) => (
-          <span key={s} className="font-mono text-[10px] text-muted-foreground/70">
+          <span key={s} className="font-mono text-[10px] md:text-xs text-muted-foreground/70">
             {s.toLocaleString("id-ID")}
           </span>
         ))}
@@ -161,8 +153,7 @@ export function DaftarSebaranTahapan({ data }: { data: SebaranTahapan[] }) {
   );
 }
 
-// Sektor donut yang sedang di-hover membesar keluar (pola activeShape bawaan
-// Recharts), dan label di tengah berpindah dari "Total" ke rincian sektor itu.
+// Sektor donut yang sedang di-hover membesar keluar
 function sektorAktif(props: PieSectorDataItem) {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
   return (
@@ -185,9 +176,9 @@ export function GrafikStatusPembayaran({ data }: { data: SebaranStatusPembayaran
   const hover = hoverIdx !== null ? data[hoverIdx] : null;
 
   return (
-    <Card title={<span className="text-lg">Status Pembayaran</span>} className="rounded-xl p-6">
+    <Card title={<span className="text-base md:text-lg">Status Pembayaran</span>} className="rounded-xl p-6">
       <div className="flex flex-1 flex-col items-center justify-center gap-6">
-        <div className="relative flex size-32.5 items-center justify-center sm:size-37.5 md:size-47.5 lg:size-42.5 xl:size-47.5">
+        <div className="relative flex size-50 items-center justify-center md:size-55">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -215,8 +206,8 @@ export function GrafikStatusPembayaran({ data }: { data: SebaranStatusPembayaran
             </PieChart>
           </ResponsiveContainer>
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center transition-all">
-            <span className="text-xs text-muted-foreground">{hover ? LABEL_STATUS[hover.statusPembayaran] : "Total"}</span>
-            <span className="font-mono text-lg font-bold text-foreground">
+            <span className="text-xs md:text-sm text-muted-foreground">{hover ? LABEL_STATUS[hover.statusPembayaran] : "Total"}</span>
+            <span className="font-mono text-base md:text-lg font-bold text-foreground">
               {hover ? hover.jumlah.toLocaleString("id-ID") : totalRingkas}
             </span>
           </div>
@@ -234,7 +225,7 @@ export function GrafikStatusPembayaran({ data }: { data: SebaranStatusPembayaran
                 className="size-3 rounded-full"
                 style={{ background: WARNA_STATUS[entri.statusPembayaran] ?? WARNA_NETRAL }}
               />
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono text-xs md:text-sm text-muted-foreground">
                 {LABEL_STATUS[entri.statusPembayaran] ?? entri.statusPembayaran}
               </span>
             </div>
@@ -247,7 +238,7 @@ export function GrafikStatusPembayaran({ data }: { data: SebaranStatusPembayaran
 
 export function GrafikTrenBulanan({ data }: { data: TrenBulanan[] }) {
   return (
-    <Card title={<span className="text-lg">Tren GL per Bulan (Tgl GL)</span>} className="rounded-xl p-6">
+    <Card title={<span className="text-base md:text-lg">Tren GL per Bulan (Tgl GL)</span>} className="rounded-xl p-6">
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={data} barCategoryGap="20%">
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -257,11 +248,13 @@ export function GrafikTrenBulanan({ data }: { data: TrenBulanan[] }) {
             tickLine={false}
             axisLine={false}
             stroke="var(--muted-foreground)"
+            padding={{ left: 0, right: 0 }}
           />
           <YAxis allowDecimals={false} fontSize={11} tickLine={false} axisLine={false} stroke="var(--muted-foreground)" />
           <Tooltip
             cursor={{ fill: "var(--muted)" }}
             content={<TooltipTema formatterNilai={(v) => `${v.toLocaleString("id-ID")} GL`} />}
+            contentStyle={{ border: "1px solid var(--border)", backgroundColor: "var(--popover)" }}
           />
           <Bar
             dataKey="jumlah"

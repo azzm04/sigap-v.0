@@ -14,9 +14,7 @@ export function PilihanUkuranHalaman({
   ukuran: number;
   total: number;
   filterAktif?: Record<string, string | undefined>;
-  /** Rute tujuan navigasi, mis. "/peringatan" — default "/" (Daftar GL). */
   basePath?: string;
-  /** Satuan yang dihitung, mis. "Rumah Sakit" — default "GL ditemukan". */
   labelSatuan?: string;
 }) {
   const router = useRouter();

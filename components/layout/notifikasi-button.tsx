@@ -21,9 +21,7 @@ export function NotifikasiButton({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const jumlah = total;
 
-  // Munculkan otomatis sekali di kunjungan pertama pada hari itu, kalau
-  // memang ada GL yang perlu ditinjau. Kunjungan berikutnya di hari yang
-  // sama tidak memunculkan ulang (sudahDilihatHariIni sudah true).
+  // Munculin otomatis sekali di kunjungan pertama pada hari itu
   useEffect(() => {
     if (!sudahDilihatHariIni && jumlah > 0) {
       setTerbuka(true);

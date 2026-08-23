@@ -1,9 +1,5 @@
 import type { SebaranRumahSakit } from "@/lib/gl/sebaran";
 
-// Daftar progress-bar sederhana, bukan grafik Recharts — mengikuti pola
-// visual yang sama dengan "Sebaran per Tahapan" di dashboard Monitoring.
-// Lebar bar proporsional terhadap rumah sakit dengan jumlah GL tertinggi
-// di daftar ini (bukan skala sumbu berlabel).
 export function DistribusiRumahSakit({ data }: { data: SebaranRumahSakit[] }) {
   const maks = data.reduce((m, d) => Math.max(m, d.jumlah), 0) || 1;
 

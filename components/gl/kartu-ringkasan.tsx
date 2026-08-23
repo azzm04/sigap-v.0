@@ -3,14 +3,6 @@ import { StatCard } from "@/components/ui/stat-card";
 import { formatWaktu } from "@/lib/format";
 import type { KartuRingkasan } from "@/lib/gl/ringkasan";
 
-// Susunan mobile/tablet sengaja TIDAK diubah (masih grid-cols-2 dua-dua
-// lalu "Data Terakhir Diperbarui" full-width di baris terakhir seperti
-// sebelumnya) — permintaan redesign ini eksplisit hanya untuk tampilan
-// desktop. Di lg: ke atas, urutan visual disusun ulang lewat lg:order
-// tanpa mengubah urutan DOM, supaya markup & perilaku mobile tetap sama
-// persis: baris 1 jadi Total GL + Data Terakhir Diperbarui (masing-masing
-// separuh lebar), baris 2 jadi Belum Dibayar + Perlu Ditinjau + Rata-rata
-// Umur Tagihan (masing-masing sepertiga lebar).
 export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">

@@ -19,7 +19,6 @@ export function HapusPermanenDialog({
   dihapusPada,
   jumlahBaris,
 }: {
-  /** ISO string, dipakai sebagai kunci batch */
   dihapusPada: string;
   jumlahBaris: number;
 }) {

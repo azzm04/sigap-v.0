@@ -14,7 +14,6 @@ export function LompatHalaman({
   totalHalaman: number;
   ukuran: number;
   filterAktif?: Record<string, string | undefined>;
-  /** Rute tujuan navigasi, mis. "/peringatan" — default "/" (Daftar GL). */
   basePath?: string;
 }) {
   const router = useRouter();

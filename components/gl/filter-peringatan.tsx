@@ -14,8 +14,6 @@ export interface NilaiFilterPeringatan {
   status_tinjauan?: string;
   dari?: string;
   sampai?: string;
-  // Supaya bisa dipakai langsung sebagai Record<string, string | undefined>
-  // di PilihanUkuranHalaman/LompatHalaman tanpa perlu di-cast.
   [kunci: string]: string | undefined;
 }
 
@@ -65,7 +63,9 @@ export function FilterPeringatan({
     <div className="border-b border-border bg-muted/40 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2">
         <div className="flex min-w-24 flex-1 flex-col gap-1.5">
-          <Label htmlFor="cari">Cari nama korban / ID jaminan</Label>
+          <Label className="text-xs md:text-sm" htmlFor="cari">
+            Cari nama korban / ID jaminan
+          </Label>
           <Input id="cari" value={cari} onChange={(e) => ubahCari(e.target.value)} className="w-full" />
         </div>
 

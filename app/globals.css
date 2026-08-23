@@ -54,6 +54,9 @@
   --color-chart-bar: var(--chart-bar);
   --color-chart-paid: var(--chart-paid);
   --color-chart-unpaid: var(--chart-unpaid);
+  --color-login-panel: var(--login-panel);
+  --color-login-panel-foreground: var(--login-panel-foreground);
+  --color-login-panel-muted: var(--login-panel-muted);
   --shadow-float: var(--elevation-float);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -122,6 +125,13 @@
 
   --surface-table-header: #d0d6e0;
   --elevation-float: 0 8px 24px -6px rgba(3, 105, 161, 0.18), 0 2px 6px -2px rgba(3, 105, 161, 0.1);
+
+  /* Panel branding di halaman login — sengaja selalu gelap di kedua tema
+     (kontras dengan panel form), tapi warnanya tetap ikut identitas
+     masing-masing tema: biru JR tua di terang, ungu "Lumina" tua di gelap. */
+  --login-panel: #071c30;
+  --login-panel-foreground: #f5f9fc;
+  --login-panel-muted: #9db8cc;
 }
 
 .dark {
@@ -179,6 +189,10 @@
 
   --surface-table-header: #2c2834;
   --elevation-float: 0 10px 28px -8px rgba(0, 0, 0, 0.6), 0 2px 6px -2px rgba(112, 0, 255, 0.14);
+
+  --login-panel: #0c0716;
+  --login-panel-foreground: #efe9fb;
+  --login-panel-muted: #a89dc4;
 }
 
 @layer base {

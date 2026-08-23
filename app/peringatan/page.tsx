@@ -205,7 +205,7 @@ export default async function PapanPeringatanPage({
                           className="flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted"
                         >
                           <Eye className="size-3.5" />
-                          Tinjau
+                          Detail GL
                         </Link>
                       </div>
                     </td>
@@ -242,10 +242,8 @@ export default async function PapanPeringatanPage({
           </div>
         </div>
 
-        <p className="max-w-2xl text-xs text-muted-foreground">
-          Tinjau membuka detail GL untuk mencatat hasil peninjauan. Kalau ternyata GL sudah dibayar
-          di pusat padahal berkas impor terakhir belum mencerminkannya, tandai lewat opsi “Sudah
-          Dibayar (Paid)” di halaman detail — GL akan hilang dari papan ini secara permanen.
+        <p className="max-w-2xl lg:max-w-4xl text-sm md:text-base lg:text-xl xl:text-2xl text-muted-foreground">
+          Buka detail GL untuk mencatat hasil tinjauan. Jika GL sudah dibayar di pusat namun data belum terbarui, pilih opsi ”Sudah Dibayar (Paid)” untuk menghapusnya secara permanen dari papan ini.
         </p>
       </div>
     </AppShell>
