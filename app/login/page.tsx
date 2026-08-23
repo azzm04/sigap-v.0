@@ -15,7 +15,7 @@ export default async function HalamanLogin({
           aria-hidden="true"
           className="pointer-events-none absolute -top-24 -left-24 size-96 rounded-full bg-accent-bright/20 blur-[100px]"
         />
-        
+
         <div className="relative z-10 m-auto flex max-w-md flex-col gap-6">
           <div className="flex items-center gap-5">
             <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/10">
@@ -27,7 +27,7 @@ export default async function HalamanLogin({
                 className="object-contain"
               />
             </div>
-            
+
             {/* Wadah Teks */}
             <div className="flex flex-col justify-center">
               <h1 className="font-mono text-4xl font-extrabold tracking-tight">

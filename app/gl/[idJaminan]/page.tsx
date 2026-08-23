@@ -256,7 +256,9 @@ export default async function DetailGLPage({
                     className="text-sm md:text-base font-medium text-foreground"
                   />
                   <p className="pl-6 text-xs md:text-sm leading-relaxed break-words text-muted-foreground">
-                    Centang jika data pusat sudah Paid. Status akan langsung berubah, namun dapat tertimpa kembali jika berkas impor selanjutnya masih Unpaid.
+                    Centang jika data pusat sudah Paid. Status akan langsung
+                    berubah, namun dapat tertimpa kembali jika berkas impor
+                    selanjutnya masih Unpaid.
                   </p>
                 </div>
               )}
@@ -276,27 +278,63 @@ export default async function DetailGLPage({
             </p>
           ) : (
             <ul className="flex flex-col gap-2">
-              {catatanTinjauan.map((c) => (
-                <li
-                  key={c.id}
-                  className="min-w-0 rounded-lg border border-border bg-card p-3 text-xs sm:text-sm"
-                >
-                  <div className="flex min-w-0 flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                    <span>
-                      {c.namaPengguna} — {formatWaktu(c.ditinjauPada)}
-                    </span>
-                    <span className="flex gap-2">
-                      {c.diabaikan && <Badge tone="danger">Diabaikan</Badge>}
-                      {c.perluTindakLanjut && (
-                        <Badge tone="info">Perlu tindak lanjut</Badge>
-                      )}
-                    </span>
-                  </div>
-                  <p className="mt-1 break-words text-sm leading-relaxed text-foreground">
-                    {c.catatan}
-                  </p>
-                </li>
-              ))}
+              {catatanTinjauan.length === 0 ? (
+                <p className="text-sm md:text-base text-muted-foreground">
+                  Belum ada catatan tinjauan untuk GL ini.
+                </p>
+              ) : (
+                <div className="w-full overflow-x-auto rounded-lg border border-border bg-card mt-2">
+                  <table className="min-w-[720px] w-full text-xs sm:text-sm">
+                    <thead className="bg-surface-table-header">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm w-1/6">
+                          Petugas
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm w-1/6">
+                          Waktu
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm w-1/6">
+                          Label / Status
+                        </th>
+                        <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm w-3/6">
+                          Catatan
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {catatanTinjauan.map((c) => (
+                        <tr
+                          key={c.id}
+                          className="border-t border-border align-top hover:bg-muted/50 transition-colors"
+                        >
+                          <td className="px-3 py-3 font-medium text-foreground whitespace-nowrap text-xs md:text-sm">
+                            {c.namaPengguna}
+                          </td>
+                          <td className="px-3 py-3 font-mono text-muted-foreground whitespace-nowrap text-xs md:text-sm">
+                            {formatWaktu(c.ditinjauPada)}
+                          </td>
+                          <td className="px-3 py-3 text-xs md:text-sm">
+                            <div className="flex flex-wrap gap-1.5">
+                              {!c.diabaikan && !c.perluTindakLanjut && (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                              {c.diabaikan && (
+                                <Badge tone="danger">Diabaikan</Badge>
+                              )}
+                              {c.perluTindakLanjut && (
+                                <Badge tone="info">Perlu tindak lanjut</Badge>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-3 py-3 whitespace-normal break-words leading-relaxed text-foreground text-xs md:text-sm">
+                            {c.catatan}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </ul>
           )}
         </section>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { apakahNavAktif, NAV_ITEMS } from "./nav-items";
 import { useSidebar } from "./sidebar-context";
+import Image from "next/image";
 
 export function SidebarApp({
   signOutAction,
@@ -37,11 +38,19 @@ export function SidebarApp({
       >
         <div className="mb-8 flex items-center justify-between gap-3 px-2">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Shield className="size-5" />
+            <div className="flex size-10 shrink-0 overflow-hidden rounded-full bg-primary/10">
+              <Image
+                src="/Logo.png"
+                alt="Logo SIGAP"
+                width={128}
+                height={128}
+                className="h-full w-full object-cover"
+              />
             </div>
             <div>
-              <h1 className="font-mono text-lg font-extrabold tracking-wide text-primary">SIGAP</h1>
+              <h1 className="font-mono text-lg font-extrabold tracking-wide text-primary">
+                SIGAP
+              </h1>
               <p className="text-xs text-muted-foreground">Monitoring GL</p>
             </div>
           </div>
