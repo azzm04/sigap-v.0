@@ -59,7 +59,7 @@ export function FilterGL({
     <div className="border-b border-border bg-muted/40 p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2">
         <div className="flex min-w-24 flex-1 flex-col gap-1.5">
-          <Label className="text-xs md:text-sm" htmlFor="cari">
+          <Label className="text-sm" htmlFor="cari">
             Cari nama korban / ID jaminan
           </Label>
           <Input id="cari" value={cari} onChange={(e) => ubahCari(e.target.value)} className="w-full" />

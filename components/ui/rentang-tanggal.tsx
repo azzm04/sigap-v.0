@@ -145,7 +145,7 @@ export function RentangTanggal({ dari, sampai, onTerapkan, className }: RentangT
       >
         <span
           className={cn(
-            "flex-1 truncate text-left text-sm md:text-base",
+            "flex-1 truncate text-left text-sm",
             adaNilai ? "font-mono" : "text-muted-foreground",
           )}
         >
@@ -153,7 +153,7 @@ export function RentangTanggal({ dari, sampai, onTerapkan, className }: RentangT
         </span>
         {adaNilai && (
           <X
-            className="size-3.5 shrink-0 text-sm md:text-base text-muted-foreground hover:text-foreground"
+            className="size-3.5 shrink-0 text-sm text-muted-foreground hover:text-foreground"
             onClick={reset}
           />
         )}

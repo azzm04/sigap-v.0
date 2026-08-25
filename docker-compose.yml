@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sigap}
       POSTGRES_DB: ${POSTGRES_DB:-sigap}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,6 +15,39 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Runner sekali-pakai untuk migrasi & skrip admin (drizzle-kit, tsx, dsb
+  # butuh devDependencies yang tidak ikut di image production "app").
+  # Contoh pakai:
+  #   docker compose run --rm tools npx drizzle-kit migrate
+  #   docker compose run --rm tools npm run seed
+  #   docker compose run --rm tools npm run buat-akun
+  tools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    profiles: ["tools"]
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: []
+    command: ["sleep", "infinity"]
 
 volumes:
   db_data:
