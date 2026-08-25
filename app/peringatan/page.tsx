@@ -12,6 +12,7 @@ import { formatRupiah, formatTanggal, formatWaktu } from "@/lib/format";
 import { ambilPapanPeringatan } from "@/lib/gl/peringatan";
 import { ambilOpsiFilter } from "@/lib/gl/queries";
 import { ambilSemuaTinjauan } from "@/lib/gl/semua-tinjauan";
+import { ambilPilihanTahapProses } from "@/lib/gl/tahap-proses";
 
 function formatTanggalOpsional(iso: string | null): string {
   return iso ? formatTanggal(iso) : "-";
@@ -65,8 +66,9 @@ export default async function PapanPeringatanPage({
     sp.status_tinjauan === "sudah" || sp.status_tinjauan === "belum" ? sp.status_tinjauan : undefined;
 
   // Selalu ambil data GL (untuk counter di banner)
-  const [opsiFilter, hasil] = await Promise.all([
+  const [opsiFilter, pilihanTahapProses, hasil] = await Promise.all([
     ambilOpsiFilter(),
+    ambilPilihanTahapProses(),
     ambilPapanPeringatan({
       halaman,
       ukuran: sp.ukuran ? Number(sp.ukuran) : undefined,
@@ -75,6 +77,7 @@ export default async function PapanPeringatanPage({
       dari: sp.dari || undefined,
       sampai: sp.sampai || undefined,
       statusTinjauan,
+      tahapProses: sp.tahap_proses || undefined,
     }),
   ]);
   const { baris, total, ukuran, totalHalaman, ambangHari } = hasil;
@@ -83,6 +86,7 @@ export default async function PapanPeringatanPage({
     cari: sp.cari,
     loket: sp.loket,
     status_tinjauan: sp.status_tinjauan,
+    tahap_proses: sp.tahap_proses,
     dari: sp.dari,
     sampai: sp.sampai,
   };
@@ -164,12 +168,15 @@ export default async function PapanPeringatanPage({
                         <th className="px-3 py-2 text-left font-semibold text-foreground">
                           Catatan
                         </th>
+                        <th className="px-3 py-2 text-left font-semibold text-foreground">
+                          Aksi
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {hasilCatatan.baris.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
+                          <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
                             Belum ada catatan tinjauan yang sesuai filter.
                           </td>
                         </tr>
@@ -209,8 +216,17 @@ export default async function PapanPeringatanPage({
                               )}
                             </div>
                           </td>
-                          <td className="px-3 py-2.5 max-w-md whitespace-normal break-words leading-relaxed text-foreground">
+                          <td className="px-3 py-2.5 min-w-[320px] max-w-[560px] whitespace-normal break-words leading-relaxed text-foreground">
                             {c.catatan}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            <Link
+                              href={`/gl/${encodeURIComponent(c.idJaminan)}?dari=peringatan`}
+                              className="flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted"
+                            >
+                              <Eye className="size-3.5" />
+                              Detail GL
+                            </Link>
                           </td>
                         </tr>
                       ))}
@@ -248,7 +264,11 @@ export default async function PapanPeringatanPage({
             )
           }>
             {/* === Tab Daftar GL (konten existing) === */}
-            <FilterPeringatan nilai={nilaiFilterPeringatan} opsi={{ loket: opsiFilter.loket }} ukuran={ukuran} />
+            <FilterPeringatan
+              nilai={nilaiFilterPeringatan}
+              opsi={{ loket: opsiFilter.loket, tahapProses: pilihanTahapProses }}
+              ukuran={ukuran}
+            />
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -285,6 +305,9 @@ export default async function PapanPeringatanPage({
                     </th>
                     <th className="px-3 py-2 text-left font-semibold text-foreground">Tahapan</th>
                     <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
+                      Tahap Proses
+                    </th>
+                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
                       Status Pembayaran
                     </th>
                     <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
@@ -302,7 +325,7 @@ export default async function PapanPeringatanPage({
                 <tbody>
                   {baris.length === 0 && (
                     <tr>
-                      <td colSpan={15} className="px-3 py-8 text-center text-muted-foreground">
+                      <td colSpan={16} className="px-3 py-8 text-center text-muted-foreground">
                         Tidak ada GL yang cocok dengan filter ini.
                       </td>
                     </tr>
@@ -349,6 +372,13 @@ export default async function PapanPeringatanPage({
                       </td>
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         <Badge tone="info">{b.tahapan}</Badge>
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        {b.tahapProses ? (
+                          <Badge tone="neutral">{b.tahapProses}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         <Badge tone="warn">{b.statusPembayaran}</Badge>
@@ -411,7 +441,7 @@ export default async function PapanPeringatanPage({
         </div>
 
         <p className="max-w-2xl lg:max-w-4xl text-sm md:text-base text-muted-foreground">
-          Buka detail GL untuk mencatat hasil tinjauan. Jika GL sudah dibayar di pusat namun data belum terbarui, pilih opsi `Sudah Dibayar (Paid)` untuk menghapusnya secara permanen dari papan ini.
+          Buka detail GL untuk mencatat hasil tinjauan. Jika GL sudah dibayar di pusat namun data belum terbarui, catat tahap &quot;Berkas Selesai&quot; di bagian Tahap Proses di Sistem Pusat pada halaman detail GL — status akan otomatis menjadi Paid dan tersingkir permanen dari papan ini.
         </p>
       </div>
     </AppShell>

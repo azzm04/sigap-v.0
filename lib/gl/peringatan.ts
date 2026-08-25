@@ -1,6 +1,6 @@
-import { and, eq, gte, ilike, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
-import { glMirror, tinjauan } from "../db/schema";
+import { glMirror, statusProsesPusat, tinjauan } from "../db/schema";
 import { hitungUmurHari } from "../format";
 import { ambilAmbangHari } from "../pengaturan";
 import { apakahMasukPeringatan } from "./aturan-peringatan";
@@ -25,6 +25,8 @@ export interface BarisPeringatan {
   umurHari: number;
   /** true kalau sudah pernah ada catatan Tinjauan Petugas untuk GL ini (apa pun isinya) */
   sudahDitinjau: boolean;
+  /** Tahap proses terkini di sistem pusat (lib/gl/tahap-proses.ts), null kalau belum pernah dicatat */
+  tahapProses: string | null;
 }
 
 // Ukuran halaman papan peringatan. Filter tahapan+ambang umur berjalan di
@@ -44,6 +46,8 @@ export interface FilterPapanPeringatan {
   sampai?: string;
   /** "sudah" = sudah ada catatan Tinjauan Petugas, "belum" = belum pernah ditinjau sama sekali */
   statusTinjauan?: "sudah" | "belum";
+  /** Nilai persis dari nilai_referensi kategori tahap_proses_pusat */
+  tahapProses?: string;
 }
 
 export interface HasilPeringatan {
@@ -120,12 +124,24 @@ export async function ambilPapanPeringatan(
   const idDiabaikan = new Set(tinjauanBaris.filter((b) => b.diabaikan).map((b) => b.idJaminan));
   const idSudahDitinjau = new Set(tinjauanBaris.map((b) => b.idJaminan));
 
+  // Diurutkan terbaru dulu supaya baris pertama yang ditemui per id_jaminan
+  // adalah tahap terkininya (sama seperti pola di lib/gl/tahap-proses.ts).
+  const semuaTahapProses = await db
+    .select({ idJaminan: statusProsesPusat.idJaminan, tahap: statusProsesPusat.tahap })
+    .from(statusProsesPusat)
+    .orderBy(desc(statusProsesPusat.dicatatPada));
+  const tahapTerkiniPerId = new Map<string, string>();
+  for (const t of semuaTahapProses) {
+    if (!tahapTerkiniPerId.has(t.idJaminan)) tahapTerkiniPerId.set(t.idJaminan, t.tahap);
+  }
+
   const semuaBaris = kandidat
     .filter((b) => !idDiabaikan.has(b.idJaminan))
     .map((b) => ({
       ...b,
       umurHari: hitungUmurHari(b.tglGl),
       sudahDitinjau: idSudahDitinjau.has(b.idJaminan),
+      tahapProses: tahapTerkiniPerId.get(b.idJaminan) ?? null,
     }))
     .filter((b) => apakahMasukPeringatan(b, ambangHari))
     .filter((b) => {
@@ -133,6 +149,7 @@ export async function ambilPapanPeringatan(
       if (filter.statusTinjauan === "belum") return !b.sudahDitinjau;
       return true;
     })
+    .filter((b) => !filter.tahapProses || b.tahapProses === filter.tahapProses)
     // Prioritas belum jelas (akhiran "00" — lihat CLAUDE.md bagian 7 dan 8),
     // jadi urutkan berdasarkan umur tertinggi sampai dikonfirmasi.
     .sort((a, b) => b.umurHari - a.umurHari)
@@ -156,6 +173,7 @@ export async function ambilPapanPeringatan(
         lokasi,
         umurHari,
         sudahDitinjau,
+        tahapProses,
       }) => ({
         idJaminan,
         namaKorban,
@@ -175,6 +193,7 @@ export async function ambilPapanPeringatan(
         lokasi,
         umurHari,
         sudahDitinjau,
+        tahapProses,
       }),
     );
 
