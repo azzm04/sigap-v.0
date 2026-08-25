@@ -105,6 +105,26 @@ export const tinjauan = pgTable("tinjauan", {
     .defaultNow(),
 });
 
+// Riwayat tahap proses internal GL di sistem pusat (mis. Sub Pra-Verifikasi,
+// Pra Verifikasi, Siap Bayar, Selesai), dicatat MANUAL oleh petugas saat
+// meninjau di halaman detail GL — bukan dari berkas impor, karena sistem
+// pusat tidak diakses aplikasi ini (CLAUDE.md aturan keras #1). Tahap
+// terkini = baris terbaru per id_jaminan. Daftar nilai tahap yang valid ada
+// di nilai_referensi kategori "tahap_proses_pusat" (aturan keras #3).
+export const statusProsesPusat = pgTable("status_proses_pusat", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  idJaminan: text("id_jaminan")
+    .notNull()
+    .references(() => glMirror.idJaminan, { onDelete: "cascade" }),
+  tahap: text("tahap").notNull(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => pengguna.id, { onDelete: "cascade" }),
+  dicatatPada: timestamp("dicatat_pada", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Pengaturan key-value. Minimal berisi ambang hari peringatan (CLAUDE.md aturan keras #2).
 export const pengaturan = pgTable("pengaturan", {
   kunci: text("kunci").primaryKey(),

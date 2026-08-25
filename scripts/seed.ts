@@ -13,8 +13,9 @@ async function main() {
     "../lib/sumber-data/normalizer"
   );
   const { db } = await import("../lib/db");
-  const { pengaturan } = await import("../lib/db/schema");
+  const { pengaturan, nilaiReferensi } = await import("../lib/db/schema");
   const { KUNCI_AMBANG_HARI } = await import("../lib/pengaturan");
+  const { KATEGORI_TAHAP_PROSES } = await import("../lib/gl/tahap-proses");
 
   const baris = await sumberDummy.ambilGL();
   const hasil = await normalisasiDanSimpan(baris);
@@ -25,6 +26,30 @@ async function main() {
     .insert(pengaturan)
     .values([{ kunci: KUNCI_AMBANG_HARI, nilai: "14" }])
     .onConflictDoNothing({ target: pengaturan.kunci });
+
+  // Daftar tahap proses di sistem pusat (Sub Pra-Verifikasi -> ... ->
+  // Berkas Selesai), lihat CLAUDE.md aturan keras #3 dan lib/gl/tahap-proses.ts.
+  const TAHAP_PROSES_PUSAT = [
+    "Berkas Asbah",
+    "Berkas Batal",
+    "Berkas Lengkap",
+    "Berkas Rekomendasi",
+    "Berkas Selesai",
+    "Berkas Siap Dibayar",
+    "Berkas Siap Diverifikasi",
+    "Berkas Telah Diverifikasi",
+    "Persetujuan Ka.Wilayah",
+    "Sub Pra-Verifikasi",
+  ];
+  await db
+    .insert(nilaiReferensi)
+    .values(
+      TAHAP_PROSES_PUSAT.map((nilai) => ({
+        kategori: KATEGORI_TAHAP_PROSES,
+        nilai,
+      })),
+    )
+    .onConflictDoNothing({ target: [nilaiReferensi.kategori, nilaiReferensi.nilai] });
 
   console.log(
     `Seed selesai: ${hasil.jumlahBaris} baris diproses, ${hasil.jumlahBaru} baru, ${hasil.jumlahBerubah} berubah.`,

@@ -7,8 +7,14 @@ import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/ui/field";
+import { AksiCatatan } from "@/components/gl/aksi-catatan";
+import { Select } from "@/components/ui/select";
 import { ambilDetailGL, ambilRiwayatTahapan } from "@/lib/gl/detail";
 import { hitungStagnasi } from "@/lib/gl/stagnasi";
+import {
+  ambilPilihanTahapProses,
+  ambilRiwayatTahapProses,
+} from "@/lib/gl/tahap-proses";
 import { ambilTinjauan } from "@/lib/gl/tinjauan";
 import {
   formatRupiah,
@@ -16,7 +22,7 @@ import {
   formatWaktu,
   hitungUmurHari,
 } from "@/lib/format";
-import { tandaiDitinjau } from "./actions";
+import { catatTahapProses, tandaiDitinjau } from "./actions";
 
 function formatTanggalOpsional(iso: string | null): string {
   return iso ? formatTanggal(iso) : "-";
@@ -34,17 +40,21 @@ export default async function DetailGLPage({
   const { dari } = await searchParams;
   const dariPeringatan = dari === "peringatan";
 
-  const [detail, riwayat, catatanTinjauan] = await Promise.all([
-    ambilDetailGL(idJaminan),
-    ambilRiwayatTahapan(idJaminan),
-    ambilTinjauan(idJaminan),
-  ]);
+  const [detail, riwayat, catatanTinjauan, pilihanTahapProses, riwayatTahapProses] =
+    await Promise.all([
+      ambilDetailGL(idJaminan),
+      ambilRiwayatTahapan(idJaminan),
+      ambilTinjauan(idJaminan),
+      ambilPilihanTahapProses(),
+      ambilRiwayatTahapProses(idJaminan),
+    ]);
 
   if (!detail) notFound();
 
   const umurHari = hitungUmurHari(detail.tglGl);
   const stagnasi = hitungStagnasi(riwayat, detail.tglGl);
   const diabaikanAktif = catatanTinjauan.find((c) => c.diabaikan) ?? null;
+  const tahapTerkini = riwayatTahapProses[0] ?? null;
 
   return (
     <AppShell
@@ -63,8 +73,8 @@ export default async function DetailGLPage({
         {diabaikanAktif && (
           <div className="flex min-w-0 flex-col gap-1 rounded-lg border border-primary/30 bg-status-info-bg p-3 text-xs leading-relaxed sm:p-4 sm:text-sm">
             <p className="font-medium break-words text-foreground">
-              Status Pembayaran ditandai Paid secara manual lewat Tinjauan
-              Petugas, bukan dari berkas impor.
+              Status Pembayaran ditandai Paid secara manual lewat Tahap
+              Proses di Sistem Pusat, bukan dari berkas impor.
             </p>
             <p className="break-words text-muted-foreground">
               Alasan: {diabaikanAktif.alasanAbaikan ?? diabaikanAktif.catatan} —
@@ -231,6 +241,105 @@ export default async function DetailGLPage({
         </section>
 
         <section className="flex flex-col gap-3">
+          <h3 className="text-sm md:text-base font-semibold text-foreground sm:text-base">
+            Tahap Proses di Sistem Pusat
+          </h3>
+          <p className="text-sm md:text-base leading-relaxed text-muted-foreground">
+            Diisi manual oleh petugas berdasarkan pengecekan langsung di
+            sistem pusat, karena SIGAP tidak terhubung ke sistem pusat.
+            Tahap boleh dipilih bebas sesuai kondisi terkini. Begitu tahap
+            &quot;Berkas Selesai&quot; dicatat, Status Pembayaran otomatis
+            menjadi Paid.
+          </p>
+
+          <Card className="min-w-0">
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="text-sm md:text-base font-medium text-muted-foreground">
+                Tahap terkini
+              </span>
+              {tahapTerkini ? (
+                <span className="text-sm md:text-base font-semibold text-foreground">
+                  {tahapTerkini.tahap}{" "}
+                  <span className="font-normal text-muted-foreground">
+                    — dicatat {formatWaktu(tahapTerkini.dicatatPada)} oleh{" "}
+                    {tahapTerkini.namaPengguna}
+                  </span>
+                </span>
+              ) : (
+                <span className="text-sm md:text-base text-muted-foreground">
+                  Belum pernah dicatat.
+                </span>
+              )}
+            </div>
+
+            <form
+              action={catatTahapProses}
+              className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end"
+            >
+              <input type="hidden" name="idJaminan" value={detail.idJaminan} />
+              <div className="flex flex-1 flex-col gap-1.5">
+                <label
+                  htmlFor="tahap"
+                  className="text-xs md:text-sm font-medium text-foreground"
+                >
+                  Tahap
+                </label>
+                <Select
+                  id="tahap"
+                  name="tahap"
+                  required
+                  placeholder="Pilih tahap..."
+                  options={pilihanTahapProses}
+                  className="w-full"
+                  defaultValue=""
+                />
+              </div>
+              <button
+                type="submit"
+                className="h-8 w-fit shrink-0 rounded-lg bg-primary px-4 text-sm md:text-base font-medium text-primary-foreground hover:bg-primary-hover"
+              >
+                Catat Tahap Ini
+              </button>
+            </form>
+          </Card>
+
+          {riwayatTahapProses.length > 0 && (
+            <div className="w-full overflow-x-auto rounded-lg border border-border bg-card">
+              <table className="min-w-[560px] w-full text-xs sm:text-sm">
+                <thead className="bg-surface-table-header">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm">
+                      Dicatat pada
+                    </th>
+                    <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm">
+                      Tahap
+                    </th>
+                    <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm">
+                      Petugas
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {riwayatTahapProses.map((r) => (
+                    <tr key={r.id} className="border-t border-border">
+                      <td className="px-3 py-2 font-mono whitespace-nowrap text-xs md:text-sm">
+                        {formatWaktu(r.dicatatPada)}
+                      </td>
+                      <td className="px-3 py-2 whitespace-normal wrap-break-words text-xs md:text-sm">
+                        {r.tahap}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-xs md:text-sm">
+                        {r.namaPengguna}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-3">
           <h3 className="text-sm font-semibold text-foreground md:text-base">
             Tinjauan Petugas
           </h3>
@@ -256,21 +365,6 @@ export default async function DetailGLPage({
                 placeholder="Catatan hasil peninjauan GL ini..."
               />
               <Checkbox name="perluTindakLanjut" label="Perlu tindak lanjut" />
-
-              {detail.statusPembayaran !== "Paid" && (
-                <div className="flex min-w-0 flex-col gap-1 rounded-lg border border-status-near/30 bg-status-near-bg p-3">
-                  <Checkbox
-                    name="tandaiSudahDibayar"
-                    label="Tandai juga sebagai Sudah Dibayar (Paid)"
-                    className="text-sm md:text-base font-medium text-foreground"
-                  />
-                  <p className="pl-6 text-xs md:text-sm leading-relaxed break-words text-muted-foreground">
-                    Centang jika data pusat sudah Paid. Status akan langsung
-                    berubah, namun dapat tertimpa kembali jika berkas impor
-                    selanjutnya masih Unpaid.
-                  </p>
-                </div>
-              )}
 
               <button
                 type="submit"
@@ -308,6 +402,9 @@ export default async function DetailGLPage({
                         <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm w-3/6">
                           Catatan
                         </th>
+                        <th className="px-3 py-2 text-left font-semibold text-foreground text-xs md:text-sm">
+                          Aksi
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -335,8 +432,17 @@ export default async function DetailGLPage({
                               )}
                             </div>
                           </td>
-                          <td className="px-3 py-3 whitespace-normal break-words leading-relaxed text-foreground text-xs md:text-sm">
+                          <td className="px-3 py-3 min-w-[320px] max-w-[560px] whitespace-normal break-words leading-relaxed text-foreground text-xs md:text-sm">
                             {c.catatan}
+                          </td>
+                          <td className="px-3 py-3 text-xs md:text-sm">
+                            <AksiCatatan
+                              id={c.id}
+                              idJaminan={detail.idJaminan}
+                              catatanAwal={c.catatan}
+                              perluTindakLanjutAwal={c.perluTindakLanjut}
+                              diabaikan={c.diabaikan}
+                            />
                           </td>
                         </tr>
                       ))}
