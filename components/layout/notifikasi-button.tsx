@@ -82,7 +82,7 @@ export function NotifikasiButton({
               {items.map((b) => (
                 <li key={b.idJaminan} className="border-b border-border last:border-0">
                   <Link
-                    href={`/gl/${encodeURIComponent(b.idJaminan)}?dari=peringatan`}
+                    href={`/gl/${encodeURIComponent(b.tokenUrl)}?dari=peringatan`}
                     onClick={() => setTerbuka(false)}
                     className="flex flex-col gap-0.5 px-4 py-2.5 text-sm hover:bg-muted"
                   >

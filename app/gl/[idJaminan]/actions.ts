@@ -9,6 +9,15 @@ import {
   ambilPilihanTahapProses,
   TAHAP_PEMICU_PAID,
 } from "@/lib/gl/tahap-proses";
+import { enkripsiIdJaminan } from "@/lib/gl/token-url";
+
+// URL detail GL memakai token terenkripsi (bukan Nomor ID Jaminan asli --
+// lihat lib/gl/token-url.ts), jadi path yang di-revalidatePath() harus
+// dibangun dari token yang sama supaya cocok persis dengan URL yang sedang
+// dibuka pengguna.
+function pathDetailGL(idJaminan: string): string {
+  return `/gl/${encodeURIComponent(enkripsiIdJaminan(idJaminan))}`;
+}
 
 export async function tandaiDitinjau(formData: FormData) {
   const session = await auth();
@@ -35,7 +44,7 @@ export async function tandaiDitinjau(formData: FormData) {
     perluTindakLanjut,
   });
 
-  revalidatePath(`/gl/${encodeURIComponent(idJaminan)}`);
+  revalidatePath(pathDetailGL(idJaminan));
   revalidatePath("/peringatan");
 }
 
@@ -94,7 +103,7 @@ export async function catatTahapProses(formData: FormData) {
     }
   });
 
-  revalidatePath(`/gl/${encodeURIComponent(idJaminan)}`);
+  revalidatePath(pathDetailGL(idJaminan));
   revalidatePath("/peringatan");
   if (sudahPaid) {
     revalidatePath("/");
@@ -132,7 +141,7 @@ export async function perbaruiTinjauan(formData: FormData) {
     .set({ catatan: catatan.trim(), perluTindakLanjut })
     .where(eq(tinjauan.id, Number(id)));
 
-  revalidatePath(`/gl/${encodeURIComponent(idJaminan)}`);
+  revalidatePath(pathDetailGL(idJaminan));
   revalidatePath("/peringatan");
 }
 
@@ -160,7 +169,7 @@ export async function hapusTinjauan(formData: FormData) {
 
   await db.delete(tinjauan).where(eq(tinjauan.id, Number(id)));
 
-  revalidatePath(`/gl/${encodeURIComponent(idJaminan)}`);
+  revalidatePath(pathDetailGL(idJaminan));
   revalidatePath("/peringatan");
   revalidatePath("/");
   revalidatePath("/sebaran");

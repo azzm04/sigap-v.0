@@ -16,6 +16,7 @@ import {
   ambilRiwayatTahapProses,
 } from "@/lib/gl/tahap-proses";
 import { ambilTinjauan } from "@/lib/gl/tinjauan";
+import { dekripsiToken } from "@/lib/gl/token-url";
 import {
   formatRupiah,
   formatTanggal,
@@ -35,8 +36,14 @@ export default async function DetailGLPage({
   params: Promise<{ idJaminan: string }>;
   searchParams: Promise<{ dari?: string }>;
 }) {
-  const { idJaminan: idMentah } = await params;
-  const idJaminan = decodeURIComponent(idMentah);
+  // Segmen route [idJaminan] sekarang berisi token terenkripsi, bukan
+  // Nomor ID Jaminan asli -- lihat lib/gl/token-url.ts. Token yang rusak
+  // atau dipalsukan (mis. hasil tebak-tebakan) gagal didekripsi dan
+  // langsung 404, tanpa pernah menyentuh database.
+  const { idJaminan: tokenMentah } = await params;
+  const idJaminan = dekripsiToken(decodeURIComponent(tokenMentah));
+  if (!idJaminan) notFound();
+
   const { dari } = await searchParams;
   const dariPeringatan = dari === "peringatan";
 

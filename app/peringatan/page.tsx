@@ -197,7 +197,7 @@ export default async function PapanPeringatanPage({
                           </td>
                           <td className="px-3 py-2.5 whitespace-nowrap">
                             <Link
-                              href={`/gl/${encodeURIComponent(c.idJaminan)}?dari=peringatan`}
+                              href={`/gl/${encodeURIComponent(c.tokenUrl)}?dari=peringatan`}
                               className="font-mono text-primary underline-offset-2 hover:underline"
                             >
                               {c.idJaminan}
@@ -221,7 +221,7 @@ export default async function PapanPeringatanPage({
                           </td>
                           <td className="px-3 py-2.5">
                             <Link
-                              href={`/gl/${encodeURIComponent(c.idJaminan)}?dari=peringatan`}
+                              href={`/gl/${encodeURIComponent(c.tokenUrl)}?dari=peringatan`}
                               className="flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted"
                             >
                               <Eye className="size-3.5" />
@@ -342,7 +342,7 @@ export default async function PapanPeringatanPage({
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/gl/${encodeURIComponent(b.idJaminan)}?dari=peringatan`}
+                            href={`/gl/${encodeURIComponent(b.tokenUrl)}?dari=peringatan`}
                             className="font-mono text-primary underline-offset-2 hover:underline"
                           >
                             {b.idJaminan}
@@ -398,7 +398,7 @@ export default async function PapanPeringatanPage({
                             {b.sudahDitinjau ? "Sudah Ditinjau" : "Belum Ditinjau"}
                           </Badge>
                           <Link
-                            href={`/gl/${encodeURIComponent(b.idJaminan)}?dari=peringatan`}
+                            href={`/gl/${encodeURIComponent(b.tokenUrl)}?dari=peringatan`}
                             className="flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted"
                           >
                             <Eye className="size-3.5" />

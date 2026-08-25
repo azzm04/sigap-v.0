@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, gte, ilike, isNull, lte, or } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror } from "../db/schema";
+import { enkripsiIdJaminan } from "./token-url";
 import { PILIHAN_UKURAN_HALAMAN } from "./ukuran-halaman";
 
 const UKURAN_HALAMAN_DEFAULT = 25;
@@ -24,6 +25,8 @@ export interface FilterDaftarGL {
 
 export interface BarisDaftarGL {
   idJaminan: string;
+  /** Token terenkripsi untuk URL /gl/[token] -- lihat lib/gl/token-url.ts */
+  tokenUrl: string;
   namaKorban: string;
   loket: string;
   namaRumahSakit: string | null;
@@ -128,7 +131,7 @@ export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftar
     .offset((halaman - 1) * ukuran);
 
   return {
-    baris,
+    baris: baris.map((b) => ({ ...b, tokenUrl: enkripsiIdJaminan(b.idJaminan) })),
     total,
     halaman,
     ukuran,

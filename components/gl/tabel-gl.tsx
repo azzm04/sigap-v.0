@@ -36,7 +36,7 @@ function kolomTabelGL(): ColumnDef<BarisTabelGL>[] {
         return (
           <div className="flex items-center gap-2">
             <Link
-              href={`/gl/${encodeURIComponent(b.idJaminan)}`}
+              href={`/gl/${encodeURIComponent(b.tokenUrl)}`}
               className="font-mono text-primary underline-offset-2 hover:underline"
             >
               {b.idJaminan}

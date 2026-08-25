@@ -4,9 +4,12 @@ import { glMirror, statusProsesPusat, tinjauan } from "../db/schema";
 import { hitungUmurHari } from "../format";
 import { ambilAmbangHari } from "../pengaturan";
 import { apakahMasukPeringatan } from "./aturan-peringatan";
+import { enkripsiIdJaminan } from "./token-url";
 
 export interface BarisPeringatan {
   idJaminan: string;
+  /** Token terenkripsi untuk URL /gl/[token] -- lihat lib/gl/token-url.ts */
+  tokenUrl: string;
   namaKorban: string;
   loket: string;
   namaRumahSakit: string | null;
@@ -139,6 +142,7 @@ export async function ambilPapanPeringatan(
     .filter((b) => !idDiabaikan.has(b.idJaminan))
     .map((b) => ({
       ...b,
+      tokenUrl: enkripsiIdJaminan(b.idJaminan),
       umurHari: hitungUmurHari(b.tglGl),
       sudahDitinjau: idSudahDitinjau.has(b.idJaminan),
       tahapProses: tahapTerkiniPerId.get(b.idJaminan) ?? null,
@@ -156,6 +160,7 @@ export async function ambilPapanPeringatan(
     .map(
       ({
         idJaminan,
+        tokenUrl,
         namaKorban,
         loket,
         namaRumahSakit,
@@ -176,6 +181,7 @@ export async function ambilPapanPeringatan(
         tahapProses,
       }) => ({
         idJaminan,
+        tokenUrl,
         namaKorban,
         loket,
         namaRumahSakit,

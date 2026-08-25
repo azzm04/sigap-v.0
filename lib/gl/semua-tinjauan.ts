@@ -1,10 +1,13 @@
 import { and, desc, ilike, or, eq } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror, pengguna, tinjauan } from "../db/schema";
+import { enkripsiIdJaminan } from "./token-url";
 
 export interface BarisTinjauanLengkap {
   id: number;
   idJaminan: string;
+  /** Token terenkripsi untuk URL /gl/[token] -- lihat lib/gl/token-url.ts */
+  tokenUrl: string;
   namaKorban: string;
   catatan: string;
   perluTindakLanjut: boolean;
@@ -79,7 +82,9 @@ export async function ambilSemuaTinjauan(
   const halaman = Math.max(1, Math.floor(filter.halaman ?? 1));
   const totalHalaman = Math.max(1, Math.ceil(total / ukuran));
   const mulai = (halaman - 1) * ukuran;
-  const baris = semuaBaris.slice(mulai, mulai + ukuran);
+  const baris = semuaBaris
+    .slice(mulai, mulai + ukuran)
+    .map((b) => ({ ...b, tokenUrl: enkripsiIdJaminan(b.idJaminan) }));
 
   return { baris, total, halaman, ukuran, totalHalaman };
 }
