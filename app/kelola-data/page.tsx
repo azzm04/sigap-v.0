@@ -38,7 +38,7 @@ export default async function KelolaDataPage() {
         <PageHeader
           title="Kelola Data"
           description={
-            'Satu tempat untuk mengunggah berkas ekspor JRCare ("KLAIM REPORT") atau berkas Data Pelengkap DASI. Sistem akan otomatis mendeteksi jenis berkas yang Anda unggah.'
+            'Satu tempat untuk mengunggah berkas ekspor JRCare ("KLAIM REPORT") atau berkas Data Pelengkap DASI, format .xlsx atau .csv. Bisa unggah beberapa berkas sekaligus — sistem akan otomatis mendeteksi jenis tiap berkas.'
           }
         />
 

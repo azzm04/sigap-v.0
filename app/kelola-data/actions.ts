@@ -16,22 +16,44 @@ function revalidasiTampilanGL() {
   revalidatePath("/kelola-data/sampah");
 }
 
-export interface StatusUnggah {
+export interface HasilUnggahSatuBerkas {
+  namaBerkas: string;
   berhasil: boolean;
   pesan: string;
 }
 
-export async function unggahBerkas(
-  _sebelumnya: StatusUnggah | undefined,
-  formData: FormData,
-): Promise<StatusUnggah> {
-  const berkas = formData.get("berkas");
+export interface StatusUnggah {
+  berhasil: boolean;
+  hasil: HasilUnggahSatuBerkas[];
+}
 
-  if (!(berkas instanceof File) || berkas.size === 0) {
-    return { berhasil: false, pesan: "Pilih berkas .xlsx terlebih dahulu." };
+const EKSTENSI_DIDUKUNG = [".xlsx", ".csv"];
+
+function ekstensiDidukung(namaBerkas: string): boolean {
+  const nama = namaBerkas.toLowerCase();
+  return EKSTENSI_DIDUKUNG.some((ekstensi) => nama.endsWith(ekstensi));
+}
+
+// Memproses satu berkas: deteksi otomatis JRCare vs DASI, sama seperti alur
+// lama, dipisah jadi fungsi sendiri supaya bisa dipanggil berulang untuk
+// unggahan banyak berkas sekaligus di unggahBerkas().
+async function prosesSatuBerkas(berkas: File): Promise<HasilUnggahSatuBerkas> {
+  const namaBerkas = berkas.name;
+
+  if (!ekstensiDidukung(namaBerkas)) {
+    const alasan = `Format berkas tidak didukung ("${namaBerkas}"). Hanya .xlsx dan .csv yang bisa diunggah.`;
+    await db.insert(imporLog).values({
+      jenis: "impor",
+      namaBerkas,
+      jumlahBaris: 0,
+      jumlahBaru: 0,
+      jumlahBerubah: 0,
+      berhasil: false,
+      alasanPenolakan: alasan,
+    });
+    return { namaBerkas, berhasil: false, pesan: alasan };
   }
 
-  const namaBerkas = berkas.name;
   const arrayBuffer = await berkas.arrayBuffer();
 
   // 1. Coba parse sebagai data GL utama (JRCare)
@@ -48,9 +70,8 @@ export async function unggahBerkas(
       berhasil: true,
     });
 
-    revalidasiTampilanGL();
-
     return {
+      namaBerkas,
       berhasil: true,
       pesan: `Berhasil diimpor (JRCare): ${hasil.jumlahBaris} baris diproses, ${hasil.jumlahBaru} baru, ${hasil.jumlahBerubah} berubah.`,
     };
@@ -69,9 +90,8 @@ export async function unggahBerkas(
         berhasil: true,
       });
 
-      revalidasiTampilanGL();
-
       return {
+        namaBerkas,
         berhasil: true,
         pesan: `Berhasil diimpor (DASI): ${hasil.jumlahBaris} baris diproses. Data lokasi cocok dengan ${hasil.jumlahCocok} GL.`,
       };
@@ -94,10 +114,48 @@ export async function unggahBerkas(
         alasanPenolakan: alasan,
       });
 
-      revalidatePath("/kelola-data");
-      return { berhasil: false, pesan: `Berkas ditolak. Pastikan format sesuai dengan "KLAIM REPORT" JRCare atau DASI.` };
+      return {
+        namaBerkas,
+        berhasil: false,
+        pesan: `Berkas ditolak. Pastikan format sesuai dengan "KLAIM REPORT" JRCare atau DASI.`,
+      };
     }
   }
+}
+
+// Menerima satu atau banyak berkas sekaligus (input "berkas" bisa muncul
+// berkali-kali di FormData). Diproses berurutan, satu-satu -- kalau satu
+// berkas gagal, berkas lain tetap lanjut diproses, hasilnya dilaporkan
+// per-berkas ke UI.
+export async function unggahBerkas(
+  _sebelumnya: StatusUnggah | undefined,
+  formData: FormData,
+): Promise<StatusUnggah> {
+  const semuaBerkas = formData
+    .getAll("berkas")
+    .filter((b): b is File => b instanceof File && b.size > 0);
+
+  if (semuaBerkas.length === 0) {
+    return {
+      berhasil: false,
+      hasil: [
+        {
+          namaBerkas: "-",
+          berhasil: false,
+          pesan: "Pilih berkas .xlsx atau .csv terlebih dahulu.",
+        },
+      ],
+    };
+  }
+
+  const hasil: HasilUnggahSatuBerkas[] = [];
+  for (const berkas of semuaBerkas) {
+    hasil.push(await prosesSatuBerkas(berkas));
+  }
+
+  revalidasiTampilanGL();
+
+  return { berhasil: hasil.every((h) => h.berhasil), hasil };
 }
 
 // Soft delete: menandai seluruh baris gl_mirror yang masih aktif dengan
@@ -177,38 +235,4 @@ export async function hapusPermanenBatch(formData: FormData) {
 
   revalidatePath("/kelola-data");
   revalidatePath("/kelola-data/sampah");
-}
-
-export async function unggahBerkasDASI(
-  _sebelumnya: StatusUnggah | undefined,
-  formData: FormData,
-): Promise<StatusUnggah> {
-  const berkas = formData.get("berkas");
-
-  if (!(berkas instanceof File) || berkas.size === 0) {
-    return { berhasil: false, pesan: "Pilih berkas .xlsx terlebih dahulu." };
-  }
-
-  const arrayBuffer = await berkas.arrayBuffer();
-
-  let baris;
-  try {
-    baris = parseBerkasDASI(arrayBuffer);
-  } catch (error) {
-    const alasan =
-      error instanceof GalatValidasiDASI
-        ? error.masalah.join(" | ")
-        : "Galat tak terduga saat membaca berkas DASI.";
-
-    return { berhasil: false, pesan: `Berkas DASI ditolak. ${alasan}` };
-  }
-
-  const hasil = await simpanDataDASI(baris);
-
-  revalidasiTampilanGL();
-
-  return {
-    berhasil: true,
-    pesan: `Berhasil memproses ${hasil.jumlahBaris} baris DASI. Data berhasil dicocokkan ke ${hasil.jumlahCocok} GL.`,
-  };
 }
