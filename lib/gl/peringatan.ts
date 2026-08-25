@@ -1,4 +1,4 @@
-import { and, eq, gte, ilike, isNull, lte, or } from "drizzle-orm";
+import { and, eq, gte, ilike, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror, tinjauan } from "../db/schema";
 import { hitungUmurHari } from "../format";
@@ -20,6 +20,8 @@ export interface BarisPeringatan {
   statusPembayaran: string;
   jumlahPembayaran: number;
   tglPembayaran: string | null;
+  tglKejadian: string | null;
+  lokasi: string | null;
   umurHari: number;
   /** true kalau sudah pernah ada catatan Tinjauan Petugas untuk GL ini (apa pun isinya) */
   sudahDitinjau: boolean;
@@ -99,6 +101,12 @@ export async function ambilPapanPeringatan(
       statusPembayaran: glMirror.statusPembayaran,
       jumlahPembayaran: glMirror.jumlahPembayaran,
       tglPembayaran: glMirror.tglPembayaran,
+      tglKejadian: glMirror.tglKejadian,
+      lokasi: glMirror.lokasi,
+      sudahDitinjau: sql<boolean>`EXISTS (
+        SELECT 1 FROM ${tinjauan}
+        WHERE ${tinjauan.idJaminan} = ${glMirror.idJaminan}
+      )`,
     })
     .from(glMirror)
     .where(bangunKondisiPeringatan(filter));
@@ -144,6 +152,8 @@ export async function ambilPapanPeringatan(
         statusPembayaran,
         jumlahPembayaran,
         tglPembayaran,
+        tglKejadian,
+        lokasi,
         umurHari,
         sudahDitinjau,
       }) => ({
@@ -161,6 +171,8 @@ export async function ambilPapanPeringatan(
         statusPembayaran,
         jumlahPembayaran,
         tglPembayaran,
+        tglKejadian,
+        lokasi,
         umurHari,
         sudahDitinjau,
       }),

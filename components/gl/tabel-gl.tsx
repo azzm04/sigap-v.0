@@ -62,6 +62,18 @@ function kolomTabelGL(): ColumnDef<BarisTabelGL>[] {
       cell: (info) => <span className="font-mono">{formatTanggal(info.getValue<string>())}</span>,
     },
     {
+      accessorKey: "tglKejadian",
+      header: "Tgl LAKA (DASI)",
+      cell: (info) => (
+        <span className="font-mono">{formatTanggalOpsional(info.getValue<string | null>())}</span>
+      ),
+    },
+    {
+      accessorKey: "lokasi",
+      header: "Lokasi (DASI)",
+      cell: (info) => info.getValue<string | null>() ?? "-",
+    },
+    {
       accessorKey: "glStatus",
       header: "GL Status",
       cell: (info) => {
@@ -155,7 +167,8 @@ export function TabelGL({
                   <td
                     key={cell.id}
                     className={cn(
-                      "px-3 py-2.5 whitespace-nowrap",
+                      "px-3 py-2.5",
+                      cell.column.id === "lokasi" ? "min-w-[350px] max-w-[700px] whitespace-normal break-words" : "whitespace-nowrap",
                       KOLOM_RATA_KANAN.has(cell.column.id) && "text-right",
                     )}
                   >

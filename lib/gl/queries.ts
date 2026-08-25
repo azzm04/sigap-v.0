@@ -39,6 +39,8 @@ export interface BarisDaftarGL {
   nilaiDisetujui: number;
   jumlahPembayaran: number;
   tglPembayaran: string | null;
+  tglKejadian: string | null;
+  lokasi: string | null;
 }
 
 export interface HasilDaftarGL {
@@ -116,6 +118,8 @@ export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftar
       nilaiDisetujui: glMirror.nilaiDisetujui,
       jumlahPembayaran: glMirror.jumlahPembayaran,
       tglPembayaran: glMirror.tglPembayaran,
+      tglKejadian: glMirror.tglKejadian,
+      lokasi: glMirror.lokasi,
     })
     .from(glMirror)
     .where(kondisi)

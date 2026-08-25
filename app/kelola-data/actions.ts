@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { glMirror, imporLog } from "@/lib/db/schema";
 import { normalisasiDanSimpan } from "@/lib/sumber-data/normalizer";
 import { GalatValidasiImpor, parseBerkasEkspor } from "@/lib/sumber-data/sumber-impor";
+import { GalatValidasiDASI, parseBerkasDASI, simpanDataDASI } from "@/lib/sumber-data/sumber-dasi";
 
 function revalidasiTampilanGL() {
   revalidatePath("/");
@@ -20,8 +21,6 @@ export interface StatusUnggah {
   pesan: string;
 }
 
-// Berkas diproses seluruhnya di memori (arrayBuffer), tidak pernah ditulis ke
-// disk — sesuai CLAUDE.md aturan keras #4 soal data pribadi di berkas ekspor.
 export async function unggahBerkas(
   _sebelumnya: StatusUnggah | undefined,
   formData: FormData,
@@ -35,48 +34,70 @@ export async function unggahBerkas(
   const namaBerkas = berkas.name;
   const arrayBuffer = await berkas.arrayBuffer();
 
-  let baris;
+  // 1. Coba parse sebagai data GL utama (JRCare)
   try {
-    baris = parseBerkasEkspor(arrayBuffer);
-  } catch (error) {
-    const alasan =
-      error instanceof GalatValidasiImpor
-        ? error.masalah.join(" | ")
-        : "Galat tak terduga saat membaca berkas.";
+    const baris = parseBerkasEkspor(arrayBuffer);
+    const hasil = await normalisasiDanSimpan(baris);
 
     await db.insert(imporLog).values({
       jenis: "impor",
       namaBerkas,
-      jumlahBaris: 0,
-      jumlahBaru: 0,
-      jumlahBerubah: 0,
-      berhasil: false,
-      alasanPenolakan: alasan,
+      jumlahBaris: hasil.jumlahBaris,
+      jumlahBaru: hasil.jumlahBaru,
+      jumlahBerubah: hasil.jumlahBerubah,
+      berhasil: true,
     });
 
-    revalidatePath("/kelola-data");
-    return { berhasil: false, pesan: `Berkas ditolak. ${alasan}` };
+    revalidasiTampilanGL();
+
+    return {
+      berhasil: true,
+      pesan: `Berhasil diimpor (JRCare): ${hasil.jumlahBaris} baris diproses, ${hasil.jumlahBaru} baru, ${hasil.jumlahBerubah} berubah.`,
+    };
+  } catch (errorGL) {
+    // 2. Jika gagal karena bukan format JRCare, coba parse sebagai data pelengkap (DASI)
+    try {
+      const barisDASI = parseBerkasDASI(arrayBuffer);
+      const hasil = await simpanDataDASI(barisDASI);
+
+      await db.insert(imporLog).values({
+        jenis: "impor",
+        namaBerkas,
+        jumlahBaris: hasil.jumlahBaris,
+        jumlahBaru: 0,
+        jumlahBerubah: hasil.jumlahCocok,
+        berhasil: true,
+      });
+
+      revalidasiTampilanGL();
+
+      return {
+        berhasil: true,
+        pesan: `Berhasil diimpor (DASI): ${hasil.jumlahBaris} baris diproses. Data lokasi cocok dengan ${hasil.jumlahCocok} GL.`,
+      };
+    } catch (errorDASI) {
+      // 3. Jika bukan JRCare dan bukan DASI, gabungkan alasan penolakan
+      const pesanJRCare =
+        errorGL instanceof GalatValidasiImpor ? errorGL.masalah.join(" | ") : "Galat tak terduga JRCare.";
+      const pesanDASI =
+        errorDASI instanceof GalatValidasiDASI ? errorDASI.masalah.join(" | ") : "Galat tak terduga DASI.";
+
+      const alasan = `Bukan berkas JRCare valid (${pesanJRCare}) DAN bukan berkas DASI valid (${pesanDASI}).`;
+
+      await db.insert(imporLog).values({
+        jenis: "impor",
+        namaBerkas,
+        jumlahBaris: 0,
+        jumlahBaru: 0,
+        jumlahBerubah: 0,
+        berhasil: false,
+        alasanPenolakan: alasan,
+      });
+
+      revalidatePath("/kelola-data");
+      return { berhasil: false, pesan: `Berkas ditolak. Pastikan format sesuai dengan "KLAIM REPORT" JRCare atau DASI.` };
+    }
   }
-
-  const hasil = await normalisasiDanSimpan(baris);
-
-  await db.insert(imporLog).values({
-    jenis: "impor",
-    namaBerkas,
-    jumlahBaris: hasil.jumlahBaris,
-    jumlahBaru: hasil.jumlahBaru,
-    jumlahBerubah: hasil.jumlahBerubah,
-    berhasil: true,
-  });
-
-  revalidatePath("/");
-  revalidatePath("/peringatan");
-  revalidatePath("/kelola-data");
-
-  return {
-    berhasil: true,
-    pesan: `Berhasil diimpor: ${hasil.jumlahBaris} baris diproses, ${hasil.jumlahBaru} baru, ${hasil.jumlahBerubah} berubah.`,
-  };
 }
 
 // Soft delete: menandai seluruh baris gl_mirror yang masih aktif dengan
@@ -156,4 +177,38 @@ export async function hapusPermanenBatch(formData: FormData) {
 
   revalidatePath("/kelola-data");
   revalidatePath("/kelola-data/sampah");
+}
+
+export async function unggahBerkasDASI(
+  _sebelumnya: StatusUnggah | undefined,
+  formData: FormData,
+): Promise<StatusUnggah> {
+  const berkas = formData.get("berkas");
+
+  if (!(berkas instanceof File) || berkas.size === 0) {
+    return { berhasil: false, pesan: "Pilih berkas .xlsx terlebih dahulu." };
+  }
+
+  const arrayBuffer = await berkas.arrayBuffer();
+
+  let baris;
+  try {
+    baris = parseBerkasDASI(arrayBuffer);
+  } catch (error) {
+    const alasan =
+      error instanceof GalatValidasiDASI
+        ? error.masalah.join(" | ")
+        : "Galat tak terduga saat membaca berkas DASI.";
+
+    return { berhasil: false, pesan: `Berkas DASI ditolak. ${alasan}` };
+  }
+
+  const hasil = await simpanDataDASI(baris);
+
+  revalidasiTampilanGL();
+
+  return {
+    berhasil: true,
+    pesan: `Berhasil memproses ${hasil.jumlahBaris} baris DASI. Data berhasil dicocokkan ke ${hasil.jumlahCocok} GL.`,
+  };
 }

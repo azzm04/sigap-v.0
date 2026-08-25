@@ -33,6 +33,12 @@ export const glMirror = pgTable("gl_mirror", {
   jumlahPembayaran: integer("jumlah_pembayaran").notNull(),
   tglPembayaran: date("tgl_pembayaran"),
 
+  // Data dari berkas DASI (sumber terpisah). Nullable karena tidak semua
+  // GL punya data ini — hanya terisi setelah berkas DASI diunggah dan
+  // nama korban cocok.
+  tglKejadian: date("tgl_kejadian"),
+  lokasi: text("lokasi"),
+
   diimporPada: timestamp("diimpor_pada", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -142,6 +142,15 @@ export default async function DetailGLPage({
               mono
             />
             <Field
+              label="Tgl LAKA (DASI)"
+              value={formatTanggalOpsional(detail.tglKejadian)}
+              mono
+            />
+            <Field
+              label="Lokasi (DASI)"
+              value={detail.lokasi ?? "-"}
+            />
+            <Field
               label="Tgl Pembayaran"
               value={formatTanggalOpsional(detail.tglPembayaran)}
               mono

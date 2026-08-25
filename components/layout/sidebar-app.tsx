@@ -40,7 +40,7 @@ export function SidebarApp({
           <div className="flex items-center gap-3">
             <div className="flex size-10 shrink-0 overflow-hidden rounded-full bg-primary/10">
               <Image
-                src="/Logo.png"
+                src="/logojr.png"
                 alt="Logo SIGAP"
                 width={128}
                 height={128}

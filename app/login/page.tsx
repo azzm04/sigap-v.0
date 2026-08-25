@@ -18,9 +18,9 @@ export default async function HalamanLogin({
 
         <div className="relative z-10 m-auto flex max-w-md flex-col gap-6">
           <div className="flex items-center gap-5">
-            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white/10">
+            <div className="flex size-26 shrink-0 items-center justify-center overflow-hidden">
               <Image
-                src="/Logo.png"
+                src="/logojr.png"
                 alt="Logo SIGAP"
                 width={128}
                 height={128}
