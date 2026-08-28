@@ -1,33 +1,25 @@
 "use client";
 
+import { useActionState } from "react";
 import { ArrowRight, Eye, EyeOff, Lock, User } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { masuk, type StatusLogin } from "@/app/login/actions";
 
-export function FormLogin({ pesanGalat }: { pesanGalat?: string }) {
+export function FormLogin() {
   const [tampilkanSandi, setTampilkanSandi] = useState(false);
-  const [csrfToken, setCsrfToken] = useState<string | null>(null);
-  const [mengirim, setMengirim] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/auth/csrf")
-      .then((res) => res.json())
-      .then((data: { csrfToken: string }) => setCsrfToken(data.csrfToken))
-      .catch(() => setCsrfToken(null));
-  }, []);
+  const [state, formAction, pending] = useActionState<
+    StatusLogin | undefined,
+    FormData
+  >(masuk, undefined);
 
   return (
     <form
-      method="POST"
-      action="/api/auth/callback/credentials"
-      onSubmit={() => setMengirim(true)}
+      action={formAction}
       className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500"
     >
-      <input type="hidden" name="csrfToken" value={csrfToken ?? ""} />
-      <input type="hidden" name="callbackUrl" value="/" />
-
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="username">Username</Label>
         <div className="relative">
@@ -62,26 +54,49 @@ export function FormLogin({ pesanGalat }: { pesanGalat?: string }) {
             type="button"
             onClick={() => setTampilkanSandi((v) => !v)}
             className="absolute top-1/2 right-3 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            aria-label={tampilkanSandi ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+            aria-label={
+              tampilkanSandi
+                ? "Sembunyikan kata sandi"
+                : "Tampilkan kata sandi"
+            }
           >
-            {tampilkanSandi ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            {tampilkanSandi ? (
+              <EyeOff className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )}
           </button>
         </div>
       </div>
 
-      {pesanGalat && (
+      <label
+        htmlFor="ingatSaya"
+        className="flex w-fit cursor-pointer items-center gap-2.5"
+      >
+        <input
+          type="checkbox"
+          id="ingatSaya"
+          name="ingatSaya"
+          className="size-4 rounded border-input accent-primary"
+        />
+        <span className="text-sm text-muted-foreground select-none">
+          Ingat Saya
+        </span>
+      </label>
+
+      {state?.galat && (
         <p role="alert" className="text-sm text-destructive">
-          {pesanGalat}
+          {state.galat}
         </p>
       )}
 
       <Button
         type="submit"
         size="lg"
-        disabled={mengirim || !csrfToken}
+        disabled={pending}
         className="mt-2 w-full gap-2 rounded-full"
       >
-        {mengirim ? (
+        {pending ? (
           "Memeriksa..."
         ) : (
           <>
