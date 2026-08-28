@@ -20,9 +20,7 @@ export interface BarisTinjauanLengkap {
 export interface FilterSemuaTinjauan {
   halaman?: number;
   ukuran?: number;
-  /** Dicocokkan ke Nama Korban, ID Jaminan, atau isi catatan */
   cari?: string;
-  /** "tindak_lanjut" = perlu tindak lanjut, "diabaikan" = ditandai diabaikan */
   label?: "tindak_lanjut" | "diabaikan";
 }
 

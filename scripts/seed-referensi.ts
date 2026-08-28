@@ -1,7 +1,6 @@
 import { config } from "dotenv";
 
-// Sama seperti scripts/seed.ts: env harus dimuat sebelum modul yang
-// bergantung padanya diimpor.
+// Sama seperti scripts/seed.ts: env harus dimuat sebelum modul yang bergantung padanya diimpor.
 config({ path: ".env.local" });
 
 // Hanya mengisi data referensi/konfigurasi minimal (ambang hari peringatan

@@ -38,9 +38,6 @@ export function hitungStagnasi(
   }
 
   if (indeksTransisi === -1) {
-    // Tahapan tidak pernah berubah di sepanjang riwayat yang tercatat --
-    // bisa jadi memang belum lama, bisa jadi sudah lama sebelum GL ini
-    // pertama diimpor ke SIGAP. Tidak bisa dibedakan, jadi jatuh ke umur.
     const [tahun, bulan, hari] = tglGl.split("-").map(Number);
     return {
       hariDiTahapan: hitungUmurHari(tglGl),

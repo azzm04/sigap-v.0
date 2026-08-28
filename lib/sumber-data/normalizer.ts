@@ -9,10 +9,6 @@ export interface HasilNormalisasi {
   jumlahBerubah: number;
 }
 
-// Menulis BarisGL[] (dari sumber-dummy.ts atau sumber-impor.ts) ke gl_mirror,
-// dan menyisipkan baris gl_snapshot baru hanya kalau tahapan/status_verifikasi/
-// status_pembayaran berubah dari yang tersimpan sebelumnya. Lihat CLAUDE.md
-// bagian 5, aturan penulisan gl_snapshot.
 export async function normalisasiDanSimpan(
   baris: BarisGL[],
 ): Promise<HasilNormalisasi> {
@@ -42,8 +38,7 @@ export async function normalisasiDanSimpan(
         jumlahBaru++;
       } else {
         // dihapusPada dikosongkan lagi kalau ID Jaminan ini pernah dihapus
-        // (soft delete) lewat "Hapus Semua Data" tapi muncul lagi di impor
-        // ini -- berkas ekspor tetap jadi sumber kebenaran paling baru.
+        // tapi muncul lagi di impor ini berkas ekspor tetap jadi sumber kebenaran paling baru.
         await tx
           .update(glMirror)
           .set({ ...b, diimporPada: new Date(), dihapusPada: null })
