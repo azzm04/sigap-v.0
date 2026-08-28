@@ -1,30 +1,54 @@
 import { db } from "./db";
-import { nilaiReferensi, pengaturan } from "./db/schema";
+import { pengaturan, picRumahSakit } from "./db/schema";
 import { KUNCI_AMBANG_HARI } from "./pengaturan";
-import { KATEGORI_TAHAP_PROSES } from "./gl/tahap-proses";
 
-// Daftar tahap proses di sistem pusat (Sub Pra-Verifikasi -> ... -> Berkas
-// Selesai), lihat CLAUDE.md aturan keras #3 dan lib/gl/tahap-proses.ts.
-const NILAI_TAHAP_PROSES_PUSAT = [
-  "Berkas Asbah",
-  "Berkas Batal",
-  "Berkas Lengkap",
-  "Berkas Rekomendasi",
-  "Berkas Selesai",
-  "Berkas Siap Dibayar",
-  "Berkas Siap Diverifikasi",
-  "Berkas Telah Diverifikasi",
-  "Persetujuan Ka.Wilayah",
-  "Sub Pra-Verifikasi",
+// Pemetaan awal PIC per rumah sakit, sesuai daftar yang diberikan pemilik proyek. Nama rumah sakit di sini SUDAH disesuaikan ke ejaan persis yang
+// muncul di gl_mirror.nama_rumah_sakit (dicek manual satu-satu terhadap
+// data ekspor nyata), bukan singkatan yang aslinya dipakai pemilik proyek
+// -- lihat lib/gl/pic.ts soal kenapa pencocokan harus persis.
+//
+// "RS PLAMONGAN INDAH" belum ketemu padanannya di data yang sudah ter-
+// impor sampai sekarang (kemungkinan belum pernah ada GL dari sana), jadi
+// disimpan apa adanya -- PIC-nya baru muncul di tabel GL begitu ada baris
+// dengan nama_rumah_sakit yang persis sama, atau petugas bisa
+// menyesuaikan ejaannya lewat halaman Pengaturan begitu tahu nama aslinya.
+const PIC_RUMAH_SAKIT_AWAL: {
+  namaRumahSakit: string;
+  picTaskForce: string;
+  picPengajuan: string;
+}[] = [
+  { namaRumahSakit: "RS SAMSOE HIDAJAT, KOTA SEMARANG", picTaskForce: "Ernita Kushanendri", picPengajuan: "Ernita Kushanendri" },
+  { namaRumahSakit: "RSUP DR. KARIADI, KOTA SEMARANG", picTaskForce: "Ernita Kushanendri", picPengajuan: "Ernita Kushanendri" },
+  { namaRumahSakit: "RSUD KRMT WONGSONEGORO, KOTA SEMARANG", picTaskForce: "Ernita Kushanendri", picPengajuan: "Ernita Kushanendri" },
+  { namaRumahSakit: "RS BHAYANGKARA POLDA JATENG, KOTA SEMARANG", picTaskForce: "Bimo", picPengajuan: "Ernita Kushanendri" },
+  { namaRumahSakit: "RS JIWA DR AMINO GONDO H, KOTA SEMARANG", picTaskForce: "Bimo", picPengajuan: "Ernita Kushanendri" },
+  { namaRumahSakit: "RS PANTIWILASA CITARUM, KOTA SEMARANG", picTaskForce: "Bimo", picPengajuan: "Ernita Kushanendri" },
+  { namaRumahSakit: "RS PRIMAYA, KOTA SEMARANG", picTaskForce: "Rika Wahyu Utami", picPengajuan: "Nurani Prasetianti" },
+  { namaRumahSakit: "RS GIGI DAN MULUT UNIMUS, KOTA SEMARANG", picTaskForce: "Rika Wahyu Utami", picPengajuan: "Nurani Prasetianti" },
+  { namaRumahSakit: "RS UNIMUS", picTaskForce: "Rika Wahyu Utami", picPengajuan: "Nurani Prasetianti" },
+  { namaRumahSakit: "RS BHAYANGKARA AKPOL, KOTA SEMARANG", picTaskForce: "Nurani Prasetianti", picPengajuan: "Nurani Prasetianti" },
+  { namaRumahSakit: "RS WILLIAM BOOTH, KOTA SEMARANG", picTaskForce: "Nurani Prasetianti", picPengajuan: "Nurani Prasetianti" },
+  { namaRumahSakit: "RS PLAMONGAN INDAH", picTaskForce: "Nurani Prasetianti", picPengajuan: "Nurani Prasetianti" },
+  { namaRumahSakit: "RSUD TUGUREJO, KOTA SEMARANG", picTaskForce: "Martina Lestari", picPengajuan: "Martina Lestari" },
+  { namaRumahSakit: "RS HERMINA PANDANARAN, KOTA SEMARANG", picTaskForce: "Martina Lestari", picPengajuan: "Martina Lestari" },
+  { namaRumahSakit: "RS TK III BHAKTI WIRA TAMTAMA, KOTA SEMARANG", picTaskForce: "Martina Lestari", picPengajuan: "Martina Lestari" },
+  { namaRumahSakit: "RS HERMINA BANYUMANIK, KOTA SEMARANG", picTaskForce: "Arif Eka", picPengajuan: "Martina Lestari" },
+  { namaRumahSakit: "RS BANYUMANIK, KOTA SEMARANG", picTaskForce: "Arif Eka", picPengajuan: "Martina Lestari" },
+  { namaRumahSakit: "RS BANYUMANIK 2, KOTA SEMARANG", picTaskForce: "Arif Eka", picPengajuan: "Martina Lestari" },
+  { namaRumahSakit: "RS NASIONAL DIPONEGORO, KOTA SEMARANG", picTaskForce: "Indra Yudistira", picPengajuan: "Pia Sofyana" },
+  { namaRumahSakit: "RS ST. ELISABETH, KOTA SEMARANG", picTaskForce: "Indra Yudistira", picPengajuan: "Pia Sofyana" },
+  { namaRumahSakit: "RS SILOAM HOSPITALS, KOTA SEMARANG", picTaskForce: "Indra Yudistira", picPengajuan: "Pia Sofyana" },
+  { namaRumahSakit: "RS ISLAM SULTAN AGUNG, KOTA SEMARANG", picTaskForce: "Henggar Aziz", picPengajuan: "Henggar Aziz" },
+  { namaRumahSakit: "RS GIGI DAN MULUT SULTAN AGUNG, KOTA SEMARANG", picTaskForce: "Henggar Aziz", picPengajuan: "Henggar Aziz" },
+  { namaRumahSakit: "RS PANTIWILASA DR CIPTO, KOTA SEMARANG", picTaskForce: "Henggar Aziz", picPengajuan: "Henggar Aziz" },
+  { namaRumahSakit: "RS PERMATA MEDIKA, KOTA SEMARANG", picTaskForce: "Aris Murdiyanto", picPengajuan: "Henggar Aziz" },
+  { namaRumahSakit: "RS COLUMBIA ASIA, KOTA SEMARANG", picTaskForce: "Aris Murdiyanto", picPengajuan: "Henggar Aziz" },
+  { namaRumahSakit: "RS KELUARGA SEHAT III SEMARANG", picTaskForce: "Aris Murdiyanto", picPengajuan: "Henggar Aziz" },
+  { namaRumahSakit: "Rumah Sakit CEPOKO", picTaskForce: "Pia Sofyana", picPengajuan: "Pia Sofyana" },
+  { namaRumahSakit: "RS TELOGOREJO, KOTA SEMARANG", picTaskForce: "Pia Sofyana", picPengajuan: "Pia Sofyana" },
+  { namaRumahSakit: "RS ROEMANI M., KOTA SEMARANG", picTaskForce: "Pia Sofyana", picPengajuan: "Pia Sofyana" },
 ];
 
-// Mengisi data referensi/konfigurasi minimal yang WAJIB ada supaya
-// aplikasi jalan benar -- ambang hari peringatan (aturan keras #2) dan
-// daftar nilai tahap proses pusat (aturan keras #3). Sengaja dipisah dari
-// seeder data dummy GL (scripts/seed.ts) supaya bisa dijalankan aman di
-// lingkungan mana pun, termasuk yang sudah berisi data GL nyata --
-// idempoten lewat onConflictDoNothing, tidak pernah menimpa nilai yang
-// sudah diubah petugas lewat halaman pengaturan.
 export async function seedReferensiDanPengaturan() {
   await db
     .insert(pengaturan)
@@ -32,12 +56,7 @@ export async function seedReferensiDanPengaturan() {
     .onConflictDoNothing({ target: pengaturan.kunci });
 
   await db
-    .insert(nilaiReferensi)
-    .values(
-      NILAI_TAHAP_PROSES_PUSAT.map((nilai) => ({
-        kategori: KATEGORI_TAHAP_PROSES,
-        nilai,
-      })),
-    )
-    .onConflictDoNothing({ target: [nilaiReferensi.kategori, nilaiReferensi.nilai] });
+    .insert(picRumahSakit)
+    .values(PIC_RUMAH_SAKIT_AWAL)
+    .onConflictDoNothing({ target: picRumahSakit.namaRumahSakit });
 }

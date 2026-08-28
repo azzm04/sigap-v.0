@@ -1,26 +1,43 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
-import { nilaiReferensi, pengguna, statusProsesPusat } from "../db/schema";
+import { glMirror, pengguna, statusProsesPusat, tinjauan } from "../db/schema";
 
-export const KATEGORI_TAHAP_PROSES = "tahap_proses_pusat";
+// Disederhanakan jadi 2 tahap tetap atas arahan eksplisit pemilik proyek
+export const TAHAP_PROSES_PUSAT = ["Berkas Diajukan Ke Pusat", "Berkas Selesai"] as const;
 
-// Tahap yang memicu status_pembayaran otomatis jadi Paid ketika petugas
-// mencatatnya (lihat app/gl/[idJaminan]/actions.ts, catatTahapProses). Ini
-// konstanta aturan bisnis yang memang tetap, bukan daftar enum terbuka —
-// sama seperti TAHAPAN_DIPANTAU di lib/gl/aturan-peringatan.ts.
+// Tahap yang memicu status_pembayaran otomatis jadi Paid ketika petugas mencatatnya (lihat app/gl/[idJaminan]/actions.ts, catatTahapProses)
 export const TAHAP_PEMICU_PAID = "Berkas Selesai";
+export const TAHAP_JRCARE_DONE = "Done";
 
-// Daftar nilai tahap yang valid. Dibaca dari nilai_referensi, bukan
-// di-hardcode di kode (CLAUDE.md aturan keras #3) — daftar ini bisa
-// bertambah kalau klien menyebut tahap baru.
+// Tahap yang membuat GL keluar dari Peringatan PIC Pengajuan (lib/gl/peringatan.ts) yaitu:
+// -- BUKAN lewat status_pembayaran jadi Paid (beda dari TAHAP_PEMICU_PAID di atas), karena "sudah diajukan ke pusat" belum tentu "sudah dibayar"
+// Jika GL-nya sudah punya Laporan Survei TKP, DAN sudah punya KSKK
+// kalau dokumennya baru lengkap belakangan, GL otomatis hilang dari
+// peringatan tanpa petugas perlu pilih ulang tahapnya.
+export const TAHAP_KELUAR_PERINGATAN = "Berkas Diajukan Ke Pusat";
+
 export async function ambilPilihanTahapProses(): Promise<string[]> {
-  const baris = await db
-    .select({ nilai: nilaiReferensi.nilai })
-    .from(nilaiReferensi)
-    .where(eq(nilaiReferensi.kategori, KATEGORI_TAHAP_PROSES))
-    .orderBy(asc(nilaiReferensi.nilai));
+  return [...TAHAP_PROSES_PUSAT];
+}
 
-  return baris.map((b) => b.nilai);
+export async function tandaiBerkasSelesai(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  idJaminan: string,
+  userId: number,
+  catatan: string,
+): Promise<void> {
+  await tx.insert(statusProsesPusat).values({ idJaminan, tahap: TAHAP_PEMICU_PAID, userId });
+  await tx.insert(tinjauan).values({
+    idJaminan,
+    userId,
+    catatan,
+    diabaikan: true,
+    alasanAbaikan: catatan,
+  });
+  await tx
+    .update(glMirror)
+    .set({ statusPembayaran: "Paid", tahapan: TAHAP_JRCARE_DONE })
+    .where(eq(glMirror.idJaminan, idJaminan));
 }
 
 export interface BarisTahapProses {

@@ -1,6 +1,4 @@
-// Aturan peringatan Tahap 1. Lihat CLAUDE.md bagian 7 — logika inti aplikasi.
-// Sengaja dipisah jadi fungsi murni supaya mudah diuji lepas dari database.
-
+// Aturan peringatan Tahap 1
 export interface DataAturanPeringatan {
   tipeKlaim: string;
   glStatus: string;
@@ -11,9 +9,7 @@ export interface DataAturanPeringatan {
 
 // Hanya dua tahap ini yang jadi wewenang petugas Jasa Raharja untuk ditindak;
 // tahap sebelumnya adalah urusan rumah sakit dan lapisan verifikasi
-// (CLAUDE.md bagian 7, "Prinsip"). Ini konstanta aturan bisnis yang memang
-// tetap, bukan daftar enum terbuka seperti daftar Tahapan secara umum.
-const TAHAPAN_DIPANTAU = new Set(["Verifikasi User", "Done"]);
+export const TAHAPAN_DIPANTAU = new Set(["Verifikasi User", "Done"]);
 
 /**
  * true kalau GL ini harus muncul di papan peringatan:
