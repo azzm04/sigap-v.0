@@ -2,18 +2,22 @@ import { ChevronsLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/ui/field";
 import { AksiCatatan } from "@/components/gl/aksi-catatan";
-import { Select } from "@/components/ui/select";
+import { FormLaporanTkp } from "@/components/gl/form-laporan-tkp";
+import { FormTahapProses } from "@/components/gl/form-tahap-proses";
+import { type BarisDokumen, TabelDokumen } from "@/components/gl/tabel-dokumen";
 import { ambilDetailGL, ambilRiwayatTahapan } from "@/lib/gl/detail";
 import { hitungStagnasi } from "@/lib/gl/stagnasi";
 import {
   ambilPilihanTahapProses,
   ambilRiwayatTahapProses,
+  TAHAP_PEMICU_PAID,
 } from "@/lib/gl/tahap-proses";
 import { ambilTinjauan } from "@/lib/gl/tinjauan";
 import { dekripsiToken } from "@/lib/gl/token-url";
@@ -23,7 +27,9 @@ import {
   formatWaktu,
   hitungUmurHari,
 } from "@/lib/format";
-import { catatTahapProses, tandaiDitinjau } from "./actions";
+import { ambilRiwayatLaporanTkp } from "@/lib/laporan-tkp/laporan";
+import { ambilTandaTangan, PEMILIK_PETUGAS_SURVEI } from "@/lib/laporan-tkp/tanda-tangan";
+import { simpanKskk, simpanKunjunganTaskForce, tandaiDitinjau } from "./actions";
 
 function formatTanggalOpsional(iso: string | null): string {
   return iso ? formatTanggal(iso) : "-";
@@ -47,13 +53,15 @@ export default async function DetailGLPage({
   const { dari } = await searchParams;
   const dariPeringatan = dari === "peringatan";
 
-  const [detail, riwayat, catatanTinjauan, pilihanTahapProses, riwayatTahapProses] =
+  const [detail, riwayat, catatanTinjauan, pilihanTahapProses, riwayatTahapProses, ttdPetugasSurvei, riwayatLaporanTkp] =
     await Promise.all([
       ambilDetailGL(idJaminan),
       ambilRiwayatTahapan(idJaminan),
       ambilTinjauan(idJaminan),
       ambilPilihanTahapProses(),
       ambilRiwayatTahapProses(idJaminan),
+      ambilTandaTangan(PEMILIK_PETUGAS_SURVEI),
+      ambilRiwayatLaporanTkp(idJaminan),
     ]);
 
   if (!detail) notFound();
@@ -62,6 +70,45 @@ export default async function DetailGLPage({
   const stagnasi = hitungStagnasi(riwayat, detail.tglGl);
   const diabaikanAktif = catatanTinjauan.find((c) => c.diabaikan) ?? null;
   const tahapTerkini = riwayatTahapProses[0] ?? null;
+  const namaPetugasSurvei = ttdPetugasSurvei?.namaTampil?.trim() || null;
+  // Tgl Kejadian (Tgl LAKA DASI) boleh digantikan Tanggal Masuk -- keduanya
+  // dianggap tanggal yang sama secara operasional (arahan pemilik proyek),
+  // dan Tanggal Masuk sudah punya jalur isi manual sendiri di form
+  // Kunjungan PIC Task Force, jadi tidak perlu input Tgl LAKA terpisah.
+  // Lokasi TETAP wajib -- diisi manual di form yang sama kalau DASI belum ada.
+  const tglKejadianEfektif = detail.tglKejadian ?? detail.tanggalMasuk;
+  const dataLaporanTkpLengkap = !!detail.lokasi && !!tglKejadianEfektif;
+  const perluTanggalSurveiManual = !detail.tanggalMasuk;
+
+  // Laporan Survei TKP (bisa banyak, riwayat) dan KSKK (maks satu per GL,
+  // lihat kolom kskk* di gl_mirror) disatukan jadi satu tabel dokumen --
+  // lihat components/gl/tabel-dokumen.tsx.
+  const daftarDokumen: BarisDokumen[] = [
+    ...riwayatLaporanTkp.map((l) => ({
+      jenis: "Laporan Survei TKP" as const,
+      key: `tkp-${l.id}`,
+      label: l.nomorLp,
+      waktu: l.dibuatPada,
+      petugas: l.namaPengguna,
+      hrefLihat: `/api/laporan-tkp/${l.id}`,
+      hrefUnduh: `/api/laporan-tkp/${l.id}?unduh=1`,
+      laporanId: l.id,
+    })),
+    ...(detail.kskkNamaBerkas && detail.kskkDiunggahPada
+      ? [
+          {
+            jenis: "KSKK" as const,
+            key: "kskk",
+            label: detail.kskkNamaBerkas,
+            waktu: detail.kskkDiunggahPada,
+            petugas: null,
+            hrefLihat: `/api/kskk/${tokenMentah}`,
+            hrefUnduh: `/api/kskk/${tokenMentah}?unduh=1`,
+            laporanId: null,
+          },
+        ]
+      : []),
+  ].sort((a, b) => b.waktu.getTime() - a.waktu.getTime());
 
   return (
     <AppShell
@@ -195,17 +242,184 @@ export default async function DetailGLPage({
         </Card>
 
         <section className="flex flex-col gap-3">
-          <h3 className="text-sm md:text-base  font-semibold text-foreground sm:text-base">
-            Riwayat Tahapan
+          <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
+            Kunjungan PIC Task Force
+            <BantuanInfo>
+              Diisi PIC Task Force setelah datang ke rumah sakit. Tanggal Masuk
+              menandai kasus ini mulai dipantau. Tanggal Pulang Pasien
+              menandai korban sudah pulang dari rumah sakit — kalau masih
+              kosong dan sudah lewat ambang hari, GL ini akan muncul di
+              Peringatan PIC Task Force. Lokasi LAKA otomatis dari berkas
+              DASI kalau sudah ter-impor dan cocok — kalau belum, isi manual
+              di sini (tetap tertimpa otomatis begitu berkas DASI-nya ada).
+            </BantuanInfo>
           </h3>
 
-          {riwayat.length <= 1 && (
-            <p className="text-sm md:text-base leading-relaxed text-muted-foreground sm:text-sm">
-              Riwayat baru mulai tercatat sejak GL ini pertama kali diimpor ke
-              SIGAP. Belum ada perubahan tahapan yang tercatat di luar keadaan
-              saat ini.
-            </p>
+          <Card className="min-w-0">
+            <form
+              action={simpanKunjunganTaskForce}
+              className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:flex-wrap"
+            >
+              <input type="hidden" name="idJaminan" value={detail.idJaminan} />
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="tanggalMasuk"
+                  className="text-xs md:text-sm font-medium text-foreground"
+                >
+                  Tanggal Masuk
+                </label>
+                <input
+                  id="tanggalMasuk"
+                  name="tanggalMasuk"
+                  type="date"
+                  defaultValue={detail.tanggalMasuk ?? ""}
+                  className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:w-44"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="tanggalPulangPasien"
+                  className="text-xs md:text-sm font-medium text-foreground"
+                >
+                  Tanggal Pulang Pasien
+                </label>
+                <input
+                  id="tanggalPulangPasien"
+                  name="tanggalPulangPasien"
+                  type="date"
+                  defaultValue={detail.tanggalPulangPasien ?? ""}
+                  className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 sm:w-44"
+                />
+              </div>
+              <div className="flex flex-1 min-w-40 flex-col gap-1.5">
+                <label htmlFor="lokasi" className="text-xs md:text-sm font-medium text-foreground">
+                  Lokasi LAKA {detail.lokasi ? "" : "(manual, DASI belum ada)"}
+                </label>
+                <input
+                  id="lokasi"
+                  name="lokasi"
+                  defaultValue={detail.lokasi ?? ""}
+                  className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                />
+              </div>
+              <button
+                type="submit"
+                className="h-9 w-fit shrink-0 rounded-lg bg-primary px-4 text-sm md:text-base font-medium text-primary-foreground hover:bg-primary-hover"
+              >
+                Simpan
+              </button>
+            </form>
+          </Card>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
+            Laporan Survei TKP
+            <BantuanInfo>
+              Nama Korban dan Tempat/Tgl Kecelakaan diambil otomatis dari data
+              GL. Petugas Survei TETAP untuk semua laporan (bukan dari PIC GL
+              ini) — hanya Nomor LP, Alamat Korban, Uraian dan Kesimpulan, Nama
+              Saksi (+ Tanda Tangan Saksi, opsional) yang diisi manual.
+              Hari/Tanggal Survei otomatis dari Tanggal Masuk kalau sudah
+              diisi, kalau belum wajib diisi manual. Tanda tangan Kepala
+              Cabang dan Petugas Survei diambil dari halaman Pengaturan.
+            </BantuanInfo>
+          </h3>
+
+          {!dataLaporanTkpLengkap && (
+            <div className="flex min-w-0 flex-col gap-1 rounded-lg border border-status-near/30 bg-status-near-bg p-3 leading-relaxed sm:p-4 sm:text-sm">
+              <p className="font-medium text-foreground">
+                Data belum lengkap untuk membuat Laporan Survei TKP:
+              </p>
+              <ul className="list-inside list-disc text-muted-foreground">
+                {!detail.lokasi && (
+                  <li>Lokasi LAKA belum terisi -- isi manual lewat form Kunjungan PIC Task Force di atas</li>
+                )}
+                {!tglKejadianEfektif && (
+                  <li>Tgl LAKA (DASI) dan Tanggal Masuk dua-duanya belum terisi</li>
+                )}
+              </ul>
+            </div>
           )}
+
+          <Card className="min-w-0">
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-3">
+              <Field label="Nama Korban (otomatis)" value={detail.namaKorban} />
+              <Field label="Petugas Survei (tetap)" value={namaPetugasSurvei} />
+              <Field
+                label={
+                  detail.tglKejadian
+                    ? "Tempat/Tgl Kecelakaan (otomatis)"
+                    : "Tempat/Tgl Kecelakaan (otomatis, tanggal dari Tanggal Masuk)"
+                }
+                value={
+                  detail.lokasi && tglKejadianEfektif
+                    ? `${detail.lokasi}, ${formatTanggal(tglKejadianEfektif)}`
+                    : null
+                }
+              />
+            </dl>
+
+            <FormLaporanTkp
+              idJaminan={detail.idJaminan}
+              dataLaporanTkpLengkap={dataLaporanTkpLengkap}
+              perluTanggalSurveiManual={perluTanggalSurveiManual}
+            />
+          </Card>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
+            KSKK
+            <BantuanInfo>
+              KSKK tidak bisa dibuat otomatis oleh SIGAP -- unggah berkas PDF hasil kerja PIC
+              Pengajuan di luar sistem.
+            </BantuanInfo>
+          </h3>
+
+          <Card className="min-w-0">
+            <form action={simpanKskk} className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end">
+              <input type="hidden" name="idJaminan" value={detail.idJaminan} />
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="kskk" className="text-sm md:text-base font-medium text-foreground">
+                  {detail.kskkNamaBerkas ? "Ganti berkas KSKK (PDF)" : "Berkas KSKK (PDF)"}
+                </label>
+                <input
+                  id="kskk"
+                  name="kskk"
+                  type="file"
+                  accept="application/pdf"
+                  className="text-sm text-foreground file:mr-2 file:h-8 file:rounded-md file:border-0 file:bg-muted file:px-2.5 file:text-sm file:font-medium file:text-foreground sm:w-80"
+                />
+              </div>
+              <button
+                type="submit"
+                className="h-9 w-fit shrink-0 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
+              >
+                Unggah KSKK
+              </button>
+            </form>
+          </Card>
+
+          {daftarDokumen.length > 0 && (
+            <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
+              Dokumen GL (Laporan Survei TKP &amp; KSKK)
+            </h3>
+          )}
+          <TabelDokumen idJaminan={detail.idJaminan} daftar={daftarDokumen} />
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
+            Riwayat Tahapan
+            {riwayat.length <= 1 && (
+              <BantuanInfo>
+                Riwayat baru mulai tercatat sejak GL ini pertama kali diimpor ke
+                SIGAP. Belum ada perubahan tahapan yang tercatat di luar keadaan
+                saat ini.
+              </BantuanInfo>
+            )}
+          </h3>
 
           <div className="w-full overflow-x-auto rounded-lg border border-border bg-card">
             <table className="min-w-[720px] w-full text-xs sm:text-sm">
@@ -248,16 +462,17 @@ export default async function DetailGLPage({
         </section>
 
         <section className="flex flex-col gap-3">
-          <h3 className="text-sm md:text-base font-semibold text-foreground sm:text-base">
+          <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
             Tahap Proses di Sistem Pusat
-          </h3>
-          <p className="text-sm md:text-base leading-relaxed text-muted-foreground">
+            <BantuanInfo>
             Diisi manual oleh petugas berdasarkan pengecekan langsung di
             sistem pusat, karena SIGAP tidak terhubung ke sistem pusat.
             Tahap boleh dipilih bebas sesuai kondisi terkini. Begitu tahap
             &quot;Berkas Selesai&quot; dicatat, Status Pembayaran otomatis
             menjadi Paid.
-          </p>
+          </BantuanInfo>
+          </h3>
+          
 
           <Card className="min-w-0">
             <div className="flex min-w-0 flex-col gap-1">
@@ -279,35 +494,11 @@ export default async function DetailGLPage({
               )}
             </div>
 
-            <form
-              action={catatTahapProses}
-              className="mt-3 flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end"
-            >
-              <input type="hidden" name="idJaminan" value={detail.idJaminan} />
-              <div className="flex flex-1 flex-col gap-1.5">
-                <label
-                  htmlFor="tahap"
-                  className="text-xs md:text-sm font-medium text-foreground"
-                >
-                  Tahap
-                </label>
-                <Select
-                  id="tahap"
-                  name="tahap"
-                  required
-                  placeholder="Pilih tahap..."
-                  options={pilihanTahapProses}
-                  className="w-full"
-                  defaultValue=""
-                />
-              </div>
-              <button
-                type="submit"
-                className="h-8 w-fit shrink-0 rounded-lg bg-primary px-4 text-sm md:text-base font-medium text-primary-foreground hover:bg-primary-hover"
-              >
-                Catat Tahap Ini
-              </button>
-            </form>
+            <FormTahapProses
+              idJaminan={detail.idJaminan}
+              pilihanTahapProses={pilihanTahapProses}
+              tahapPemicuPaid={TAHAP_PEMICU_PAID}
+            />
           </Card>
 
           {riwayatTahapProses.length > 0 && (

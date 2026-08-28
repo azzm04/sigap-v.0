@@ -1,6 +1,3 @@
-// Format tampilan sesuai CLAUDE.md aturan keras #5: Rp dengan pemisah ribuan
-// titik, tanggal DD/MM/YYYY.
-
 export function formatRupiah(nilai: number): string {
   return `Rp ${nilai.toLocaleString("id-ID")}`;
 }
@@ -11,7 +8,7 @@ export function formatTanggal(iso: string): string {
   return `${hari}/${bulan}/${tahun}`;
 }
 
-/** Format tanggal + jam dalam WIB (CLAUDE.md aturan keras #5), untuk kolom timestamp. */
+/** Format tanggal + jam dalam WIB untuk kolom timestamp. */
 export function formatWaktu(waktu: Date): string {
   const bagian = waktu.toLocaleString("id-ID", {
     timeZone: "Asia/Jakarta",
@@ -24,12 +21,45 @@ export function formatWaktu(waktu: Date): string {
   return `${bagian} WIB`;
 }
 
-/** Tanggal hari ini di zona WIB, format ISO "YYYY-MM-DD" — dipakai untuk membandingkan "sudah dilihat hari ini atau belum". */
 export function tanggalHariIniWIB(): string {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jakarta" });
 }
 
-/** umur_hari = tanggal_hari_ini - Tgl GL, satuan hari kalender (CLAUDE.md bagian 7) */
+const NAMA_BULAN = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+];
+
+/** iso: "YYYY-MM" atau "YYYY-MM-DD" -> "Agustus 2026" */
+export function formatBulanTahun(iso: string): string {
+  const [tahun, bulan] = iso.split("-");
+  return `${NAMA_BULAN[Number(bulan) - 1]} ${tahun}`;
+}
+
+/**
+ * "DD/MM/YYYY" -> iso "YYYY-MM-DD", kebalikan formatTanggal(). null kalau
+ * tidak sesuai format atau bukan tanggal valid -- pemanggil (lib/google-sheets/tarik.ts)
+ * WAJIB melewati baris yang gagal parse, bukan menyimpan tanggal ngawur.
+ */
+export function parseTanggalIndo(teks: string): string | null {
+  const cocok = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(teks.trim());
+  if (!cocok) return null;
+  const [, hariStr, bulanStr, tahunStr] = cocok;
+  const hari = Number(hariStr);
+  const bulan = Number(bulanStr);
+  const tahun = Number(tahunStr);
+  const tanggal = new Date(Date.UTC(tahun, bulan - 1, hari));
+  if (
+    tanggal.getUTCFullYear() !== tahun ||
+    tanggal.getUTCMonth() !== bulan - 1 ||
+    tanggal.getUTCDate() !== hari
+  ) {
+    return null;
+  }
+  return `${tahunStr}-${bulanStr.padStart(2, "0")}-${hariStr.padStart(2, "0")}`;
+}
+
+/** umur_hari = tanggal_hari_ini - Tgl GL, satuan hari kalender */
 export function hitungUmurHari(iso: string): number {
   const [tahun, bulan, hari] = iso.split("-").map(Number);
   const tglGl = Date.UTC(tahun, bulan - 1, hari);

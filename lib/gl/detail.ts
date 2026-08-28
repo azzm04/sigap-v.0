@@ -23,6 +23,10 @@ export interface DetailGL {
   tglPembayaran: string | null;
   tglKejadian: string | null;
   lokasi: string | null;
+  tanggalMasuk: string | null;
+  tanggalPulangPasien: string | null;
+  kskkNamaBerkas: string | null;
+  kskkDiunggahPada: Date | null;
   diimporPada: Date;
 }
 
@@ -49,6 +53,10 @@ export async function ambilDetailGL(idJaminan: string): Promise<DetailGL | null>
       tglPembayaran: glMirror.tglPembayaran,
       tglKejadian: glMirror.tglKejadian,
       lokasi: glMirror.lokasi,
+      tanggalMasuk: glMirror.tanggalMasuk,
+      tanggalPulangPasien: glMirror.tanggalPulangPasien,
+      kskkNamaBerkas: glMirror.kskkNamaBerkas,
+      kskkDiunggahPada: glMirror.kskkDiunggahPada,
       diimporPada: glMirror.diimporPada,
     })
     .from(glMirror)
@@ -66,9 +74,6 @@ export interface BarisRiwayatTahapan {
   direkamPada: Date;
 }
 
-// Riwayat tahapan dari gl_snapshot, sesuai CLAUDE.md bagian 5: baris baru
-// hanya tersimpan saat ada perubahan, jadi jumlahnya bisa cuma satu (baseline)
-// untuk GL yang belum pernah berubah sejak impor pertama.
 export async function ambilRiwayatTahapan(idJaminan: string): Promise<BarisRiwayatTahapan[]> {
   return db
     .select({
