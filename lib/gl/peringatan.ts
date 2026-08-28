@@ -1,18 +1,23 @@
 import { and, desc, eq, gte, ilike, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
-import { glMirror, statusProsesPusat, tinjauan } from "../db/schema";
+import { glMirror, laporanSurveiTkp, statusProsesPusat, tinjauan } from "../db/schema";
 import { hitungUmurHari } from "../format";
 import { ambilAmbangHari } from "../pengaturan";
 import { apakahMasukPeringatan } from "./aturan-peringatan";
+import { ambilPetaJumlahGLPerKorban, jumlahGLKorban } from "./duplikat-korban";
+import { ambilPetaPicRumahSakit, cariPic } from "./pic";
+import { TAHAP_KELUAR_PERINGATAN } from "./tahap-proses";
 import { enkripsiIdJaminan } from "./token-url";
 
 export interface BarisPeringatan {
   idJaminan: string;
-  /** Token terenkripsi untuk URL /gl/[token] -- lihat lib/gl/token-url.ts */
   tokenUrl: string;
   namaKorban: string;
   loket: string;
   namaRumahSakit: string | null;
+  picTaskForce: string | null;
+  picPengajuan: string | null;
+  jumlahGLKorban: number;
   tipeKlaim: string;
   tipeCidera: string;
   nomorSuratJaminan: string | null;
@@ -26,31 +31,30 @@ export interface BarisPeringatan {
   tglKejadian: string | null;
   lokasi: string | null;
   umurHari: number;
-  /** true kalau sudah pernah ada catatan Tinjauan Petugas untuk GL ini (apa pun isinya) */
+  umurPengajuan: number;
+  pengajuanBerdasarkanTglGl: boolean;
   sudahDitinjau: boolean;
-  /** Tahap proses terkini di sistem pusat (lib/gl/tahap-proses.ts), null kalau belum pernah dicatat */
   tahapProses: string | null;
+  /**
+   * Cek kelengkapan dokumen sebelum diajukan PIC Pengajuan ke DASI-JR --
+   * murni cek DB: ada/tidaknya baris laporan_survei_tkp untuk GL ini.
+   * "Siap Diajukan ke Pusat" kalau sudah ada Laporan Survei TKP dan KSKK "Dokumen Belum Lengkap" kalau belum
+   */
+  statusDokumen: "Siap Diajukan ke Pusat" | "Dokumen Belum Lengkap";
 }
 
-// Ukuran halaman papan peringatan. Filter tahapan+ambang umur berjalan di
-// JS (bukan SQL), jadi paginasi juga dilakukan di JS setelah seluruh baris
-// yang lolos filter terkumpul — lihat komentar ambilPapanPeringatan().
 const UKURAN_HALAMAN_PERINGATAN = 20;
 
 export interface FilterPapanPeringatan {
   halaman?: number;
   ukuran?: number;
-  /** Dicocokkan ke Nama Korban atau Nomor ID Jaminan */
   cari?: string;
   loket?: string;
-  /** ISO "YYYY-MM-DD", batas bawah Tgl GL */
   dari?: string;
-  /** ISO "YYYY-MM-DD", batas atas Tgl GL */
   sampai?: string;
-  /** "sudah" = sudah ada catatan Tinjauan Petugas, "belum" = belum pernah ditinjau sama sekali */
   statusTinjauan?: "sudah" | "belum";
-  /** Nilai persis dari nilai_referensi kategori tahap_proses_pusat */
   tahapProses?: string;
+  picPengajuan?: string;
 }
 
 export interface HasilPeringatan {
@@ -80,17 +84,16 @@ function bangunKondisiPeringatan(filter: FilterPapanPeringatan) {
   return and(...kondisi);
 }
 
-// Papan peringatan Tahap 1 (CLAUDE.md bagian 6 dan 7). Pra-saring di SQL
-// dengan syarat yang murah (tipe klaim, status GL, status pembayaran, dan
-// filter petugas kalau ada) supaya tidak menarik ribuan baris Paid/Cancel
-// yang jelas tidak relevan, lalu syarat yang lebih rumit (tahapan + ambang
-// umur) dicek lewat apakahMasukPeringatan agar satu-satunya sumber
-// kebenaran aturan tetap fungsi yang sama dengan yang diuji di
-// aturan-peringatan.test.ts.
+// Papan peringatan Tahap 1
+// dengan syarat yang murah (tipe klaim, status GL, status pembayaran, dan filter petugas kalau ada) supaya tidak menarik ribuan baris Paid/Cancel
 export async function ambilPapanPeringatan(
   filter: FilterPapanPeringatan = {},
 ): Promise<HasilPeringatan> {
-  const ambangHari = await ambilAmbangHari();
+  const [ambangHari, petaPic, petaJumlahKorban] = await Promise.all([
+    ambilAmbangHari(),
+    ambilPetaPicRumahSakit(),
+    ambilPetaJumlahGLPerKorban(),
+  ]);
 
   const kandidat = await db
     .select({
@@ -110,25 +113,22 @@ export async function ambilPapanPeringatan(
       tglPembayaran: glMirror.tglPembayaran,
       tglKejadian: glMirror.tglKejadian,
       lokasi: glMirror.lokasi,
-      sudahDitinjau: sql<boolean>`EXISTS (
-        SELECT 1 FROM ${tinjauan}
-        WHERE ${tinjauan.idJaminan} = ${glMirror.idJaminan}
+      tanggalPulangPasien: glMirror.tanggalPulangPasien,
+      kskkNamaBerkas: glMirror.kskkNamaBerkas,
+      punyaLaporanTkp: sql<boolean>`EXISTS (
+        SELECT 1 FROM ${laporanSurveiTkp} AS ltk
+        WHERE ltk.id_jaminan = ${glMirror}.id_jaminan
       )`,
     })
     .from(glMirror)
     .where(bangunKondisiPeringatan(filter));
 
-  // Diambil sekali tanpa filter diabaikan supaya dua kebutuhan (baris yang
-  // permanen dikecualikan, dan status "sudah/belum ditinjau" untuk filter
-  // petugas) sama-sama terjawab dari satu query.
   const tinjauanBaris = await db
     .select({ idJaminan: tinjauan.idJaminan, diabaikan: tinjauan.diabaikan })
     .from(tinjauan);
   const idDiabaikan = new Set(tinjauanBaris.filter((b) => b.diabaikan).map((b) => b.idJaminan));
   const idSudahDitinjau = new Set(tinjauanBaris.map((b) => b.idJaminan));
 
-  // Diurutkan terbaru dulu supaya baris pertama yang ditemui per id_jaminan
-  // adalah tahap terkininya (sama seperti pola di lib/gl/tahap-proses.ts).
   const semuaTahapProses = await db
     .select({ idJaminan: statusProsesPusat.idJaminan, tahap: statusProsesPusat.tahap })
     .from(statusProsesPusat)
@@ -143,19 +143,36 @@ export async function ambilPapanPeringatan(
     .map((b) => ({
       ...b,
       tokenUrl: enkripsiIdJaminan(b.idJaminan),
+      ...cariPic(petaPic, b.namaRumahSakit),
+      jumlahGLKorban: jumlahGLKorban(petaJumlahKorban, b.namaKorban),
       umurHari: hitungUmurHari(b.tglGl),
+      // Dasar umur Peringatan PIC Pengajuan: sejak Tanggal Pulang Pasien,fallback ke Tgl GL kalau belum diisi PIC Task Force (supaya GL tidak diam-diam hilang dari pemantauan gara-gara satu field)
+      // ditampilkan sebagai badge di UI.
+      umurPengajuan: hitungUmurHari(b.tanggalPulangPasien ?? b.tglGl),
+      pengajuanBerdasarkanTglGl: !b.tanggalPulangPasien,
       sudahDitinjau: idSudahDitinjau.has(b.idJaminan),
       tahapProses: tahapTerkiniPerId.get(b.idJaminan) ?? null,
+      // Dokumen lengkap = Laporan Survei TKP DAN KSKK dua-duanya ada, Pengajuan sebelum tahap "Berkas Diajukan Ke Pusat" dicatat).
+      punyaKskk: !!b.kskkNamaBerkas,
+      statusDokumen: (b.punyaLaporanTkp && b.kskkNamaBerkas
+        ? "Siap Diajukan ke Pusat"
+        : "Dokumen Belum Lengkap") as "Siap Diajukan ke Pusat" | "Dokumen Belum Lengkap",
     }))
-    .filter((b) => apakahMasukPeringatan(b, ambangHari))
+
+    // Syarat umur Peringatan PIC Pengajuan sekarang dari Tanggal Pulang Pasien. Baris asli (b.umurHari) tidak ikut berubah, tetap Tgl GL untuk tampilan.
+    .filter((b) => apakahMasukPeringatan({ ...b, umurHari: b.umurPengajuan }, ambangHari))
+    // Sudah "Berkas Diajukan Ke Pusat" DAN dokumen (Laporan Survei TKP + KSKK) lengkap -> keluar dari peringatan ini, walau status_pembayaran masih Unpaid 
+    // (arahan pemilik proyek: "sudah diajukan" beda dari "sudah dibayar", JANGAN pakai mekanisme Paid seperti TAHAP_PEMICU_PAID
+    // -- Paid baru terjadi lewat impor mingguan ceri.jasaraharja, belum dibangun)
+    .filter((b) => !(b.tahapProses === TAHAP_KELUAR_PERINGATAN && b.punyaLaporanTkp && b.punyaKskk))
     .filter((b) => {
       if (filter.statusTinjauan === "sudah") return b.sudahDitinjau;
       if (filter.statusTinjauan === "belum") return !b.sudahDitinjau;
       return true;
     })
     .filter((b) => !filter.tahapProses || b.tahapProses === filter.tahapProses)
-    // Prioritas belum jelas (akhiran "00" — lihat CLAUDE.md bagian 7 dan 8),
-    // jadi urutkan berdasarkan umur tertinggi sampai dikonfirmasi.
+    .filter((b) => !filter.picPengajuan || b.picPengajuan === filter.picPengajuan)
+    // Prioritas belum jelas (akhiran "00"), jadi urutkan berdasarkan umur tertinggi sampai dikonfirmasi.
     .sort((a, b) => b.umurHari - a.umurHari)
     .map(
       ({
@@ -164,6 +181,9 @@ export async function ambilPapanPeringatan(
         namaKorban,
         loket,
         namaRumahSakit,
+        picTaskForce,
+        picPengajuan,
+        jumlahGLKorban,
         tipeKlaim,
         tipeCidera,
         nomorSuratJaminan,
@@ -177,14 +197,20 @@ export async function ambilPapanPeringatan(
         tglKejadian,
         lokasi,
         umurHari,
+        umurPengajuan,
+        pengajuanBerdasarkanTglGl,
         sudahDitinjau,
         tahapProses,
+        statusDokumen,
       }) => ({
         idJaminan,
         tokenUrl,
         namaKorban,
         loket,
         namaRumahSakit,
+        picTaskForce,
+        picPengajuan,
+        jumlahGLKorban,
         tipeKlaim,
         tipeCidera,
         nomorSuratJaminan,
@@ -198,8 +224,11 @@ export async function ambilPapanPeringatan(
         tglKejadian,
         lokasi,
         umurHari,
+        umurPengajuan,
+        pengajuanBerdasarkanTglGl,
         sudahDitinjau,
         tahapProses,
+        statusDokumen,
       }),
     );
 
