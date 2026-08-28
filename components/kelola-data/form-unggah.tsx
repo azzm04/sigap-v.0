@@ -74,7 +74,8 @@ export function FormUnggah() {
         </div>
         <h3 className="text-base font-medium text-foreground">Tarik dan lepas berkas di sini</h3>
         <p className="text-xs text-muted-foreground">
-          Atau klik untuk memilih satu atau beberapa berkas JRCare / DASI (.xlsx atau .csv)
+          Atau klik untuk memilih satu atau beberapa berkas JRCare / DASI / Sentralisasi
+          Pembayaran (.xlsx atau .csv)
         </p>
         <span className="pointer-events-none rounded-full bg-primary px-6 py-2 text-sm font-medium text-primary-foreground">
           Pilih Berkas

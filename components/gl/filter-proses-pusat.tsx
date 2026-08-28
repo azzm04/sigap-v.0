@@ -8,30 +8,22 @@ import { Label } from "@/components/ui/label";
 import { RentangTanggal } from "@/components/ui/rentang-tanggal";
 import { Select } from "@/components/ui/select";
 
-export interface NilaiFilterPeringatan {
+export interface NilaiFilterProsesPusat {
   cari?: string;
-  status_tinjauan?: string;
   pic_pengajuan?: string;
   dari?: string;
   sampai?: string;
   [kunci: string]: string | undefined;
 }
 
-const OPSI_STATUS_TINJAUAN = [
-  { value: "belum", label: "Belum Ditinjau" },
-  { value: "sudah", label: "Sudah Ditinjau" },
-];
-
-export function FilterPeringatan({
+export function FilterProsesPusat({
   nilai,
   opsi,
   ukuran,
-  basePath = "/peringatan",
 }: {
-  nilai: NilaiFilterPeringatan;
+  nilai: NilaiFilterProsesPusat;
   opsi: { picPengajuan: string[] };
   ukuran: number;
-  basePath?: string;
 }) {
   const router = useRouter();
   const adaFilterAktif = Object.values(nilai).some((v) => v);
@@ -42,21 +34,24 @@ export function FilterPeringatan({
     setCari(nilai.cari ?? "");
   }, [nilai.cari]);
 
-  function terapkan(perubahan: Partial<NilaiFilterPeringatan>) {
-    const gabungan: NilaiFilterPeringatan = { ...nilai, ...perubahan };
+  function terapkan(perubahan: Partial<NilaiFilterProsesPusat>) {
+    const gabungan: NilaiFilterProsesPusat = { ...nilai, ...perubahan };
     const params = new URLSearchParams();
     for (const [kunci, v] of Object.entries(gabungan)) {
       if (v) params.set(kunci, v);
     }
     params.set("ukuran", String(ukuran));
     params.set("halaman", "1");
-    router.push(`${basePath}?${params.toString()}`);
+    router.push(`/proses-pusat?${params.toString()}`);
   }
 
   function ubahCari(nilaiBaru: string) {
     setCari(nilaiBaru);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => terapkan({ cari: nilaiBaru || undefined }), 450);
+    timeoutRef.current = setTimeout(
+      () => terapkan({ cari: nilaiBaru || undefined }),
+      450,
+    );
   }
 
   return (
@@ -66,18 +61,11 @@ export function FilterPeringatan({
           <Label className="text-sm" htmlFor="cari">
             Cari nama korban / ID jaminan
           </Label>
-          <Input id="cari" value={cari} onChange={(e) => ubahCari(e.target.value)} className="w-full" />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="status_tinjauan">Status Tinjauan</Label>
-          <Select
-            id="status_tinjauan"
-            value={nilai.status_tinjauan ?? ""}
-            onChange={(e) => terapkan({ status_tinjauan: e.target.value || undefined })}
-            placeholder="Semua"
-            options={OPSI_STATUS_TINJAUAN}
-            className="w-full sm:w-36"
+          <Input
+            id="cari"
+            value={cari}
+            onChange={(e) => ubahCari(e.target.value)}
+            className="w-full"
           />
         </div>
 
@@ -104,7 +92,10 @@ export function FilterPeringatan({
         </div>
 
         {adaFilterAktif && (
-          <Link href={basePath} className="h-8 shrink-0 pb-1 text-sm text-muted-foreground underline sm:pb-2">
+          <Link
+            href="/proses-pusat"
+            className="h-8 shrink-0 pb-1 text-sm text-muted-foreground underline sm:pb-2"
+          >
             Reset filter
           </Link>
         )}

@@ -13,6 +13,9 @@ export interface NilaiFilterGL {
   loket?: string;
   tahapan?: string;
   status_pembayaran?: string;
+  gl_status?: string;
+  pic_task_force?: string;
+  pic_pengajuan?: string;
   dari?: string;
   sampai?: string;
   [kunci: string]: string | undefined;
@@ -25,7 +28,14 @@ export function FilterGL({
   basePath = "/",
 }: {
   nilai: NilaiFilterGL;
-  opsi: { loket: string[]; tahapan: string[]; statusPembayaran: string[] };
+  opsi: {
+    loket: string[];
+    tahapan: string[];
+    statusPembayaran: string[];
+    glStatus: string[];
+    picTaskForce: string[];
+    picPengajuan: string[];
+  };
   ukuran: number;
   basePath?: string;
 }) {
@@ -66,18 +76,6 @@ export function FilterGL({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="loket">Loket</Label>
-          <Select
-            id="loket"
-            value={nilai.loket ?? ""}
-            onChange={(e) => terapkan({ loket: e.target.value || undefined })}
-            placeholder="Semua"
-            options={opsi.loket}
-            className="w-full sm:w-32"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
           <Label htmlFor="tahapan">Tahapan</Label>
           <Select
             id="tahapan"
@@ -98,6 +96,42 @@ export function FilterGL({
             placeholder="Semua"
             options={opsi.statusPembayaran}
             className="w-full sm:w-28"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="gl_status">GL Status</Label>
+          <Select
+            id="gl_status"
+            value={nilai.gl_status ?? ""}
+            onChange={(e) => terapkan({ gl_status: e.target.value || undefined })}
+            placeholder="Semua"
+            options={opsi.glStatus}
+            className="w-full sm:w-28"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="pic_task_force">PIC Task Force</Label>
+          <Select
+            id="pic_task_force"
+            value={nilai.pic_task_force ?? ""}
+            onChange={(e) => terapkan({ pic_task_force: e.target.value || undefined })}
+            placeholder="Semua"
+            options={opsi.picTaskForce}
+            className="w-full sm:w-36"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="pic_pengajuan">PIC Pengajuan</Label>
+          <Select
+            id="pic_pengajuan"
+            value={nilai.pic_pengajuan ?? ""}
+            onChange={(e) => terapkan({ pic_pengajuan: e.target.value || undefined })}
+            placeholder="Semua"
+            options={opsi.picPengajuan}
+            className="w-full sm:w-36"
           />
         </div>
 

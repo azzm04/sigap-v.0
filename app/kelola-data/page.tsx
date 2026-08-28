@@ -3,6 +3,7 @@ import { Database, Trash2 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { FormUnggah } from "@/components/kelola-data/form-unggah";
 import { HapusSemuaDialog } from "@/components/kelola-data/hapus-semua-dialog";
+import { SinkronSheetsButton } from "@/components/kelola-data/sinkron-sheets-button";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,16 +14,20 @@ import { ambilTotalBarisAktif } from "@/lib/gl/sampah";
 
 const LABEL_JENIS: Record<JenisLogData, string> = {
   impor: "Impor",
+  impor_sentralisasi: "Impor Sentralisasi Pembayaran",
   hapus: "Hapus Semua Data",
   pulihkan: "Pulihkan",
   hapus_permanen: "Hapus Permanen",
+  sinkron_sheets: "Sinkron Google Sheets",
 };
 
 const TONE_JENIS: Record<JenisLogData, "info" | "danger" | "ok"> = {
   impor: "info",
+  impor_sentralisasi: "info",
   hapus: "danger",
   pulihkan: "ok",
   hapus_permanen: "danger",
+  sinkron_sheets: "info",
 };
 
 export default async function KelolaDataPage() {
@@ -38,7 +43,7 @@ export default async function KelolaDataPage() {
         <PageHeader
           title="Kelola Data"
           description={
-            'Satu tempat untuk mengunggah berkas ekspor JRCare ("KLAIM REPORT") atau berkas Data Pelengkap DASI, format .xlsx atau .csv. Bisa unggah beberapa berkas sekaligus — sistem akan otomatis mendeteksi jenis tiap berkas.'
+            'Satu tempat untuk mengunggah berkas ekspor JRCare ("KLAIM REPORT"), berkas Data Pelengkap DASI, atau berkas Sentralisasi Pembayaran, format .xlsx atau .csv. Bisa unggah beberapa berkas sekaligus — sistem akan otomatis mendeteksi jenis tiap berkas.'
           }
         />
 
@@ -133,7 +138,8 @@ export default async function KelolaDataPage() {
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap gap-2">
+            <div className="flex shrink-0 flex-wrap items-start gap-2">
+              <SinkronSheetsButton />
               <Link href="/kelola-data/sampah" className={buttonVariants({ variant: "outline" })}>
                 <Trash2 />
                 Buka Keranjang Sampah

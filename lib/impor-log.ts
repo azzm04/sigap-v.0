@@ -2,7 +2,13 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "./db";
 import { imporLog } from "./db/schema";
 
-export type JenisLogData = "impor" | "hapus" | "pulihkan" | "hapus_permanen";
+export type JenisLogData =
+  | "impor"
+  | "impor_sentralisasi"
+  | "hapus"
+  | "pulihkan"
+  | "hapus_permanen"
+  | "sinkron_sheets";
 
 export interface BarisLogData {
   id: number;

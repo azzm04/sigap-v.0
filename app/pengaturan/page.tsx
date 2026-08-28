@@ -1,13 +1,25 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { FormKataSandi } from "@/components/pengaturan/form-kata-sandi";
+import { PicRumahSakit } from "@/components/pengaturan/pic-rumah-sakit";
+import { TandaTanganLaporanTkp } from "@/components/pengaturan/tanda-tangan";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
+import { ambilSemuaPicRumahSakit } from "@/lib/gl/pic";
+import {
+  ambilSemuaTandaTangan,
+  PEMILIK_KEPALA_CABANG,
+  PEMILIK_PETUGAS_SURVEI,
+} from "@/lib/laporan-tkp/tanda-tangan";
 import { ambilAmbangHari } from "@/lib/pengaturan";
 import { ubahAmbangHari } from "./actions";
 
 export default async function PengaturanPage() {
-  const ambangHari = await ambilAmbangHari();
+  const [ambangHari, picRumahSakit, daftarTandaTangan] = await Promise.all([
+    ambilAmbangHari(),
+    ambilSemuaPicRumahSakit(),
+    ambilSemuaTandaTangan(),
+  ]);
 
   return (
     <AppShell>
@@ -59,6 +71,14 @@ export default async function PengaturanPage() {
             <FormKataSandi />
           </Card>
         </div>
+
+        <PicRumahSakit data={picRumahSakit} />
+
+        <TandaTanganLaporanTkp
+          daftarTandaTangan={daftarTandaTangan}
+          pemilikKepalaCabang={PEMILIK_KEPALA_CABANG}
+          pemilikPetugasSurvei={PEMILIK_PETUGAS_SURVEI}
+        />
 
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
           Aplikasi tidak pernah menyentuh DASI atau JRCare secara langsung. Data

@@ -1,6 +1,8 @@
-import { and, asc, count, desc, eq, gte, ilike, isNull, lte, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror } from "../db/schema";
+import { ambilPetaJumlahGLPerKorban, jumlahGLKorban } from "./duplikat-korban";
+import { ambilNamaPicPengajuan, ambilNamaPicTaskForce, ambilPetaPicRumahSakit, ambilRumahSakitUntukPic, cariPic } from "./pic";
 import { enkripsiIdJaminan } from "./token-url";
 import { PILIHAN_UKURAN_HALAMAN } from "./ukuran-halaman";
 
@@ -16,6 +18,9 @@ export interface FilterDaftarGL {
   loket?: string;
   tahapan?: string;
   statusPembayaran?: string;
+  glStatus?: string;
+  picTaskForce?: string;
+  picPengajuan?: string;
   dari?: string;
   sampai?: string;
   cari?: string;
@@ -30,6 +35,11 @@ export interface BarisDaftarGL {
   namaKorban: string;
   loket: string;
   namaRumahSakit: string | null;
+  /** Dipetakan dari nama_rumah_sakit lewat lib/gl/pic.ts, null kalau belum diatur di Pengaturan */
+  picTaskForce: string | null;
+  picPengajuan: string | null;
+  /** Jumlah baris GL aktif dengan Nama Korban persis sama (lib/gl/duplikat-korban.ts), termasuk baris ini sendiri */
+  jumlahGLKorban: number;
   tglGl: string;
   tipeKlaim: string;
   tipeCidera: string;
@@ -56,7 +66,7 @@ export interface HasilDaftarGL {
 
 export async function ambilOpsiFilter() {
   const kondisiAktif = isNull(glMirror.dihapusPada);
-  const [loket, tahapan, statusPembayaran] = await Promise.all([
+  const [loket, tahapan, statusPembayaran, glStatus, picTaskForce, picPengajuan] = await Promise.all([
     db
       .selectDistinct({ nilai: glMirror.loket })
       .from(glMirror)
@@ -72,20 +82,31 @@ export async function ambilOpsiFilter() {
       .from(glMirror)
       .where(kondisiAktif)
       .orderBy(asc(glMirror.statusPembayaran)),
+    db
+      .selectDistinct({ nilai: glMirror.glStatus })
+      .from(glMirror)
+      .where(kondisiAktif)
+      .orderBy(asc(glMirror.glStatus)),
+    ambilNamaPicTaskForce(),
+    ambilNamaPicPengajuan(),
   ]);
 
   return {
     loket: loket.map((r) => r.nilai),
     tahapan: tahapan.map((r) => r.nilai),
     statusPembayaran: statusPembayaran.map((r) => r.nilai),
+    glStatus: glStatus.map((r) => r.nilai),
+    picTaskForce,
+    picPengajuan,
   };
 }
 
-export function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
+export async function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
   const kondisi = [isNull(glMirror.dihapusPada)];
   if (filter.loket) kondisi.push(eq(glMirror.loket, filter.loket));
   if (filter.tahapan) kondisi.push(eq(glMirror.tahapan, filter.tahapan));
   if (filter.statusPembayaran) kondisi.push(eq(glMirror.statusPembayaran, filter.statusPembayaran));
+  if (filter.glStatus) kondisi.push(eq(glMirror.glStatus, filter.glStatus));
   if (filter.dari) kondisi.push(gte(glMirror.tglGl, filter.dari));
   if (filter.sampai) kondisi.push(lte(glMirror.tglGl, filter.sampai));
   if (filter.cari) {
@@ -93,15 +114,28 @@ export function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
     const kondisiCari = or(ilike(glMirror.namaKorban, pola), ilike(glMirror.idJaminan, pola));
     if (kondisiCari) kondisi.push(kondisiCari);
   }
+  if (filter.picTaskForce || filter.picPengajuan) {
+    const rumahSakit = await ambilRumahSakitUntukPic({
+      picTaskForce: filter.picTaskForce,
+      picPengajuan: filter.picPengajuan,
+    });
+    // Array kosong berarti tidak ada rumah sakit yang cocok dengan PIC ini
+    kondisi.push(rumahSakit.length > 0 ? inArray(glMirror.namaRumahSakit, rumahSakit) : sql`false`);
+  }
   return and(...kondisi);
 }
 
 export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftarGL> {
   const halaman = Math.max(1, Math.floor(filter.halaman ?? 1));
   const ukuran = sanitisasiUkuran(filter.ukuran);
-  const kondisi = bangunKondisiDaftarGL(filter);
+  const kondisi = await bangunKondisiDaftarGL(filter);
 
-  const [{ nilai: total }] = await db.select({ nilai: count() }).from(glMirror).where(kondisi);
+  const [totalRows, petaPic, petaJumlahKorban] = await Promise.all([
+    db.select({ nilai: count() }).from(glMirror).where(kondisi),
+    ambilPetaPicRumahSakit(),
+    ambilPetaJumlahGLPerKorban(),
+  ]);
+  const total = totalRows[0].nilai;
 
   const baris = await db
     .select({
@@ -131,7 +165,12 @@ export async function ambilDaftarGL(filter: FilterDaftarGL): Promise<HasilDaftar
     .offset((halaman - 1) * ukuran);
 
   return {
-    baris: baris.map((b) => ({ ...b, tokenUrl: enkripsiIdJaminan(b.idJaminan) })),
+    baris: baris.map((b) => ({
+      ...b,
+      tokenUrl: enkripsiIdJaminan(b.idJaminan),
+      ...cariPic(petaPic, b.namaRumahSakit),
+      jumlahGLKorban: jumlahGLKorban(petaJumlahKorban, b.namaKorban),
+    })),
     total,
     halaman,
     ukuran,

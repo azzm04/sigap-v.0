@@ -51,12 +51,13 @@ export async function GET() {
     { width: 14 },  // P  Umur (hari)
     { width: 20 },  // Q  Status Verifikasi
     { width: 20 },  // R  Status Tinjauan
+    { width: 22 },  // S  Status Dokumen
   ];
 
   // ── 1. JUDUL (baris 1) ──
   const rowTitle = ws.addRow([]);
   rowTitle.height = 28;
-  ws.mergeCells("A1:R1");
+  ws.mergeCells("A1:S1");
   rowTitle.getCell(1).value = "LAPORAN PERINGATAN GL";
   rowTitle.getCell(1).font = FONT_TITLE;
   rowTitle.getCell(1).alignment = { horizontal: "center", vertical: "middle" };
@@ -111,6 +112,7 @@ export async function GET() {
     "Umur (hari)",
     "Status Verifikasi",
     "Status Tinjauan",
+    "Status Dokumen",
   ];
 
   const headerRow = ws.addRow(kolomHeader);
@@ -147,6 +149,7 @@ export async function GET() {
       b.umurHari,
       b.statusVerifikasi ?? "-",
       b.sudahDitinjau ? "Sudah Ditinjau" : "Belum Ditinjau",
+      b.statusDokumen,
     ]);
 
     dataRow.eachCell((cell) => {

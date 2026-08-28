@@ -5,8 +5,7 @@ import { tanggalHariIniWIB } from "./format";
 
 export const KUNCI_AMBANG_HARI = "ambang_hari_peringatan";
 
-// Tidak ada nilai bawaan di sini (CLAUDE.md aturan keras #2: ambang hari
-// tidak boleh di-hardcode di logika). Baris pengaturan wajib sudah ada di
+// Tidak ada nilai bawaan di sini. Baris pengaturan wajib sudah ada di
 // database — diisi lewat scripts/seed.ts saat penyiapan awal, atau lewat
 // setAmbangHari() dari halaman pengaturan nanti.
 export async function ambilAmbangHari(): Promise<number> {

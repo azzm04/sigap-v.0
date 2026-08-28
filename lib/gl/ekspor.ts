@@ -17,10 +17,9 @@ export interface BarisEkspor {
   nilaiDisetujui: number;
 }
 
-// Ekspor Excel "hasil olahan": baris yang sama persis dengan yang tampil di
-// tabel daftar GL untuk filter yang aktif, tanpa batas halaman.
+// Ekspor Excel "hasil olahan": baris yang sama persis dengan yang tampil di tabel daftar GL untuk filter yang aktif, tanpa batas halaman.
 export async function ambilDataUntukEkspor(filter: FilterDaftarGL): Promise<BarisEkspor[]> {
-  const kondisi = bangunKondisiDaftarGL(filter);
+  const kondisi = await bangunKondisiDaftarGL(filter);
 
   const baris = await db
     .select({

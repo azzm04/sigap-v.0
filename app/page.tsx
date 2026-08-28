@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { FilterGL, type NilaiFilterGL } from "@/components/gl/filter-gl";
 import { GrafikSebaranTahapan, GrafikStatusPembayaran, GrafikTrenBulanan } from "@/components/gl/grafik";
+import { KartuKinerjaPengajuanPusat } from "@/components/gl/kartu-kinerja-pusat";
 import { KartuRingkasanGL } from "@/components/gl/kartu-ringkasan";
 import { LompatHalaman } from "@/components/gl/lompat-halaman";
 import { TabelGL } from "@/components/gl/tabel-gl";
@@ -10,6 +11,7 @@ import { hitungUmurHari } from "@/lib/format";
 import { ambilDaftarGL, ambilOpsiFilter } from "@/lib/gl/queries";
 import {
   ambilKartuRingkasan,
+  ambilKinerjaPengajuanPusat,
   ambilSebaranStatusPembayaran,
   ambilSebaranTahapan,
   ambilTrenBulanan,
@@ -32,13 +34,16 @@ export default async function Home({
 }) {
   const sp = await searchParams;
 
-  const [opsiFilter, hasil, ringkasan, sebaranTahapan, sebaranStatusPembayaran, trenBulanan, ambangHari] =
+  const [opsiFilter, hasil, ringkasan, kinerjaPusat, sebaranTahapan, sebaranStatusPembayaran, trenBulanan, ambangHari] =
     await Promise.all([
       ambilOpsiFilter(),
       ambilDaftarGL({
         loket: sp.loket || undefined,
         tahapan: sp.tahapan || undefined,
         statusPembayaran: sp.status_pembayaran || undefined,
+        glStatus: sp.gl_status || undefined,
+        picTaskForce: sp.pic_task_force || undefined,
+        picPengajuan: sp.pic_pengajuan || undefined,
         dari: sp.dari || undefined,
         sampai: sp.sampai || undefined,
         cari: sp.cari || undefined,
@@ -46,6 +51,11 @@ export default async function Home({
         ukuran: sp.ukuran ? Number(sp.ukuran) : undefined,
       }),
       ambilKartuRingkasan(),
+      ambilKinerjaPengajuanPusat({
+        picPengajuan: sp.pic_pengajuan || undefined,
+        dari: sp.dari || undefined,
+        sampai: sp.sampai || undefined,
+      }),
       ambilSebaranTahapan(),
       ambilSebaranStatusPembayaran(),
       ambilTrenBulanan(),
@@ -58,6 +68,9 @@ export default async function Home({
     loket: sp.loket,
     tahapan: sp.tahapan,
     status_pembayaran: sp.status_pembayaran,
+    gl_status: sp.gl_status,
+    pic_task_force: sp.pic_task_force,
+    pic_pengajuan: sp.pic_pengajuan,
     dari: sp.dari,
     sampai: sp.sampai,
   };
@@ -76,6 +89,10 @@ export default async function Home({
             <GrafikTrenBulanan data={trenBulanan} />
           </div>
         </div>
+
+        <hr className="border-t border-border/60" />
+
+        <KartuKinerjaPengajuanPusat data={kinerjaPusat} />
 
         <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
           <FilterGL nilai={nilaiFilterGL} opsi={opsiFilter} ukuran={hasil.ukuran} />

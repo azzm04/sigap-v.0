@@ -8,9 +8,6 @@ export interface BatchTerhapus {
   jumlahBaris: number;
 }
 
-// Dikelompokkan per nilai dihapusPada yang identik -- satu klik "Hapus Semua
-// Data" menulis timestamp yang sama untuk semua baris dalam satu UPDATE,
-// jadi cukup untuk mengenali batch tanpa tabel terpisah.
 export async function ambilBatchTerhapus(): Promise<BatchTerhapus[]> {
   const baris = await db
     .select({ dihapusPada: glMirror.dihapusPada, jumlahBaris: count() })
@@ -25,8 +22,7 @@ export async function ambilBatchTerhapus(): Promise<BatchTerhapus[]> {
 }
 
 // Total baris yang masih aktif (belum di-soft-delete) -- ditampilkan di
-// Zona Berbahaya supaya petugas tahu persis berapa baris yang akan
-// disembunyikan sebelum menekan "Hapus Semua Data".
+// Zona Berbahaya supaya petugas tahu persis berapa baris yang akan disembunyikan sebelum menekan "Hapus Semua Data".
 export async function ambilTotalBarisAktif(): Promise<number> {
   const [{ nilai }] = await db
     .select({ nilai: count() })

@@ -1,0 +1,107 @@
+import { simpanTandaTanganAction } from "@/app/pengaturan/actions";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import type { BarisTandaTangan } from "@/lib/laporan-tkp/tanda-tangan";
+
+function BarisFormTandaTangan({
+  pemilik,
+  label,
+  data,
+  placeholderNama,
+}: {
+  pemilik: string;
+  label: string;
+  data: BarisTandaTangan | undefined;
+  placeholderNama: string;
+}) {
+  const idBase = pemilik.replace(/[^a-zA-Z0-9]/g, "-");
+
+  return (
+    <form
+      action={simpanTandaTanganAction}
+      className="flex flex-col gap-3 border-t border-border py-4 first:border-t-0 first:pt-0 sm:flex-row sm:items-end"
+    >
+      <input type="hidden" name="pemilik" value={pemilik} />
+
+      <div className="flex w-full flex-col gap-1.5 sm:w-32">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        {data?.gambar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={data.gambar}
+            alt={`Tanda tangan ${label}`}
+            className="h-12 w-fit max-w-32 rounded border border-border bg-white object-contain p-1"
+          />
+        ) : (
+          <span className="text-xs text-muted-foreground">Belum diunggah</span>
+        )}
+      </div>
+
+      <div className="flex w-full flex-col gap-1.5 sm:w-40">
+        <Label htmlFor={`${idBase}-gambar`}>Gambar (PNG/JPEG)</Label>
+        <input
+          id={`${idBase}-gambar`}
+          name="gambar"
+          type="file"
+          accept="image/png,image/jpeg"
+          className="text-xs text-foreground file:mr-2 file:h-7 file:rounded-md file:border-0 file:bg-muted file:px-2.5 file:text-xs file:font-medium file:text-foreground"
+        />
+      </div>
+
+      <div className="flex w-full flex-col gap-1.5 sm:w-40">
+        <Label htmlFor={`${idBase}-nama`}>Nama tampil</Label>
+        <Input
+          id={`${idBase}-nama`}
+          name="namaTampil"
+          defaultValue={data?.namaTampil ?? ""}
+          placeholder={placeholderNama}
+        />
+      </div>
+
+      <div className="flex w-full flex-col gap-1.5 sm:w-40">
+        <Label htmlFor={`${idBase}-jabatan`}>Jabatan</Label>
+        <Input id={`${idBase}-jabatan`} name="jabatan" defaultValue={data?.jabatan ?? ""} />
+      </div>
+
+      <button
+        type="submit"
+        className="h-8 w-fit shrink-0 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
+      >
+        Simpan
+      </button>
+    </form>
+  );
+}
+
+export function TandaTanganLaporanTkp({
+  daftarTandaTangan,
+  pemilikKepalaCabang,
+  pemilikPetugasSurvei,
+}: {
+  daftarTandaTangan: BarisTandaTangan[];
+  pemilikKepalaCabang: string;
+  pemilikPetugasSurvei: string;
+}) {
+  const peta = new Map(daftarTandaTangan.map((t) => [t.pemilik, t]));
+
+  return (
+    <Card
+      title="Tanda Tangan Laporan Survei TKP"
+      description="Gambar tanda tangan yang ditempel otomatis ke PDF Laporan Survei TKP (menu ini di halaman detail GL). Keduanya TETAP untuk semua laporan, tidak tergantung PIC mana pun yang menangani GL-nya -- sesuai template asli. Belum diunggah = area tanda tangan kosong di PDF, laporan tetap bisa dibuat."
+    >
+      <BarisFormTandaTangan
+        pemilik={pemilikKepalaCabang}
+        label="Kepala Cabang Semarang"
+        data={peta.get(pemilikKepalaCabang)}
+        placeholderNama="Nama Kepala Cabang"
+      />
+      <BarisFormTandaTangan
+        pemilik={pemilikPetugasSurvei}
+        label="Petugas Survei"
+        data={peta.get(pemilikPetugasSurvei)}
+        placeholderNama="Nama Petugas Survei"
+      />
+    </Card>
+  );
+}

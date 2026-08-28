@@ -1,9 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatTanggal } from "@/lib/format";
+
+// Samakan dengan class w-72 pada panel kalender di bawah.
+const LEBAR_PANEL = 288;
+
+// Panel dirender lewat portal ke document.body (lihat di bawah) supaya
+// tidak ikut terpotong oleh ancestor "overflow-hidden" -- kartu filter di
+// dashboard dan halaman Peringatan sengaja overflow-hidden agar sudut
+// tabel yang flush tetap mengikuti sudut membulat kartu, tapi itu ikut
+// memotong dropdown absolute biasa. Posisi dihitung manual dari koordinat
+// tombol pemicu, bukan lewat CSS "absolute" relatif terhadap wrapper.
+function hitungPosisiPanel(trigger: HTMLElement): { top: number; left: number } {
+  const rect = trigger.getBoundingClientRect();
+  const kiriPreferensi = rect.right - LEBAR_PANEL;
+  const kiri = Math.min(Math.max(kiriPreferensi, 8), window.innerWidth - LEBAR_PANEL - 8);
+  return { top: rect.bottom + window.scrollY + 8, left: kiri + window.scrollX };
+}
 
 const NAMA_BULAN = [
   "Januari",
@@ -62,17 +79,34 @@ export function RentangTanggal({ dari, sampai, onTerapkan, className }: RentangT
   const [awal, setAwal] = useState<Date | null>(dari ? dariIso(dari) : null);
   const [akhir, setAkhir] = useState<Date | null>(sampai ? dariIso(sampai) : null);
   const [hover, setHover] = useState<Date | null>(null);
+  const [posisi, setPosisi] = useState<{ top: number; left: number } | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function tutupKalauDiLuar(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setTerbuka(false);
-      }
+      const target = e.target as Node;
+      if (wrapperRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setTerbuka(false);
     }
     document.addEventListener("mousedown", tutupKalauDiLuar);
     return () => document.removeEventListener("mousedown", tutupKalauDiLuar);
   }, []);
+
+  useEffect(() => {
+    if (!terbuka) return;
+    function reposisikan() {
+      if (triggerRef.current) setPosisi(hitungPosisiPanel(triggerRef.current));
+    }
+    window.addEventListener("resize", reposisikan);
+    window.addEventListener("scroll", reposisikan, true);
+    return () => {
+      window.removeEventListener("resize", reposisikan);
+      window.removeEventListener("scroll", reposisikan, true);
+    };
+  }, [terbuka]);
 
   function buka() {
     const awalBaru = dari ? dariIso(dari) : null;
@@ -81,6 +115,7 @@ export function RentangTanggal({ dari, sampai, onTerapkan, className }: RentangT
     setAkhir(akhirBaru);
     setHover(null);
     setBulanTampil(awalBaru ?? akhirBaru ?? new Date());
+    if (triggerRef.current) setPosisi(hitungPosisiPanel(triggerRef.current));
     setTerbuka(true);
   }
 
@@ -139,6 +174,7 @@ export function RentangTanggal({ dari, sampai, onTerapkan, className }: RentangT
     <div className={cn("relative", className)} ref={wrapperRef}>
       <button
         type="button"
+        ref={triggerRef}
         onClick={() => (terbuka ? setTerbuka(false) : buka())}
         aria-label="Pilih rentang Tgl GL"
         className="flex h-8 w-full items-center gap-1.5 rounded-lg border border-input bg-transparent px-2.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -160,8 +196,14 @@ export function RentangTanggal({ dari, sampai, onTerapkan, className }: RentangT
         <CalendarIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </button>
 
-      {terbuka && (
-        <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-border bg-popover shadow-lg">
+      {terbuka &&
+        posisi &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={{ top: posisi.top, left: posisi.left }}
+            className="absolute z-50 w-72 overflow-hidden rounded-xl border border-border bg-popover shadow-lg"
+          >
           <div className="bg-primary px-4 py-3 text-primary-foreground">
             <div className="text-xs opacity-80">
               {NAMA_BULAN[bulanTampil.getMonth()]} {bulanTampil.getFullYear()}
@@ -257,8 +299,9 @@ export function RentangTanggal({ dari, sampai, onTerapkan, className }: RentangT
               );
             })}
           </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
