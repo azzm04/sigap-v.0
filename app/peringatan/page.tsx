@@ -1,63 +1,16 @@
-import Link from "next/link";
-import { Download, Eye, TriangleAlert } from "lucide-react";
+import { Download, TriangleAlert } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
-import { FilterCatatan, type NilaiFilterCatatan } from "@/components/gl/filter-catatan";
-import { FilterPeringatan, type NilaiFilterPeringatan } from "@/components/gl/filter-peringatan";
-import { FilterTaskForce, type NilaiFilterTaskForce } from "@/components/gl/filter-task-force";
-import { LompatHalaman } from "@/components/gl/lompat-halaman";
+import { type NilaiFilterCatatan } from "@/components/gl/filter-catatan";
+import { type NilaiFilterPeringatan } from "@/components/gl/filter-peringatan";
+import { type NilaiFilterTaskForce } from "@/components/gl/filter-task-force";
+import { PeringatanTabCatatan } from "@/components/gl/peringatan-tab-catatan";
+import { PeringatanTabGL } from "@/components/gl/peringatan-tab-gl";
+import { PeringatanTabTaskForce } from "@/components/gl/peringatan-tab-task-force";
 import { TabPeringatan, type TabPeringatanKey } from "@/components/gl/tab-peringatan";
-import { PilihanUkuranHalaman } from "@/components/gl/ukuran-halaman";
-import { Badge } from "@/components/ui/badge";
-import { Pagination } from "@/components/ui/pagination";
-import { formatRupiah, formatTanggal, formatWaktu } from "@/lib/format";
 import { ambilPapanPeringatan } from "@/lib/gl/peringatan";
 import { ambilPeringatanTaskForce } from "@/lib/gl/peringatan-task-force";
 import { ambilOpsiFilter } from "@/lib/gl/queries";
 import { ambilSemuaTinjauan } from "@/lib/gl/semua-tinjauan";
-
-function formatTanggalOpsional(iso: string | null): string {
-  return iso ? formatTanggal(iso) : "-";
-}
-
-function buatUrlHalaman(nilaiFilter: NilaiFilterPeringatan, ukuran: number, halaman: number): string {
-  const params = new URLSearchParams();
-  for (const [kunci, nilai] of Object.entries(nilaiFilter)) {
-    if (nilai) params.set(kunci, nilai);
-  }
-  params.set("ukuran", String(ukuran));
-  params.set("halaman", String(halaman));
-  return `/peringatan?${params.toString()}`;
-}
-
-function buatUrlHalamanCatatan(
-  nilaiFilter: NilaiFilterCatatan,
-  ukuran: number,
-  halaman: number,
-): string {
-  const params = new URLSearchParams();
-  params.set("tab", "catatan");
-  for (const [kunci, nilai] of Object.entries(nilaiFilter)) {
-    if (nilai) params.set(kunci, nilai);
-  }
-  params.set("ukuran_catatan", String(ukuran));
-  params.set("halaman_catatan", String(halaman));
-  return `/peringatan?${params.toString()}`;
-}
-
-function buatUrlHalamanTaskForce(
-  nilaiFilter: NilaiFilterTaskForce,
-  ukuran: number,
-  halaman: number,
-): string {
-  const params = new URLSearchParams();
-  params.set("tab", "task-force");
-  for (const [kunci, nilai] of Object.entries(nilaiFilter)) {
-    if (nilai) params.set(kunci, nilai);
-  }
-  params.set("ukuran_task_force", String(ukuran));
-  params.set("halaman_task_force", String(halaman));
-  return `/peringatan?${params.toString()}`;
-}
 
 export default async function PapanPeringatanPage({
   searchParams,
@@ -88,6 +41,8 @@ export default async function PapanPeringatanPage({
 
   const statusTinjauan =
     sp.status_tinjauan === "sudah" || sp.status_tinjauan === "belum" ? sp.status_tinjauan : undefined;
+  const statusDokumen =
+    sp.status_dokumen === "lengkap" || sp.status_dokumen === "belum_lengkap" ? sp.status_dokumen : undefined;
 
   // Selalu ambil data GL (untuk counter di banner)
   const [opsiFilter, hasil] = await Promise.all([
@@ -99,6 +54,7 @@ export default async function PapanPeringatanPage({
       dari: sp.dari || undefined,
       sampai: sp.sampai || undefined,
       statusTinjauan,
+      statusDokumen,
       picPengajuan: sp.pic_pengajuan || undefined,
     }),
   ]);
@@ -107,6 +63,7 @@ export default async function PapanPeringatanPage({
   const nilaiFilterPeringatan: NilaiFilterPeringatan = {
     cari: sp.cari,
     status_tinjauan: sp.status_tinjauan,
+    status_dokumen: sp.status_dokumen,
     pic_pengajuan: sp.pic_pengajuan,
     dari: sp.dari,
     sampai: sp.sampai,
@@ -196,496 +153,28 @@ export default async function PapanPeringatanPage({
             tabAktif={tabAktif}
             slotTaskForce={
               hasilTaskForce && (
-                <>
-                  <FilterTaskForce
-                    nilai={nilaiFilterTaskForce}
-                    opsi={{ picTaskForce: opsiFilter.picTaskForce }}
-                    ukuran={hasilTaskForce.ukuran}
-                  />
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-surface-table-header">
-                        <tr>
-                          <th className="px-3 py-2 text-left font-semibold text-foreground">
-                            Nama Korban
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                            Nomor ID Jaminan
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold text-foreground">
-                            Nama Rumah Sakit
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                            PIC Task Force
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                            Loket
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                            Tahapan
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                            Tanggal Masuk
-                          </th>
-                          <th className="px-3 py-2 text-center font-semibold whitespace-nowrap text-foreground">
-                            Umur (hari)
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold text-foreground">
-                            Data Belum Lengkap
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                            Status Tinjauan
-                          </th>
-                          <th className="px-3 py-2 text-left font-semibold text-foreground">Aksi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {hasilTaskForce.baris.length === 0 && (
-                          <tr>
-                            <td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">
-                              Tidak ada GL yang cocok dengan filter ini.
-                            </td>
-                          </tr>
-                        )}
-                        {hasilTaskForce.baris.map((b) => (
-                          <tr
-                            key={b.idJaminan}
-                            className="border-t border-border border-l-[3px] border-l-status-late align-top transition-colors hover:bg-muted/40"
-                          >
-                            <td className="px-3 py-2.5 whitespace-nowrap">{b.namaKorban}</td>
-                            <td className="px-3 py-2.5 whitespace-nowrap">
-                              <Link
-                                href={`/gl/${encodeURIComponent(b.tokenUrl)}?dari=peringatan`}
-                                className="font-mono text-primary underline-offset-2 hover:underline"
-                              >
-                                {b.idJaminan}
-                              </Link>
-                            </td>
-                            <td className="px-3 py-2.5 whitespace-nowrap">
-                              {b.namaRumahSakit ?? "-"}
-                            </td>
-                            <td className="px-3 py-2.5 whitespace-nowrap">
-                              {b.picTaskForce ?? "-"}
-                            </td>
-                            <td className="px-3 py-2.5 whitespace-nowrap">{b.loket}</td>
-                            <td className="px-3 py-2.5 whitespace-nowrap">
-                              <Badge tone="info">{b.tahapan}</Badge>
-                            </td>
-                            <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                              {formatTanggalOpsional(b.tanggalMasuk)}
-                            </td>
-                            <td className="px-3 py-2.5 text-center whitespace-nowrap">
-                              <div className="flex flex-col items-center gap-1">
-                                <span className="font-mono font-bold text-status-late">
-                                  {b.umurSejakMasuk}
-                                </span>
-                                {b.sumberUmurTaskForce !== "tanggalMasuk" && (
-                                  <Badge
-                                    tone="neutral"
-                                    title={
-                                      b.sumberUmurTaskForce === "tglKejadian"
-                                        ? "Tanggal Masuk belum diisi PIC Task Force, dihitung dari Tgl LAKA (DASI) sebagai estimasi."
-                                        : "Tanggal Masuk dan Tgl LAKA (DASI) belum diisi, dihitung dari Tgl GL sebagai estimasi."
-                                    }
-                                  >
-                                    {b.sumberUmurTaskForce === "tglKejadian"
-                                      ? "berdasarkan Tgl LAKA"
-                                      : "berdasarkan Tgl GL"}
-                                  </Badge>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <div className="flex flex-wrap gap-1.5">
-                                {!b.tanggalPulangPasien && (
-                                  <Badge tone="warn">Tanggal Pulang Pasien</Badge>
-                                )}
-                                {!b.lokasi && <Badge tone="warn">Lokasi LAKA</Badge>}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2.5 whitespace-nowrap">
-                              <Badge tone={b.sudahDitinjau ? "ok" : "neutral"}>
-                                {b.sudahDitinjau ? "Sudah Ditinjau" : "Belum Ditinjau"}
-                              </Badge>
-                            </td>
-                            <td className="px-3 py-2.5">
-                              <Link
-                                href={`/gl/${encodeURIComponent(b.tokenUrl)}?dari=peringatan`}
-                                className="flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted"
-                              >
-                                <Eye className="size-3.5" />
-                                Detail GL
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                    <PilihanUkuranHalaman
-                      ukuran={hasilTaskForce.ukuran}
-                      total={hasilTaskForce.total}
-                      basePath="/peringatan"
-                      filterAktif={{ tab: "task-force", ...nilaiFilterTaskForce }}
-                      labelSatuan="GL menunggu kunjungan"
-                    />
-
-                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                      <LompatHalaman
-                        halamanAktif={hasilTaskForce.halaman}
-                        totalHalaman={hasilTaskForce.totalHalaman}
-                        ukuran={hasilTaskForce.ukuran}
-                        basePath="/peringatan"
-                        filterAktif={{ tab: "task-force", ...nilaiFilterTaskForce }}
-                      />
-                      <div className="flex justify-center sm:contents">
-                        <Pagination
-                          halamanAktif={hasilTaskForce.halaman}
-                          totalHalaman={hasilTaskForce.totalHalaman}
-                          buatUrl={(h) =>
-                            buatUrlHalamanTaskForce(nilaiFilterTaskForce, hasilTaskForce.ukuran, h)
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </>
+                <PeringatanTabTaskForce
+                  hasil={hasilTaskForce}
+                  nilaiFilter={nilaiFilterTaskForce}
+                  opsiPicTaskForce={opsiFilter.picTaskForce}
+                />
               )
             }
             slotCatatan={
-            hasilCatatan && (
-              <>
-                <FilterCatatan nilai={nilaiFilterCatatan} ukuran={hasilCatatan.ukuran} />
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-surface-table-header">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                          Petugas
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                          Waktu
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                          Nama Korban
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                          Nomor ID Jaminan
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                          Label / Status
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold text-foreground">
-                          Catatan
-                        </th>
-                        <th className="px-3 py-2 text-left font-semibold text-foreground">
-                          Aksi
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {hasilCatatan.baris.length === 0 && (
-                        <tr>
-                          <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
-                            Belum ada catatan tinjauan yang sesuai filter.
-                          </td>
-                        </tr>
-                      )}
-                      {hasilCatatan.baris.map((c) => (
-                        <tr
-                          key={c.id}
-                          className="border-t border-border align-top transition-colors hover:bg-muted/40"
-                        >
-                          <td className="px-3 py-2.5 font-medium whitespace-nowrap text-foreground">
-                            {c.namaPengguna}
-                          </td>
-                          <td className="px-3 py-2.5 font-mono whitespace-nowrap text-muted-foreground">
-                            {formatWaktu(c.ditinjauPada)}
-                          </td>
-                          <td className="px-3 py-2.5 whitespace-nowrap">
-                            {c.namaKorban}
-                          </td>
-                          <td className="px-3 py-2.5 whitespace-nowrap">
-                            <Link
-                              href={`/gl/${encodeURIComponent(c.tokenUrl)}?dari=peringatan`}
-                              className="font-mono text-primary underline-offset-2 hover:underline"
-                            >
-                              {c.idJaminan}
-                            </Link>
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex flex-wrap gap-1.5">
-                              {!c.diabaikan && !c.perluTindakLanjut && (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                              {c.diabaikan && (
-                                <Badge tone="danger">Diabaikan</Badge>
-                              )}
-                              {c.perluTindakLanjut && (
-                                <Badge tone="info">Perlu tindak lanjut</Badge>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 min-w-[320px] max-w-[560px] whitespace-normal break-words leading-relaxed text-foreground">
-                            {c.catatan}
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <Link
-                              href={`/gl/${encodeURIComponent(c.tokenUrl)}?dari=peringatan`}
-                              className="flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted"
-                            >
-                              <Eye className="size-3.5" />
-                              Detail GL
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                  <PilihanUkuranHalaman
-                    ukuran={hasilCatatan.ukuran}
-                    total={hasilCatatan.total}
-                    basePath="/peringatan"
-                    filterAktif={{ tab: "catatan", ...nilaiFilterCatatan }}
-                    labelSatuan="catatan ditemukan"
-                  />
-
-                  <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                    <LompatHalaman
-                      halamanAktif={hasilCatatan.halaman}
-                      totalHalaman={hasilCatatan.totalHalaman}
-                      ukuran={hasilCatatan.ukuran}
-                      basePath="/peringatan"
-                      filterAktif={{ tab: "catatan", ...nilaiFilterCatatan }}
-                    />
-                    <div className="flex justify-center sm:contents">
-                      <Pagination
-                        halamanAktif={hasilCatatan.halaman}
-                        totalHalaman={hasilCatatan.totalHalaman}
-                        buatUrl={(h) => buatUrlHalamanCatatan(nilaiFilterCatatan, hasilCatatan.ukuran, h)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            )
-          }>
-            {/* === Tab Daftar GL (konten existing) === */}
-            <FilterPeringatan
-              nilai={nilaiFilterPeringatan}
-              opsi={{ picPengajuan: opsiFilter.picPengajuan }}
+              hasilCatatan && (
+                <PeringatanTabCatatan hasil={hasilCatatan} nilaiFilter={nilaiFilterCatatan} />
+              )
+            }
+          >
+            <PeringatanTabGL
+              baris={baris}
+              total={total}
               ukuran={ukuran}
+              halaman={halaman}
+              totalHalaman={totalHalaman}
+              nilaiFilter={nilaiFilterPeringatan}
+              opsiPicPengajuan={opsiFilter.picPengajuan}
             />
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-surface-table-header">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Tipe Klaim
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Tipe Cidera
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-foreground">
-                      Nama Rumah Sakit
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      PIC Pengajuan
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Loket
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Nomor ID Jaminan
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-foreground">Nama Korban</th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Nomor Surat Jaminan
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Tgl GL
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Tgl LAKA (DASI)
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-foreground">Lokasi (DASI)</th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      GL Status
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-foreground">Tahapan</th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Status Pembayaran
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Jumlah Pembayaran
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Tgl Pembayaran
-                    </th>
-                    <th className="px-3 py-2 text-center font-semibold whitespace-nowrap text-foreground">
-                      Umur (hari)
-                    </th>
-                    <th className="px-3 py-2 text-center font-semibold whitespace-nowrap text-foreground">
-                      Umur Pengajuan
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                      Status Dokumen
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-foreground">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {baris.length === 0 && (
-                    <tr>
-                      <td colSpan={21} className="px-3 py-8 text-center text-muted-foreground">
-                        Tidak ada GL yang cocok dengan filter ini.
-                      </td>
-                    </tr>
-                  )}
-                  {baris.map((b) => (
-                    <tr
-                      key={b.idJaminan}
-                      className="border-t border-border border-l-[3px] border-l-status-late align-top transition-colors hover:bg-muted/40"
-                    >
-                      <td className="px-3 py-2.5 whitespace-nowrap">{b.tipeKlaim}</td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">{b.tipeCidera}</td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">{b.namaRumahSakit ?? "-"}</td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">{b.picPengajuan ?? "-"}</td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">{b.loket}</td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/gl/${encodeURIComponent(b.tokenUrl)}?dari=peringatan`}
-                            className="font-mono text-primary underline-offset-2 hover:underline"
-                          >
-                            {b.idJaminan}
-                          </Link>
-                          {b.statusVerifikasi && (
-                            <Badge tone={b.statusVerifikasi === "Verified" ? "ok" : "neutral"}>
-                              {b.statusVerifikasi}
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <span>{b.namaKorban}</span>
-                          {b.jumlahGLKorban > 1 && (
-                            <Link
-                              href={`/peringatan?cari=${encodeURIComponent(b.namaKorban)}`}
-                              title={`Ada ${b.jumlahGLKorban} baris GL dengan Nama Korban persis sama -- kemungkinan korban yang sama, GL berbeda (mis. rawat jalan lanjutan). Klik untuk lihat semua.`}
-                            >
-                              <Badge tone="info" className="whitespace-nowrap">
-                                {b.jumlahGLKorban} GL
-                              </Badge>
-                            </Link>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                        {b.nomorSuratJaminan ?? "-"}
-                      </td>
-                      <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                        {formatTanggal(b.tglGl)}
-                      </td>
-                      <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                        {formatTanggalOpsional(b.tglKejadian)}
-                      </td>
-                      <td className="px-3 py-2.5 min-w-[350px] max-w-[700px]  whitespace-normal break-words">
-                        {b.lokasi ?? "-"}
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
-                        <Badge tone={b.glStatus === "Active" ? "ok" : "danger"}>{b.glStatus}</Badge>
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
-                        <Badge tone="info">{b.tahapan}</Badge>
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
-                        <Badge tone="warn">{b.statusPembayaran}</Badge>
-                      </td>
-                      <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                        {formatRupiah(b.jumlahPembayaran)}
-                      </td>
-                      <td className="px-3 py-2.5 font-mono whitespace-nowrap">
-                        {formatTanggalOpsional(b.tglPembayaran)}
-                      </td>
-                      <td className="px-3 py-2.5 text-center font-mono font-bold whitespace-nowrap text-status-late">
-                        {b.umurHari}
-                      </td>
-                      <td className="px-3 py-2.5 text-center whitespace-nowrap">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="font-mono font-bold text-status-late">{b.umurPengajuan}</span>
-                          {b.pengajuanBerdasarkanTglGl && (
-                            <Badge
-                              tone="neutral"
-                              title="Tanggal Pulang Pasien belum diisi PIC Task Force, dihitung dari Tgl GL sebagai estimasi."
-                            >
-                              berdasarkan Tgl GL
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
-                        <Badge
-                          tone={b.statusDokumen === "Siap Diajukan ke Pusat" ? "ok" : "warn"}
-                          title="Berdasarkan ada/tidaknya Laporan Survei TKP dan KSKK yang sudah dibuat/diunggah untuk GL ini."
-                        >
-                          {b.statusDokumen}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex flex-col items-start gap-1.5">
-                          <Badge tone={b.sudahDitinjau ? "ok" : "neutral"} className="w-fit">
-                            {b.sudahDitinjau ? "Sudah Ditinjau" : "Belum Ditinjau"}
-                          </Badge>
-                          <Link
-                            href={`/gl/${encodeURIComponent(b.tokenUrl)}?dari=peringatan`}
-                            className="flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted"
-                          >
-                            <Eye className="size-3.5" />
-                            Detail GL
-                          </Link>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-              <PilihanUkuranHalaman
-                ukuran={ukuran}
-                total={total}
-                basePath="/peringatan"
-                filterAktif={nilaiFilterPeringatan}
-              />
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                <LompatHalaman
-                  halamanAktif={halaman}
-                  totalHalaman={totalHalaman}
-                  ukuran={ukuran}
-                  basePath="/peringatan"
-                  filterAktif={nilaiFilterPeringatan}
-                />
-                <div className="flex justify-center sm:contents">
-                  <Pagination
-                    halamanAktif={halaman}
-                    totalHalaman={totalHalaman}
-                    buatUrl={(h) => buatUrlHalaman(nilaiFilterPeringatan, ukuran, h)}
-                  />
-                </div>
-              </div>
-            </div>
           </TabPeringatan>
         </div>
       </div>

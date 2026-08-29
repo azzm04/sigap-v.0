@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 export interface NilaiFilterPeringatan {
   cari?: string;
   status_tinjauan?: string;
+  status_dokumen?: string;
   pic_pengajuan?: string;
   dari?: string;
   sampai?: string;
@@ -20,6 +21,11 @@ export interface NilaiFilterPeringatan {
 const OPSI_STATUS_TINJAUAN = [
   { value: "belum", label: "Belum Ditinjau" },
   { value: "sudah", label: "Sudah Ditinjau" },
+];
+
+const OPSI_STATUS_DOKUMEN = [
+  { value: "belum_lengkap", label: "Dokumen Belum Lengkap" },
+  { value: "lengkap", label: "Dokumen Lengkap" },
 ];
 
 export function FilterPeringatan({
@@ -78,6 +84,18 @@ export function FilterPeringatan({
             placeholder="Semua"
             options={OPSI_STATUS_TINJAUAN}
             className="w-full sm:w-36"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="status_dokumen">Status Dokumen</Label>
+          <Select
+            id="status_dokumen"
+            value={nilai.status_dokumen ?? ""}
+            onChange={(e) => terapkan({ status_dokumen: e.target.value || undefined })}
+            placeholder="Semua"
+            options={OPSI_STATUS_DOKUMEN}
+            className="w-full sm:w-44"
           />
         </div>
 

@@ -55,6 +55,8 @@ export interface FilterPapanPeringatan {
   statusTinjauan?: "sudah" | "belum";
   tahapProses?: string;
   picPengajuan?: string;
+  /** "lengkap" = Laporan Survei TKP + KSKK sudah ada dua-duanya, "belum_lengkap" = salah satu atau keduanya belum ada */
+  statusDokumen?: "lengkap" | "belum_lengkap";
 }
 
 export interface HasilPeringatan {
@@ -172,6 +174,11 @@ export async function ambilPapanPeringatan(
     })
     .filter((b) => !filter.tahapProses || b.tahapProses === filter.tahapProses)
     .filter((b) => !filter.picPengajuan || b.picPengajuan === filter.picPengajuan)
+    .filter((b) => {
+      if (filter.statusDokumen === "lengkap") return b.statusDokumen === "Siap Diajukan ke Pusat";
+      if (filter.statusDokumen === "belum_lengkap") return b.statusDokumen === "Dokumen Belum Lengkap";
+      return true;
+    })
     // Prioritas belum jelas (akhiran "00"), jadi urutkan berdasarkan umur tertinggi sampai dikonfirmasi.
     .sort((a, b) => b.umurHari - a.umurHari)
     .map(
