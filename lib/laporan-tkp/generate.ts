@@ -227,9 +227,12 @@ export async function generateLaporanSurveiTkpPdf(data: DataLaporanTkp): Promise
   page.drawText("Sumber Informasi :", { x: MARGIN, y, size: UKURAN_DASAR, font });
   y -= 11;
 
-  const tinggiBarisTabel = 32;
+  // tinggiBarisTabel dan lebarKolomTtd sengaja diperbesar dari nilai awal
+  // (32 dan 90) -- tanda tangan saksi yang ter-embed kelihatan terlalu
+  // kecil dibanding sel tabelnya, arahan pemilik proyek supaya diperbesar.
+  const tinggiBarisTabel = 44;
   const lebarKolomNo = 24;
-  const lebarKolomTtd = 90;
+  const lebarKolomTtd = 110;
   const lebarKolomIsi = LEBAR_ISI - lebarKolomNo - lebarKolomTtd;
   const tinggiHeaderTabel = 14;
   const yAtasTabel = y;

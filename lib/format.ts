@@ -8,6 +8,11 @@ export function formatTanggal(iso: string): string {
   return `${hari}/${bulan}/${tahun}`;
 }
 
+/** formatTanggal(), tapi "-" untuk tanggal yang belum terisi (null). */
+export function formatTanggalOpsional(iso: string | null): string {
+  return iso ? formatTanggal(iso) : "-";
+}
+
 /** Format tanggal + jam dalam WIB untuk kolom timestamp. */
 export function formatWaktu(waktu: Date): string {
   const bagian = waktu.toLocaleString("id-ID", {
