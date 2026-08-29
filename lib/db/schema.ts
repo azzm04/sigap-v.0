@@ -10,7 +10,6 @@ import {
   unique,
 } from "drizzle-orm/pg-core";
 
-// Salinan data GL dari impor terakhir. Lihat CLAUDE.md bagian 5 dan docs/domain-gl.md.
 export const glMirror = pgTable("gl_mirror", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   idJaminan: text("id_jaminan").notNull().unique(),
@@ -32,24 +31,26 @@ export const glMirror = pgTable("gl_mirror", {
   statusPembayaran: text("status_pembayaran").notNull(),
   jumlahPembayaran: integer("jumlah_pembayaran").notNull(),
   tglPembayaran: date("tgl_pembayaran"),
-
-  // Data dari berkas DASI (sumber terpisah). Nullable karena tidak semua
-  // GL punya data ini — hanya terisi setelah berkas DASI diunggah dan
-  // nama korban cocok.
   tglKejadian: date("tgl_kejadian"),
   lokasi: text("lokasi"),
+
+  // Diisi MANUAL oleh PIC Task Force lewat halaman detail GL
+  // tanggalMasuk = kapan kasus ini mulai dipantau petugas (bukan Tgl GL).
+  // tanggalPulangPasien = tanda PIC Task Force sudah kunjungan ke RS dan
+  // Peringatan 2 (fallback ke Tgl GL kalau masih kosong).
+  tanggalMasuk: date("tanggal_masuk"),
+  tanggalPulangPasien: date("tanggal_pulang_pasien"),
+
+  // KSKK diunggah MANUAL oleh PIC Pengajuan lewat halaman detail GL
+  kskk: text("kskk"), // data URI base64 application/pdf
+  kskkNamaBerkas: text("kskk_nama_berkas"),
+  kskkDiunggahPada: timestamp("kskk_diunggah_pada", { withTimezone: true }),
 
   diimporPada: timestamp("diimpor_pada", { withTimezone: true })
     .notNull()
     .defaultNow(),
 
-  // Soft delete: diisi saat petugas menekan "Hapus Semua Data" di Kelola
-  // Data. Semua query tampilan WAJIB menyaring baris dengan dihapusPada
-  // IS NULL. Baris yang dihapus dengan waktu yang sama dianggap satu
-  // "batch" yang bisa dipulihkan bersama dari halaman Sampah. Kalau ID
-  // Jaminan yang sama muncul lagi di impor berikutnya, kolom ini otomatis
-  // dikosongkan lagi (lihat lib/sumber-data/normalizer.ts) — berkas ekspor
-  // tetap jadi sumber kebenaran paling baru.
+  // Soft delete: diisi saat petugas menekan "Hapus Semua Data" di Kelola Data
   dihapusPada: timestamp("dihapus_pada", { withTimezone: true }),
 });
 
@@ -67,10 +68,7 @@ export const glSnapshot = pgTable("gl_snapshot", {
     .defaultNow(),
 });
 
-// Log Data: catatan tiap aktivitas yang mengubah gl_mirror secara massal --
-// unggahan impor, "Hapus Semua Data", dan pemulihan lewat halaman Sampah --
-// disatukan di sini supaya semuanya bisa dianalisis dari satu riwayat.
-// Dibedakan lewat kolom jenis; nama_berkas cuma relevan untuk jenis "impor".
+// Log Data: catatan tiap aktivitas yang mengubah gl_mirror secara massal unggahan impor, "Hapus Semua Data", dan pemulihan lewat halaman Sampah disatukan di sini supaya semuanya bisa dianalisis dari satu riwayat.
 export const imporLog = pgTable("impor_log", {
   id: bigserial("id", { mode: "number" }).primaryKey(),
   jenis: text("jenis").notNull().default("impor"),
@@ -96,11 +94,36 @@ export const tinjauan = pgTable("tinjauan", {
     .references(() => pengguna.id, { onDelete: "cascade" }),
   catatan: text("catatan").notNull(),
   perluTindakLanjut: boolean("perlu_tindak_lanjut").notNull().default(false),
-  // diabaikan = true menyingkirkan GL dari papan peringatan secara permanen
-  // (CLAUDE.md bagian 5 dan 7), beda dari perluTindakLanjut yang hanya menandai.
   diabaikan: boolean("diabaikan").notNull().default(false),
   alasanAbaikan: text("alasan_abaikan"),
   ditinjauPada: timestamp("ditinjau_pada", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const statusProsesPusat = pgTable("status_proses_pusat", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  idJaminan: text("id_jaminan")
+    .notNull()
+    .references(() => glMirror.idJaminan, { onDelete: "cascade" }),
+  tahap: text("tahap").notNull(),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => pengguna.id, { onDelete: "cascade" }),
+  dicatatPada: timestamp("dicatat_pada", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+// Pemetaan PIC (penanggung jawab) per rumah sakit -- dua peran terpisah:
+// PIC Task Force (kunjungan ke RS) dan PIC Pengajuan. Diisi dan diubah lewat halaman Pengaturan, BUKAN di-hardcode di kode
+// namaRumahSakit dicocokkan ke gl_mirror.namaRumahSakit lewat perbandingan
+export const picRumahSakit = pgTable("pic_rumah_sakit", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  namaRumahSakit: text("nama_rumah_sakit").notNull().unique(),
+  picTaskForce: text("pic_task_force"),
+  picPengajuan: text("pic_pengajuan"),
+  diperbaruiPada: timestamp("diperbarui_pada", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
@@ -122,7 +145,6 @@ export const pengguna = pgTable("pengguna", {
 });
 
 // Daftar nilai enum terbuka (tahapan, status verifikasi, tipe cidera, dst).
-// Wajib dibaca dari sini, bukan di-hardcode di kode (CLAUDE.md aturan keras #3).
 export const nilaiReferensi = pgTable(
   "nilai_referensi",
   {
@@ -132,3 +154,34 @@ export const nilaiReferensi = pgTable(
   },
   (t) => [unique().on(t.kategori, t.nilai)],
 );
+
+// Gambar tanda tangan untuk PDF Laporan Survei TKP (lib/laporan-tkp/).
+export const tandaTangan = pgTable("tanda_tangan", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  pemilik: text("pemilik").notNull().unique(),
+  gambar: text("gambar"),
+  namaTampil: text("nama_tampil"),
+  jabatan: text("jabatan"),
+  diperbaruiPada: timestamp("diperbarui_pada", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const laporanSurveiTkp = pgTable("laporan_survei_tkp", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  idJaminan: text("id_jaminan")
+    .notNull()
+    .references(() => glMirror.idJaminan, { onDelete: "cascade" }),
+  nomorLp: text("nomor_lp").notNull(),
+  alamatKorban: text("alamat_korban").notNull(),
+  uraianKesimpulan: text("uraian_kesimpulan").notNull(),
+  namaSaksi: text("nama_saksi").notNull(),
+  ttdSaksi: text("ttd_saksi"),
+  tanggalSurveiManual: date("tanggal_survei_manual"),
+  userId: bigint("user_id", { mode: "number" })
+    .notNull()
+    .references(() => pengguna.id, { onDelete: "cascade" }),
+  dibuatPada: timestamp("dibuat_pada", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

@@ -53,7 +53,10 @@ function barisTotal(jumlah = 999): unknown[] {
   return baris;
 }
 
-function buatBuffer(barisData: unknown[][], opsi?: { tanpaTotal?: boolean }): Buffer {
+function buatBuffer(
+  barisData: unknown[][],
+  opsi?: { tanpaTotal?: boolean; bookType?: "xlsx" | "csv" },
+): Buffer {
   const rows: unknown[][] = [...blokFilter(), HEADER_ROW, ...barisData];
   if (!opsi?.tanpaTotal) {
     rows.push([]); // baris kosong tepat sebelum baris total, seperti berkas nyata
@@ -62,7 +65,7 @@ function buatBuffer(barisData: unknown[][], opsi?: { tanpaTotal?: boolean }): Bu
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Klaim Report");
-  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" }) as Buffer;
+  return XLSX.write(wb, { type: "buffer", bookType: opsi?.bookType ?? "xlsx" }) as Buffer;
 }
 
 const BARIS_LENGKAP: unknown[] = [
@@ -107,6 +110,23 @@ describe("parseBerkasEkspor", () => {
       jumlahPembayaran: 0,
       tglPembayaran: null,
       nomorSuratJaminan: null,
+    });
+  });
+
+  it("mem-parse berkas .csv dengan struktur dan isi yang sama seperti .xlsx", () => {
+    // Petugas boleh mengunggah versi .csv dari ekspor JRCare (bukan cuma
+    // .xlsx) -- SheetJS membaca CSV sebagai teks murni, jadi parseTanggal
+    // (berbasis regex DD-MM-YYYY) harus tetap bekerja tanpa perubahan.
+    const buffer = buatBuffer([BARIS_LENGKAP], { bookType: "csv" });
+    const hasil = parseBerkasEkspor(buffer);
+
+    expect(hasil).toHaveLength(1);
+    expect(hasil[0]).toMatchObject({
+      tipeKlaim: "GL",
+      idJaminan: "04062026001925.0826.mSh7",
+      tglGl: "2026-04-02",
+      nilaiDiajukan: 23526570,
+      statusPembayaran: "Unpaid",
     });
   });
 

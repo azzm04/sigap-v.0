@@ -9,19 +9,19 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
       <StatCard
         label="Total GL"
         value={data.totalGL.toLocaleString("id-ID")}
-        className="lg:order-1 lg:col-span-3"
+        className="text-sm md:text-base lg:order-1 lg:col-span-3"
       />
       <StatCard
         label="Rata-rata Umur Tagihan (hari)"
         value={data.rataRataUmurTagihan.toFixed(2)}
         tone="accent"
-        className="lg:order-5 lg:col-span-2"
+        className=" text-sm md:text-base lg:order-5 lg:col-span-2"
       />
       <StatCard
         label="Belum Dibayar"
         value={data.totalUnpaid.toLocaleString("id-ID")}
         tone="warn"
-        className="lg:order-3 lg:col-span-2"
+        className="text-sm md:text-base lg:order-3 lg:col-span-2"
       />
       <Link
         href="/peringatan"
@@ -38,7 +38,7 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
         label="Data Terakhir Diperbarui"
         value={data.diimporTerakhir ? formatWaktu(data.diimporTerakhir) : "-"}
         mono={false}
-        className="col-span-2 lg:order-2 lg:col-span-3"
+        className="text-sm md:text-base col-span-2 lg:order-2 lg:col-span-3"
       />
     </div>
   );

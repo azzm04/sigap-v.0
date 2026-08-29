@@ -5,8 +5,7 @@ import { tanggalHariIniWIB } from "./format";
 
 export const KUNCI_AMBANG_HARI = "ambang_hari_peringatan";
 
-// Tidak ada nilai bawaan di sini (CLAUDE.md aturan keras #2: ambang hari
-// tidak boleh di-hardcode di logika). Baris pengaturan wajib sudah ada di
+// Tidak ada nilai bawaan di sini. Baris pengaturan wajib sudah ada di
 // database — diisi lewat scripts/seed.ts saat penyiapan awal, atau lewat
 // setAmbangHari() dari halaman pengaturan nanti.
 export async function ambilAmbangHari(): Promise<number> {
@@ -35,6 +34,38 @@ export async function setAmbangHari(hari: number): Promise<void> {
     .insert(pengaturan)
     .values({ kunci: KUNCI_AMBANG_HARI, nilai: String(hari) })
     .onConflictDoUpdate({ target: pengaturan.kunci, set: { nilai: String(hari) } });
+}
+
+export const KUNCI_BATAS_RIWAYAT = "batas_riwayat_log";
+const BATAS_RIWAYAT_BAWAAN = 100;
+
+// Beda dari ambilAmbangHari(): tidak melempar galat kalau belum diisi.
+// Batas riwayat cuma soal tampilan (berapa baris Log Data yang dimuat),
+// jadi kalau baris pengaturannya belum ada (mis. lupa jalankan
+// seed:referensi setelah migrasi), lebih aman jatuh ke nilai bawaan
+// daripada membuat halaman Kelola Data ikut error.
+export async function ambilBatasRiwayat(): Promise<number> {
+  const [baris] = await db
+    .select()
+    .from(pengaturan)
+    .where(eq(pengaturan.kunci, KUNCI_BATAS_RIWAYAT))
+    .limit(1);
+
+  if (!baris) return BATAS_RIWAYAT_BAWAAN;
+
+  const angka = Number(baris.nilai);
+  if (!Number.isFinite(angka) || !Number.isInteger(angka) || angka <= 0) {
+    return BATAS_RIWAYAT_BAWAAN;
+  }
+
+  return angka;
+}
+
+export async function setBatasRiwayat(jumlah: number): Promise<void> {
+  await db
+    .insert(pengaturan)
+    .values({ kunci: KUNCI_BATAS_RIWAYAT, nilai: String(jumlah) })
+    .onConflictDoUpdate({ target: pengaturan.kunci, set: { nilai: String(jumlah) } });
 }
 
 // Menandai kapan terakhir kali notifikasi papan peringatan di topbar dibuka,

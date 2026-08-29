@@ -1,6 +1,7 @@
 "use client";
 
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,16 @@ function kolomTabelGL(): ColumnDef<BarisTabelGL>[] {
       header: "Nama Rumah Sakit",
       cell: (info) => info.getValue<string | null>() ?? "-",
     },
+    {
+      accessorKey: "picTaskForce",
+      header: "PIC Task Force",
+      cell: (info) => info.getValue<string | null>() ?? "-",
+    },
+    {
+      accessorKey: "picPengajuan",
+      header: "PIC Pengajuan",
+      cell: (info) => info.getValue<string | null>() ?? "-",
+    },
     { accessorKey: "loket", header: "Loket" },
     {
       accessorKey: "idJaminan",
@@ -36,7 +47,7 @@ function kolomTabelGL(): ColumnDef<BarisTabelGL>[] {
         return (
           <div className="flex items-center gap-2">
             <Link
-              href={`/gl/${encodeURIComponent(b.idJaminan)}`}
+              href={`/gl/${encodeURIComponent(b.tokenUrl)}`}
               className="font-mono text-primary underline-offset-2 hover:underline"
             >
               {b.idJaminan}
@@ -50,7 +61,28 @@ function kolomTabelGL(): ColumnDef<BarisTabelGL>[] {
         );
       },
     },
-    { accessorKey: "namaKorban", header: "Nama Korban" },
+    {
+      accessorKey: "namaKorban",
+      header: "Nama Korban",
+      cell: (info) => {
+        const b = info.row.original;
+        return (
+          <div className="flex items-center gap-1.5">
+            <span>{b.namaKorban}</span>
+            {b.jumlahGLKorban > 1 && (
+              <Link
+                href={`/?cari=${encodeURIComponent(b.namaKorban)}`}
+                title={`Ada ${b.jumlahGLKorban} baris GL dengan Nama Korban persis sama -- kemungkinan korban yang sama, GL berbeda (mis. rawat jalan lanjutan). Klik untuk lihat semua.`}
+              >
+                <Badge tone="info" className="whitespace-nowrap">
+                  {b.jumlahGLKorban} GL
+                </Badge>
+              </Link>
+            )}
+          </div>
+        );
+      },
+    },
     {
       accessorKey: "nomorSuratJaminan",
       header: "Nomor Surat Jaminan",
@@ -105,6 +137,22 @@ function kolomTabelGL(): ColumnDef<BarisTabelGL>[] {
       cell: (info) => (
         <span className="font-mono">{formatTanggalOpsional(info.getValue<string | null>())}</span>
       ),
+    },
+    {
+      id: "aksi",
+      header: "Aksi",
+      cell: (info) => {
+        const b = info.row.original;
+        return (
+          <Link
+            href={`/gl/${encodeURIComponent(b.tokenUrl)}`}
+            className="flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted"
+          >
+            <Eye className="size-3.5" />
+            Detail GL
+          </Link>
+        );
+      },
     },
   ];
 }

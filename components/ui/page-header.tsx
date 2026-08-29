@@ -11,7 +11,7 @@ function PageHeader({
 }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
-      <div className="flex max-w-xl flex-col gap-1">
+      <div className="flex max-w-xl flex-1 flex-col gap-1 md:max-w-3xl">
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>

@@ -13,6 +13,7 @@ import {
   ambilTotalRumahSakitMitra,
 } from "@/lib/gl/sebaran";
 import { PILIHAN_UKURAN_HALAMAN } from "@/lib/gl/ukuran-halaman";
+import { BantuanInfo } from "@/components/ui/bantuan-info";
 
 const UKURAN_HALAMAN_DEFAULT = 10;
 const JUMLAH_TOP = 10;
@@ -48,8 +49,13 @@ export default async function SebaranPage({
     <AppShell>
       <div className="flex flex-col gap-6 p-8">
         <PageHeader
-          title="Sebaran Data Rumah Sakit"
-          description="Analisis distribusi Guarantee Letter berdasarkan rumah sakit mitra."
+          title={
+            <span className="text-sm md:text-base text-muted-foreground">Sebaran Data Rumah Sakit
+            <BantuanInfo>
+              Analisis distribusi Guarantee Letter berdasarkan rumah sakit mitra.
+            </BantuanInfo>
+            </span>
+          }
         />
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

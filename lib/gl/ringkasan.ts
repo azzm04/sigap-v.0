@@ -1,10 +1,12 @@
-import { and, count, desc, eq, isNull, max, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, lte, max, sql } from "drizzle-orm";
 import { db } from "../db";
-import { glMirror } from "../db/schema";
+import { glMirror, laporanSurveiTkp, statusProsesPusat } from "../db/schema";
+import { TAHAPAN_DIPANTAU } from "./aturan-peringatan";
 import { ambilPapanPeringatan } from "./peringatan";
+import { ambilRumahSakitUntukPic } from "./pic";
+import { TAHAP_JRCARE_DONE, TAHAP_KELUAR_PERINGATAN, TAHAP_PEMICU_PAID } from "./tahap-proses";
 
 // Baris yang di-soft-delete lewat "Hapus Semua Data" tidak pernah ikut
-// dihitung di kartu ringkasan maupun grafik mana pun.
 const KONDISI_AKTIF = isNull(glMirror.dihapusPada);
 
 export interface KartuRingkasan {
@@ -41,9 +43,6 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
           eq(glMirror.statusPembayaran, "Unpaid"),
         ),
       ),
-    // Sengaja TIDAK disaring KONDISI_AKTIF: label ini menjawab "kapan data
-    // terakhir diimpor", bukan "berapa baris yang tampil sekarang" — tetap
-    // relevan walau seluruh data baru saja di-soft-delete.
     db.select({ diimporTerakhir: max(glMirror.diimporPada) }).from(glMirror),
     ambilPapanPeringatan(),
   ]);
@@ -62,9 +61,6 @@ export interface SebaranTahapan {
   jumlah: number;
 }
 
-// Diurutkan berdasarkan jumlah, BUKAN urutan tahapan resmi — urutan proses
-// GL belum dikonfirmasi klien (docs/domain-gl.md), jadi jangan menyiratkan
-// urutan/funnel yang belum tentu benar.
 export async function ambilSebaranTahapan(): Promise<SebaranTahapan[]> {
   return db
     .select({ tahapan: glMirror.tahapan, jumlah: count() })
@@ -101,4 +97,102 @@ export async function ambilTrenBulanan(): Promise<TrenBulanan[]> {
     .where(and(KONDISI_AKTIF, eq(glMirror.tipeKlaim, "GL")))
     .groupBy(kolomBulan)
     .orderBy(kolomBulan);
+}
+
+export interface KinerjaPengajuanPusat {
+  totalAktif: number;
+  dokumenBelumLengkap: number;
+  siapDiajukanKePusat: number;
+  sudahDiajukanKePusat: number;
+  done: number;
+}
+
+export interface FilterKinerjaPengajuanPusat {
+  picPengajuan?: string;
+  /** ISO "YYYY-MM-DD", batas bawah Tgl GL */
+  dari?: string;
+  /** ISO "YYYY-MM-DD", batas atas Tgl GL */
+  sampai?: string;
+}
+
+// Kartu "Kinerja Pengajuan ke Pusat" (CLAUDE.md bagian 7) -- dinamis
+// mengikuti filter PIC Pengajuan/Rentang Tgl GL yang sama dengan tabel
+// Daftar GL di dashboard, bukan filter terpisah. Empat kategori SALING
+// EKSKLUSIF, dievaluasi per baris (bukan 4 query COUNT terpisah) supaya
+// urutan prioritasnya eksplisit dan tidak ada GL yang dihitung dobel:
+//   1. done duluan (paling final)
+//   2. sudahDiajukanKePusat (sudah di Proses Pusat, belum lunas)
+//   3. dokumenBelumLengkap / siapDiajukanKePusat (belum pernah diajukan
+//      sama sekali -- dibedakan cuma dari kelengkapan dokumen)
+//
+// "tahapan Done tapi status_pembayaran Unpaid" TERNYATA bisa terjadi pada
+// GL yang gl_status-nya Active (bukan cuma Cancel seperti dugaan awal --
+// sudah dicek ke data nyata, lihat CLAUDE.md). Makanya syarat #3 pakai
+// TAHAPAN_DIPANTAU ("Verifikasi User" ATAU "Done"), bukan cuma "Verifikasi
+// User" saja, supaya GL semacam itu tetap kehitung di kartu #1, bukan
+// hilang tanpa kategori.
+export async function ambilKinerjaPengajuanPusat(
+  filter: FilterKinerjaPengajuanPusat = {},
+): Promise<KinerjaPengajuanPusat> {
+  const kosong: KinerjaPengajuanPusat = {
+    totalAktif: 0,
+    dokumenBelumLengkap: 0,
+    siapDiajukanKePusat: 0,
+    sudahDiajukanKePusat: 0,
+    done: 0,
+  };
+
+  const kondisi = [KONDISI_AKTIF, eq(glMirror.tipeKlaim, "GL"), eq(glMirror.glStatus, "Active")];
+  if (filter.dari) kondisi.push(gte(glMirror.tglGl, filter.dari));
+  if (filter.sampai) kondisi.push(lte(glMirror.tglGl, filter.sampai));
+
+  if (filter.picPengajuan) {
+    const rsList = await ambilRumahSakitUntukPic({ picPengajuan: filter.picPengajuan });
+    if (rsList.length === 0) return kosong;
+    kondisi.push(inArray(glMirror.namaRumahSakit, rsList));
+  }
+
+  const [baris, semuaTahapProses] = await Promise.all([
+    db
+      .select({
+        idJaminan: glMirror.idJaminan,
+        tahapan: glMirror.tahapan,
+        statusPembayaran: glMirror.statusPembayaran,
+        kskkNamaBerkas: glMirror.kskkNamaBerkas,
+        punyaLaporanTkp: sql<boolean>`EXISTS (
+          SELECT 1 FROM ${laporanSurveiTkp} AS ltk
+          WHERE ltk.id_jaminan = ${glMirror}.id_jaminan
+        )`,
+      })
+      .from(glMirror)
+      .where(and(...kondisi)),
+    db
+      .select({ idJaminan: statusProsesPusat.idJaminan, tahap: statusProsesPusat.tahap })
+      .from(statusProsesPusat)
+      .orderBy(desc(statusProsesPusat.dicatatPada)),
+  ]);
+
+  const tahapTerkiniPerId = new Map<string, string>();
+  for (const t of semuaTahapProses) {
+    if (!tahapTerkiniPerId.has(t.idJaminan)) tahapTerkiniPerId.set(t.idJaminan, t.tahap);
+  }
+
+  const hasil = { ...kosong, totalAktif: baris.length };
+  for (const b of baris) {
+    const tahapTerkini = tahapTerkiniPerId.get(b.idJaminan) ?? null;
+    const sudahPernahDiajukan =
+      tahapTerkini === TAHAP_KELUAR_PERINGATAN || tahapTerkini === TAHAP_PEMICU_PAID;
+
+    if (b.tahapan === TAHAP_JRCARE_DONE && b.statusPembayaran === "Paid") {
+      hasil.done++;
+    } else if (tahapTerkini === TAHAP_KELUAR_PERINGATAN && b.statusPembayaran !== "Paid") {
+      hasil.sudahDiajukanKePusat++;
+    } else if (TAHAPAN_DIPANTAU.has(b.tahapan) && b.statusPembayaran === "Unpaid" && !sudahPernahDiajukan) {
+      const dokumenLengkap = !!b.kskkNamaBerkas && b.punyaLaporanTkp;
+      if (dokumenLengkap) hasil.siapDiajukanKePusat++;
+      else hasil.dokumenBelumLengkap++;
+    }
+  }
+
+  return hasil;
 }

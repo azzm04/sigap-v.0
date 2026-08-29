@@ -6,12 +6,6 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL tidak diset");
 }
 
-// Next.js dev mode me-reload modul ini di setiap hot-reload. Tanpa
-// caching, tiap reload bikin koneksi Postgres baru tanpa menutup yang
-// lama, sampai akhirnya kena "sorry, too many clients already". Simpan
-// instance-nya di globalThis supaya reload berikutnya pakai koneksi yang
-// sama, bukan bikin baru -- pola standar yang sama dipakai untuk klien
-// Prisma di banyak proyek Next.js.
 const globalUntukDb = globalThis as unknown as { koneksiPostgres?: postgres.Sql };
 
 const client =

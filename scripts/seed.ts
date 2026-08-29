@@ -12,19 +12,12 @@ async function main() {
   const { normalisasiDanSimpan } = await import(
     "../lib/sumber-data/normalizer"
   );
-  const { db } = await import("../lib/db");
-  const { pengaturan } = await import("../lib/db/schema");
-  const { KUNCI_AMBANG_HARI } = await import("../lib/pengaturan");
+  const { seedReferensiDanPengaturan } = await import("../lib/seed-data");
 
   const baris = await sumberDummy.ambilGL();
   const hasil = await normalisasiDanSimpan(baris);
 
-  // Isi hanya kalau belum pernah diisi — jangan timpa nilai yang mungkin
-  // sudah diubah petugas lewat halaman pengaturan.
-  await db
-    .insert(pengaturan)
-    .values([{ kunci: KUNCI_AMBANG_HARI, nilai: "14" }])
-    .onConflictDoNothing({ target: pengaturan.kunci });
+  await seedReferensiDanPengaturan();
 
   console.log(
     `Seed selesai: ${hasil.jumlahBaris} baris diproses, ${hasil.jumlahBaru} baru, ${hasil.jumlahBerubah} berubah.`,

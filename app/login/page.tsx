@@ -1,13 +1,7 @@
 import Image from "next/image";
 import { FormLogin } from "@/components/login/login-form";
 
-export default async function HalamanLogin({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
-  const { error } = await searchParams;
-
+export default function HalamanLogin() {
   return (
     <div className="flex min-h-screen w-full">
       <div className="relative hidden w-5/12 flex-col justify-between overflow-hidden bg-login-panel p-12 text-login-panel-foreground lg:flex">
@@ -62,10 +56,7 @@ export default async function HalamanLogin({
             </p>
           </div>
 
-          {/* Form Komponen */}
-          <FormLogin
-            pesanGalat={error ? "Username atau kata sandi salah." : undefined}
-          />
+          <FormLogin />
 
           {/* Footer Mobile */}
           <p className="mt-8 text-center text-xs text-muted-foreground lg:hidden">
