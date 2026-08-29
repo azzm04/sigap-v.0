@@ -17,15 +17,11 @@ export function SinkronSheetsButton() {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
+    <div className="flex flex-col not-user-invalid:items-end gap-1.5">
       <Button variant="outline" onClick={jalankan} disabled={pending}>
         <RefreshCw className={pending ? "animate-spin" : undefined} />
         {pending ? "Menyinkron..." : "Sinkronkan dengan Google Sheets"}
       </Button>
-      <p className="max-w-xs text-right text-xs leading-relaxed text-muted-foreground">
-        Menarik dulu edit manual (Tanggal Masuk, Tanggal Pulang Pasien, Lokasi LAKA -- sel kuning di
-        sheet), baru mengirim ulang seluruh data ke Google Sheets.
-      </p>
       {pesan && (
         <p
           role="status"

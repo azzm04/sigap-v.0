@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BarisTandaTangan } from "@/lib/laporan-tkp/tanda-tangan";
+import { BantuanInfo } from "@/components/ui/bantuan-info";
 
 function BarisFormTandaTangan({
   pemilik,
@@ -88,7 +89,7 @@ export function TandaTanganLaporanTkp({
   return (
     <Card
       title="Tanda Tangan Laporan Survei TKP"
-      description="Gambar tanda tangan yang ditempel otomatis ke PDF Laporan Survei TKP (menu ini di halaman detail GL). Keduanya TETAP untuk semua laporan, tidak tergantung PIC mana pun yang menangani GL-nya -- sesuai template asli. Belum diunggah = area tanda tangan kosong di PDF, laporan tetap bisa dibuat."
+      description={`Unggah tanda tangan digital (PNG/JPEG) dan nama tampil untuk Kepala Cabang Semarang dan Petugas Survei. Tanda tangan ini akan dicetak di Laporan Survei TKP.`}
     >
       <BarisFormTandaTangan
         pemilik={pemilikKepalaCabang}
