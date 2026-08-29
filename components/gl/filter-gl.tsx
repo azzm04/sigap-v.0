@@ -16,10 +16,16 @@ export interface NilaiFilterGL {
   gl_status?: string;
   pic_task_force?: string;
   pic_pengajuan?: string;
+  status_duplikat_nama?: string;
   dari?: string;
   sampai?: string;
   [kunci: string]: string | undefined;
 }
+
+const OPSI_STATUS_DUPLIKAT_NAMA = [
+  { value: "duplikat", label: "Nama Sama (>1 GL)" },
+  { value: "unik", label: "Nama Unik (1 GL)" },
+];
 
 export function FilterGL({
   nilai,
@@ -132,6 +138,18 @@ export function FilterGL({
             placeholder="Semua"
             options={opsi.picPengajuan}
             className="w-full sm:w-36"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="status_duplikat_nama">Nama Korban</Label>
+          <Select
+            id="status_duplikat_nama"
+            value={nilai.status_duplikat_nama ?? ""}
+            onChange={(e) => terapkan({ status_duplikat_nama: e.target.value || undefined })}
+            placeholder="Semua"
+            options={OPSI_STATUS_DUPLIKAT_NAMA}
+            className="w-full sm:w-40"
           />
         </div>
 

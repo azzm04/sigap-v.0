@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { StatCard } from "@/components/ui/stat-card";
 import { formatWaktu } from "@/lib/format";
 import type { KartuRingkasan } from "@/lib/gl/ringkasan";
@@ -7,7 +8,23 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
       <StatCard
-        label="Total GL"
+        label={
+          <span className="inline-flex items-center gap-1.5">
+            Total GL
+            <BantuanInfo>
+              {data.totalAktif.toLocaleString("id-ID")} GL berstatus Active
+              {data.rincianNonAktif.map((r) => (
+                <span key={r.glStatus}>
+                  , {r.jumlah.toLocaleString("id-ID")} GL berstatus {r.glStatus}
+                </span>
+              ))}
+              . Dari yang Active, {data.totalMasihTahapAwal.toLocaleString("id-ID")} masih di tahap
+              awal (ditangani rumah sakit, belum sampai Verifikasi User) dan{" "}
+              {data.totalTahapDipantau.toLocaleString("id-ID")} sudah di tahap Verifikasi
+              User/Done.
+            </BantuanInfo>
+          </span>
+        }
         value={data.totalGL.toLocaleString("id-ID")}
         className="text-sm md:text-base lg:order-1 lg:col-span-3"
       />

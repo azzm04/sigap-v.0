@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, inArray, isNull, lte, max, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, lte, max, notInArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror, laporanSurveiTkp, statusProsesPusat } from "../db/schema";
 import { TAHAPAN_DIPANTAU } from "./aturan-peringatan";
@@ -11,6 +11,16 @@ const KONDISI_AKTIF = isNull(glMirror.dihapusPada);
 
 export interface KartuRingkasan {
   totalGL: number;
+  /** GL Status = Active, dari totalGL. Sisanya (totalGL - totalAktif) dirinci di rincianNonAktif */
+  totalAktif: number;
+  /** Breakdown GL non-Active (biasanya Cancel) per nilai GL Status -- tidak
+   * di-hardcode ke "Cancel" saja karena nilai GL Status bisa bertambah
+   * (CLAUDE.md aturan keras #3), jadi dibangun dinamis dari data */
+  rincianNonAktif: { glStatus: string; jumlah: number }[];
+  /** Dari totalAktif: tahapan di luar TAHAPAN_DIPANTAU ("Verifikasi User"/"Done") -- masih di alur awal RS, belum jadi wewenang PIC Pengajuan */
+  totalMasihTahapAwal: number;
+  /** Dari totalAktif: tahapan IN TAHAPAN_DIPANTAU -- basis Kartu Kinerja Pengajuan ke Pusat */
+  totalTahapDipantau: number;
   totalUnpaid: number;
   totalPeringatan: number;
   /** Rata-rata umur (hari) GL bertipe GL, Active, dan Unpaid — seberapa lama tagihan yang belum dibayar sudah mengendap */
@@ -20,15 +30,28 @@ export interface KartuRingkasan {
 
 export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
   const [
-    [{ totalGL }],
+    rincianStatus,
+    [{ totalMasihTahapAwal }],
     [{ totalUnpaid, rataRataUmurTagihan }],
     [{ diimporTerakhir }],
     peringatan,
   ] = await Promise.all([
     db
-      .select({ totalGL: count() })
+      .select({ glStatus: glMirror.glStatus, jumlah: count() })
       .from(glMirror)
-      .where(and(KONDISI_AKTIF, eq(glMirror.tipeKlaim, "GL"))),
+      .where(and(KONDISI_AKTIF, eq(glMirror.tipeKlaim, "GL")))
+      .groupBy(glMirror.glStatus),
+    db
+      .select({ totalMasihTahapAwal: count() })
+      .from(glMirror)
+      .where(
+        and(
+          KONDISI_AKTIF,
+          eq(glMirror.tipeKlaim, "GL"),
+          eq(glMirror.glStatus, "Active"),
+          notInArray(glMirror.tahapan, [...TAHAPAN_DIPANTAU]),
+        ),
+      ),
     db
       .select({
         totalUnpaid: count(),
@@ -47,8 +70,16 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
     ambilPapanPeringatan(),
   ]);
 
+  const totalGL = rincianStatus.reduce((jumlah, r) => jumlah + r.jumlah, 0);
+  const totalAktif = rincianStatus.find((r) => r.glStatus === "Active")?.jumlah ?? 0;
+  const rincianNonAktif = rincianStatus.filter((r) => r.glStatus !== "Active");
+
   return {
     totalGL,
+    totalAktif,
+    rincianNonAktif,
+    totalMasihTahapAwal,
+    totalTahapDipantau: totalAktif - totalMasihTahapAwal,
     totalUnpaid,
     totalPeringatan: peringatan.total,
     rataRataUmurTagihan: Number(rataRataUmurTagihan),

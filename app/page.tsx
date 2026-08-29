@@ -33,6 +33,10 @@ export default async function Home({
   searchParams: Promise<NilaiFilterGL & { halaman?: string; ukuran?: string }>;
 }) {
   const sp = await searchParams;
+  const statusDuplikatNama =
+    sp.status_duplikat_nama === "duplikat" || sp.status_duplikat_nama === "unik"
+      ? sp.status_duplikat_nama
+      : undefined;
 
   const [opsiFilter, hasil, ringkasan, kinerjaPusat, sebaranTahapan, sebaranStatusPembayaran, trenBulanan, ambangHari] =
     await Promise.all([
@@ -47,6 +51,7 @@ export default async function Home({
         dari: sp.dari || undefined,
         sampai: sp.sampai || undefined,
         cari: sp.cari || undefined,
+        statusDuplikatNama,
         halaman: sp.halaman ? Number(sp.halaman) : 1,
         ukuran: sp.ukuran ? Number(sp.ukuran) : undefined,
       }),
@@ -71,6 +76,7 @@ export default async function Home({
     gl_status: sp.gl_status,
     pic_task_force: sp.pic_task_force,
     pic_pengajuan: sp.pic_pengajuan,
+    status_duplikat_nama: sp.status_duplikat_nama,
     dari: sp.dari,
     sampai: sp.sampai,
   };

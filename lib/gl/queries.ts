@@ -24,21 +24,19 @@ export interface FilterDaftarGL {
   dari?: string;
   sampai?: string;
   cari?: string;
+  statusDuplikatNama?: "duplikat" | "unik";
   halaman?: number;
   ukuran?: number;
 }
 
 export interface BarisDaftarGL {
   idJaminan: string;
-  /** Token terenkripsi untuk URL /gl/[token] -- lihat lib/gl/token-url.ts */
   tokenUrl: string;
   namaKorban: string;
   loket: string;
   namaRumahSakit: string | null;
-  /** Dipetakan dari nama_rumah_sakit lewat lib/gl/pic.ts, null kalau belum diatur di Pengaturan */
   picTaskForce: string | null;
   picPengajuan: string | null;
-  /** Jumlah baris GL aktif dengan Nama Korban persis sama (lib/gl/duplikat-korban.ts), termasuk baris ini sendiri */
   jumlahGLKorban: number;
   tglGl: string;
   tipeKlaim: string;
@@ -119,8 +117,17 @@ export async function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
       picTaskForce: filter.picTaskForce,
       picPengajuan: filter.picPengajuan,
     });
-    // Array kosong berarti tidak ada rumah sakit yang cocok dengan PIC ini
     kondisi.push(rumahSakit.length > 0 ? inArray(glMirror.namaRumahSakit, rumahSakit) : sql`false`);
+  }
+  if (filter.statusDuplikatNama) {
+    const jumlahNamaSama = sql`(
+      select count(*) from gl_mirror as gm2
+      where gm2.dihapus_pada is null
+        and upper(trim(gm2.nama_korban)) = upper(trim(${glMirror.namaKorban}))
+    )`;
+    kondisi.push(
+      filter.statusDuplikatNama === "duplikat" ? sql`${jumlahNamaSama} > 1` : sql`${jumlahNamaSama} = 1`,
+    );
   }
   return and(...kondisi);
 }
