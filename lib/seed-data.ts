@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { pengaturan, picRumahSakit } from "./db/schema";
-import { KUNCI_AMBANG_HARI } from "./pengaturan";
+import { KUNCI_AMBANG_HARI, KUNCI_BATAS_RIWAYAT } from "./pengaturan";
 
 // Pemetaan awal PIC per rumah sakit, sesuai daftar yang diberikan pemilik proyek. Nama rumah sakit di sini SUDAH disesuaikan ke ejaan persis yang
 // muncul di gl_mirror.nama_rumah_sakit (dicek manual satu-satu terhadap
@@ -52,7 +52,10 @@ const PIC_RUMAH_SAKIT_AWAL: {
 export async function seedReferensiDanPengaturan() {
   await db
     .insert(pengaturan)
-    .values([{ kunci: KUNCI_AMBANG_HARI, nilai: "14" }])
+    .values([
+      { kunci: KUNCI_AMBANG_HARI, nilai: "14" },
+      { kunci: KUNCI_BATAS_RIWAYAT, nilai: "100" },
+    ])
     .onConflictDoNothing({ target: pengaturan.kunci });
 
   await db

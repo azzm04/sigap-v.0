@@ -1,22 +1,14 @@
 import Link from "next/link";
-import { ChevronRight, Database, Trash2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
-import { FormUnggah } from "@/components/kelola-data/form-unggah";
-import { HapusSemuaDialog } from "@/components/kelola-data/hapus-semua-dialog";
-import { SinkronSheetsButton } from "@/components/kelola-data/sinkron-sheets-button";
+import { LompatHalaman } from "@/components/gl/lompat-halaman";
+import { PilihanUkuranHalaman } from "@/components/gl/ukuran-halaman";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Pagination } from "@/components/ui/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatWaktu } from "@/lib/format";
-import {
-  ambilRiwayatLogData,
-  ambilTotalLogData,
-  ambilWaktuImporTerakhirBerhasil,
-  type JenisLogData,
-} from "@/lib/impor-log";
-import { ambilTotalBarisAktif } from "@/lib/gl/sampah";
-import { BantuanInfo } from "@/components/ui/bantuan-info";
+import { ambilRiwayatLogDataBerhalaman, type JenisLogData } from "@/lib/impor-log";
 
 const LABEL_JENIS: Record<JenisLogData, string> = {
   impor: "Impor",
@@ -36,46 +28,46 @@ const TONE_JENIS: Record<JenisLogData, "info" | "danger" | "ok"> = {
   sinkron_sheets: "info",
 };
 
-export default async function KelolaDataPage() {
-  const [riwayat, totalLogData, totalBarisAktif, diimporTerakhir] = await Promise.all([
-    ambilRiwayatLogData(),
-    ambilTotalLogData(),
-    ambilTotalBarisAktif(),
-    ambilWaktuImporTerakhirBerhasil(),
-  ]);
+function buatUrlHalaman(ukuran: number, halaman: number): string {
+  const params = new URLSearchParams();
+  params.set("ukuran", String(ukuran));
+  params.set("halaman", String(halaman));
+  return `/kelola-data/riwayat?${params.toString()}`;
+}
+
+export default async function RiwayatLogDataPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ halaman?: string; ukuran?: string }>;
+}) {
+  const sp = await searchParams;
+  const hasil = await ambilRiwayatLogDataBerhalaman({
+    halaman: sp.halaman ? Number(sp.halaman) : undefined,
+    ukuran: sp.ukuran ? Number(sp.ukuran) : undefined,
+  });
 
   return (
     <AppShell>
-      <div className="flex flex-col gap-6 p-8">
-        <PageHeader
-          title={
-            <span className="text-lg font-semibold text-foreground">Kelola Data
-            <BantuanInfo>
-              Satu tempat untuk mengunggah berkas ekspor JRCare (KLAIM REPORT), berkas Data Pelengkap DASI, atau berkas Sentralisasi Pembayaran, format .xlsx atau .csv. Bisa unggah beberapa berkas sekaligus — sistem akan otomatis mendeteksi jenis tiap berkas.
-            </BantuanInfo>
-            </span>
-          }
-        />
+      <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col gap-2">
+          <Link
+            href="/kelola-data"
+            className="flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:underline"
+          >
+            <ArrowLeft className="size-3.5" />
+            Kembali ke Kelola Data
+          </Link>
+          <PageHeader
+            title="Detail Riwayat Log Data"
+            description={
+              <span className="text-sm text-muted-foreground">
+                Seluruh aktivitas yang mengubah data GL -- impor, hapus semua data, pemulihan, dan sinkronisasi.
+              </span>
+            }
+          />
+        </div>
 
         <Card>
-          <FormUnggah />
-        </Card>
-
-        <Card
-          title="Log Data"
-          description={`${riwayat.length.toLocaleString("id-ID")} aktivitas terakhir yang mengubah data GL — impor, hapus semua data, dan pemulihan.`}
-          actions={
-            totalLogData > riwayat.length ? (
-              <Link
-                href="/kelola-data/riwayat"
-                className="flex shrink-0 items-center gap-1 text-xs font-medium text-foreground hover:underline"
-              >
-                Detail Riwayat
-                <ChevronRight className="size-3.5" />
-              </Link>
-            ) : undefined
-          }
-        >
           <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-sm">
               <thead className="bg-surface-table-header">
@@ -90,14 +82,14 @@ export default async function KelolaDataPage() {
                 </tr>
               </thead>
               <tbody>
-                {riwayat.length === 0 && (
+                {hasil.baris.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
                       Belum ada aktivitas yang tercatat.
                     </td>
                   </tr>
                 )}
-                {riwayat.map((r) => (
+                {hasil.baris.map((r) => (
                   <tr key={r.id} className="border-t border-border align-top">
                     <td className="px-3 py-2 font-mono whitespace-nowrap">{formatWaktu(r.diimporPada)}</td>
                     <td className="px-3 py-2">
@@ -136,36 +128,30 @@ export default async function KelolaDataPage() {
               </tbody>
             </table>
           </div>
-        </Card>
 
-        <Card>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Database className="size-5" />
-              </div>
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-base font-semibold text-foreground">
-                    {totalBarisAktif.toLocaleString("id-ID")} baris GL aktif
-                  </span>
-                  <Badge tone="ok" pill>
-                    Sinkron
-                  </Badge>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  Terakhir diperbarui: {diimporTerakhir ? formatWaktu(diimporTerakhir) : "-"}
-                </span>
-              </div>
-            </div>
+          <div className="flex flex-col gap-3 border-t border-border px-1 pt-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <PilihanUkuranHalaman
+              ukuran={hasil.ukuran}
+              total={hasil.total}
+              basePath="/kelola-data/riwayat"
+              labelSatuan="aktivitas"
+            />
 
-            <div className="flex flex-wrap items-start gap-2 lg:shrink-0">
-              <SinkronSheetsButton />
-              <Link href="/kelola-data/sampah" className={buttonVariants({ variant: "outline" })}>
-                <Trash2 />
-                Buka Keranjang Sampah
-              </Link>
-              <HapusSemuaDialog totalBaris={totalBarisAktif} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <LompatHalaman
+                halamanAktif={hasil.halaman}
+                totalHalaman={hasil.totalHalaman}
+                ukuran={hasil.ukuran}
+                basePath="/kelola-data/riwayat"
+              />
+
+              <div className="flex justify-center sm:contents">
+                <Pagination
+                  halamanAktif={hasil.halaman}
+                  totalHalaman={hasil.totalHalaman}
+                  buatUrl={(h) => buatUrlHalaman(hasil.ukuran, h)}
+                />
+              </div>
             </div>
           </div>
         </Card>

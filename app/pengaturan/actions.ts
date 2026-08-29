@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { pengguna } from "@/lib/db/schema";
 import { hapusPicRumahSakit, simpanPicRumahSakit } from "@/lib/gl/pic";
 import { simpanTandaTangan } from "@/lib/laporan-tkp/tanda-tangan";
-import { setAmbangHari } from "@/lib/pengaturan";
+import { setAmbangHari, setBatasRiwayat } from "@/lib/pengaturan";
 
 function revalidasiTampilanPic() {
   revalidatePath("/pengaturan");
@@ -99,6 +99,20 @@ export async function ubahAmbangHari(formData: FormData) {
   revalidatePath("/pengaturan");
   revalidatePath("/peringatan");
   revalidatePath("/");
+}
+
+export async function ubahBatasRiwayat(formData: FormData) {
+  const nilai = formData.get("batasRiwayat");
+  const angka = Number(nilai);
+
+  if (!Number.isFinite(angka) || !Number.isInteger(angka) || angka <= 0) {
+    throw new Error("Batas riwayat harus berupa bilangan bulat positif.");
+  }
+
+  await setBatasRiwayat(angka);
+
+  revalidatePath("/pengaturan");
+  revalidatePath("/kelola-data");
 }
 
 export interface StatusKataSandi {
