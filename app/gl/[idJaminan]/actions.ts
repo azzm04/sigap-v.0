@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { glMirror, laporanSurveiTkp, statusProsesPusat, tinjauan } from "@/lib/db/schema";
 import {
   ambilPilihanTahapProses,
+  ambilRiwayatTahapProses,
   TAHAP_KELUAR_PERINGATAN,
   TAHAP_PEMICU_PAID,
   tandaiBerkasSelesai,
@@ -472,6 +473,25 @@ export async function simpanKskk(formData: FormData) {
   picuSinkronSheetsLatarBelakang();
 }
 
+// Begitu GL sudah "Berkas Diajukan Ke Pusat" atau "Berkas Selesai", KSKK
+// dan Laporan Survei TKP jadi bukti historis apa yang benar dikirim ke
+// pusat -- tidak boleh dihapus lagi (cuma boleh diganti/unggah ulang).
+// Mencegah GL "nyangkut" di Proses Pusat/status Diajukan Ke Pusat padahal
+// dokumen syaratnya sudah tidak ada. Jaring pengaman server -- tombol UI
+// juga sudah dikunci (components/gl/tabel-dokumen.tsx), ini cuma
+// pertahanan kalau ada yang memanggil action-nya langsung.
+async function pastikanDokumenBolehDihapus(idJaminan: string): Promise<void> {
+  const [tahapTerkini] = await ambilRiwayatTahapProses(idJaminan);
+  if (
+    tahapTerkini &&
+    (tahapTerkini.tahap === TAHAP_KELUAR_PERINGATAN || tahapTerkini.tahap === TAHAP_PEMICU_PAID)
+  ) {
+    throw new Error(
+      `GL ini sudah tahap "${tahapTerkini.tahap}" -- dokumen tidak bisa dihapus lagi, sudah jadi bukti historis. Gunakan "Ganti berkas" kalau perlu mengoreksi.`,
+    );
+  }
+}
+
 // Menghapus satu Laporan Survei TKP yang sudah dibuat (dari tabel gabungan
 // dokumen di halaman detail GL). Dicocokkan idJaminan sekaligus id supaya
 // tidak mungkin menghapus laporan milik GL lain lewat id yang salah ketik.
@@ -489,6 +509,8 @@ export async function hapusLaporanTkp(formData: FormData) {
   if (typeof idJaminan !== "string" || !idJaminan) {
     throw new Error("ID Jaminan tidak valid.");
   }
+
+  await pastikanDokumenBolehDihapus(idJaminan);
 
   await db
     .delete(laporanSurveiTkp)
@@ -511,6 +533,8 @@ export async function hapusKskk(formData: FormData) {
   if (typeof idJaminan !== "string" || !idJaminan) {
     throw new Error("ID Jaminan tidak valid.");
   }
+
+  await pastikanDokumenBolehDihapus(idJaminan);
 
   await db
     .update(glMirror)

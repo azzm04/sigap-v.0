@@ -81,7 +81,7 @@ export function FormTahapProses({
       >
         <input type="hidden" name="idJaminan" value={idJaminan} />
         <div className="flex flex-1 flex-col gap-1.5">
-          <label htmlFor="tahap" className="text-xs md:text-sm font-medium text-foreground">
+          <label htmlFor="tahap" className="text-sm md:text-base font-medium text-foreground">
             Tahap
           </label>
           <Select

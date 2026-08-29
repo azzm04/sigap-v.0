@@ -31,9 +31,31 @@ export interface BarisDokumen {
 const TAUTAN_AKSI =
   "flex h-8 w-fit items-center gap-1.5 rounded-lg border border-input px-3 text-xs font-medium whitespace-nowrap text-foreground hover:bg-muted";
 
-function TombolHapusDokumen({ idJaminan, baris }: { idJaminan: string; baris: BarisDokumen }) {
+function TombolHapusDokumen({
+  idJaminan,
+  baris,
+  terkunci,
+}: {
+  idJaminan: string;
+  baris: BarisDokumen;
+  terkunci: boolean;
+}) {
   const [terbuka, setTerbuka] = useState(false);
   const [pending, mulaiTransisi] = useTransition();
+
+  if (terkunci) {
+    return (
+      <Button
+        variant="destructive"
+        size="sm"
+        disabled
+        title='GL ini sudah "Berkas Diajukan Ke Pusat" -- dokumen jadi bukti historis, tidak bisa dihapus. Pakai "Ganti berkas" untuk mengoreksi.'
+      >
+        <Trash2 />
+        Hapus
+      </Button>
+    );
+  }
 
   function konfirmasi() {
     mulaiTransisi(async () => {
@@ -85,7 +107,16 @@ function TombolHapusDokumen({ idJaminan, baris }: { idJaminan: string; baris: Ba
 // -- kolom Jenis menandai dokumen mana yang mana. Lihat = PDF tampil inline
 // di tab baru (rute API dengan ?unduh dihilangkan, lihat app/api/laporan-tkp
 // dan app/api/kskk), Unduh = tetap force-download seperti sebelumnya.
-export function TabelDokumen({ idJaminan, daftar }: { idJaminan: string; daftar: BarisDokumen[] }) {
+export function TabelDokumen({
+  idJaminan,
+  daftar,
+  terkunci,
+}: {
+  idJaminan: string;
+  daftar: BarisDokumen[];
+  /** true kalau GL sudah "Berkas Diajukan Ke Pusat"/"Berkas Selesai" -- dokumen tidak boleh dihapus lagi, cuma boleh diganti */
+  terkunci: boolean;
+}) {
   if (daftar.length === 0) return null;
 
   return (
@@ -132,7 +163,7 @@ export function TabelDokumen({ idJaminan, daftar }: { idJaminan: string; daftar:
                   <a href={b.hrefUnduh} className={TAUTAN_AKSI}>
                     Unduh
                   </a>
-                  <TombolHapusDokumen idJaminan={idJaminan} baris={b} />
+                  <TombolHapusDokumen idJaminan={idJaminan} baris={b} terkunci={terkunci} />
                 </div>
               </td>
             </tr>
