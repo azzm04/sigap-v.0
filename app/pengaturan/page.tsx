@@ -16,28 +16,29 @@ import { ambilAmbangHari, ambilBatasRiwayat } from "@/lib/pengaturan";
 import { ubahAmbangHari, ubahBatasRiwayat } from "./actions";
 
 export default async function PengaturanPage() {
-  const [ambangHari, batasRiwayat, picRumahSakit, daftarTandaTangan] = await Promise.all([
-    ambilAmbangHari(),
-    ambilBatasRiwayat(),
-    ambilSemuaPicRumahSakit(),
-    ambilSemuaTandaTangan(),
-  ]);
+  const [ambangHari, batasRiwayat, picRumahSakit, daftarTandaTangan] =
+    await Promise.all([
+      ambilAmbangHari(),
+      ambilBatasRiwayat(),
+      ambilSemuaPicRumahSakit(),
+      ambilSemuaTandaTangan(),
+    ]);
 
   return (
     <AppShell>
-      {/* Ubah max-w-2xl menjadi max-w-6xl agar ada ruang lebih lebar untuk 2 kolom */}
       <div className="flex max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <PageHeader
-          title = {
-            <span className="text-lg font-semibold">
+          title={
+            <span className="text-lg md:text-xl font-semibold">
               Pengaturan
-            <BantuanInfo>Kelola ambang batas peringatan dan kata sandi akun.</BantuanInfo>
+              <BantuanInfo>
+                Kelola ambang batas peringatan dan kata sandi akun.
+              </BantuanInfo>
             </span>
           }
         />
 
-        {/* Bungkus Card dengan Grid: 1 kolom di HP, 2 kolom di tablet (md) ke atas */}
-        <div className="grid grid-cols-2 items-start gap-6 md:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-2">
           <Card
             title={
               <span className="inline-flex items-center gap-1.5">
@@ -45,10 +46,8 @@ export default async function PengaturanPage() {
               </span>
             }
             description={
-              <span className="text-sm">
-                Jumlah hari sejak Tanggal Kejadian (Tgl LAKA DASI) yang menjadi ambang batas
-                peringatan. Jika GL sudah melewati ambang ini, status GL akan berubah menjadi
-                Peringatan.
+              <span className="text-sm md:text-base text-muted-foreground">
+                Jika GL sudah melewati ambang ini, status GL akan berubah menjadi Peringatan.
               </span>
             }
           >
@@ -80,11 +79,12 @@ export default async function PengaturanPage() {
             </form>
 
             <div className="flex flex-col gap-1.5 border-t border-border pt-3">
-              <h4 className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <h4 className="inline-flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground">
                 Batas Riwayat Log Data
               </h4>
-              <p className="text-sm text-muted-foreground">
-                Jumlah baris riwayat log data yang ditampilkan di halaman Kelola Data. Jika riwayat lebih panjang dari batas ini, halaman Kelola Data menampilkan `Detail Riwayat`
+              <p className="text-sm md:text-base text-muted-foreground">
+                Jumlah baris riwayat log data yang ditampilkan di halaman Kelola
+                Data.
               </p>
               <form
                 action={ubahBatasRiwayat}
@@ -120,7 +120,8 @@ export default async function PengaturanPage() {
               <span className="inline-flex items-center gap-1.5">
                 Ubah Kata Sandi
                 <BantuanInfo>
-                  Ganti kata sandi Anda secara berkala untuk menjaga keamanan akun SIGAP.
+                  Ganti kata sandi Anda secara berkala untuk menjaga keamanan
+                  akun SIGAP.
                 </BantuanInfo>
               </span>
             }

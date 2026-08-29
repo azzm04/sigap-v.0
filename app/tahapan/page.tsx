@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { DaftarSebaranTahapan } from "@/components/gl/grafik";
 import { PageHeader } from "@/components/ui/page-header";
 import { ambilSebaranTahapan } from "@/lib/gl/ringkasan";
+import { BantuanInfo } from "@/components/ui/bantuan-info";
 
 export default async function DetailSebaranTahapanPage() {
   const data = await ambilSebaranTahapan();
@@ -20,8 +21,14 @@ export default async function DetailSebaranTahapanPage() {
         </Link>
 
         <PageHeader
-          title="Detail Sebaran per Tahapan"
-          description="Seluruh tahapan GL aktif, diurutkan dari jumlah terbanyak."
+          title={
+            <span className="text-xl font-semibold tracking-tight">
+              Detail Sebaran per Tahapan
+              <BantuanInfo>
+                Seluruh tahapan GL aktif, diurutkan dari jumlah terbanyak.
+              </BantuanInfo>
+            </span>
+          }
         />
 
         <DaftarSebaranTahapan data={data} />

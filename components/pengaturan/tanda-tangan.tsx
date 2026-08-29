@@ -88,8 +88,14 @@ export function TandaTanganLaporanTkp({
 
   return (
     <Card
-      title="Tanda Tangan Laporan Survei TKP"
-      description={`Unggah tanda tangan digital (PNG/JPEG) dan nama tampil untuk Kepala Cabang Semarang dan Petugas Survei. Tanda tangan ini akan dicetak di Laporan Survei TKP.`}
+      title={
+        <span className="text-base md:text-lg font-semibold">
+          Tanda Tangan Laporan Survei TKP
+          <BantuanInfo>
+            Unggah tanda tangan digital (PNG/JPEG) dan nama tampil untuk Kepala Cabang Semarang dan Petugas Survei. Tanda tangan ini akan dicetak di Laporan Survei TKP.
+          </BantuanInfo>
+        </span>
+      }
     >
       <BarisFormTandaTangan
         pemilik={pemilikKepalaCabang}

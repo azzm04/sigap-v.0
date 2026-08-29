@@ -66,7 +66,7 @@ export default async function ProsesPusatPage({
       <div className="flex flex-col gap-6 p-4 sm:p-6 lg:p-8">
         <PageHeader
           title={
-            <span className="inline-flex items-center gap-1.5 text-sm md:text-base">
+            <span className="inline-flex items-center gap-1.5 text-lg md:text-xl">
               Proses Pusat
               <BantuanInfo>
                 GL yang sudah diajukan ke pusat (tahap &quot;{TAHAP_KELUAR_PERINGATAN}&quot;) dan

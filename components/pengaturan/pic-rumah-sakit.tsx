@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BarisPicRumahSakit } from "@/lib/gl/pic";
+import { BantuanInfo } from "../ui/bantuan-info";
 
 function FormPic({
   awal,
@@ -115,8 +116,14 @@ export function PicRumahSakit({ data }: { data: BarisPicRumahSakit[] }) {
 
   return (
     <Card
-      title="Pemetaan PIC Rumah Sakit"
-      description='PIC Task Force mengunjungi rumah sakit dan mengecek status korban. PIC Pengajuan mengajukan GL yang sudah "Verifikasi User" ke DASI-JR. Nama Rumah Sakit harus persis sama (huruf besar/kecil tidak masalah) dengan yang muncul di berkas ekspor supaya PIC-nya ke-mapping otomatis di tabel GL.'
+      title={
+        <span className="inline-flex items-center gap-1.5">
+        Pemetaan PIC Rumah Sakit
+        <BantuanInfo>
+          PIC Task Force mengunjungi rumah sakit dan mengecek status korban. PIC Pengajuan mengajukan GL yang sudah `Verifikasi User` ke DASI-JR. Nama Rumah Sakit harus persis sama (huruf besar/kecil tidak masalah) dengan yang muncul di berkas ekspor supaya PIC-nya ke-mapping otomatis di tabel GL.
+        </BantuanInfo>
+        </span>
+      }
       actions={
         <Button size="sm" onClick={bukaTambah}>
           <Plus />

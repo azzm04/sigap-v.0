@@ -50,7 +50,7 @@ export default async function SebaranPage({
       <div className="flex flex-col gap-6 p-8">
         <PageHeader
           title={
-            <span className="text-sm md:text-base text-muted-foreground">Sebaran Data Rumah Sakit
+            <span className="text-lg md:text-xl font-semibold">Sebaran Data Rumah Sakit
             <BantuanInfo>
               Analisis distribusi Guarantee Letter berdasarkan rumah sakit mitra.
             </BantuanInfo>
