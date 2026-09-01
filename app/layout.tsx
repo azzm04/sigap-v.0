@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SIGAP",
+  title: "GL TRACKER",
   description: "Sistem pemantauan GL — Jasa Raharja cabang Semarang",
 };
 

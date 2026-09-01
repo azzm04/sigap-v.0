@@ -9,10 +9,6 @@ import {
   PEMILIK_PETUGAS_SURVEI,
 } from "@/lib/laporan-tkp/tanda-tangan";
 
-// PDF DIBUAT ULANG tiap diunduh dari field yang tersimpan + data GL/tanda
-// tangan TERKINI (lib/db/schema.ts, komentar laporan_survei_tkp) -- bukan
-// berkas statis yang disimpan sekali. Sudah dilindungi middleware, dicek
-// lagi di sini sebagai lapisan kedua (pola sama seperti /api/ekspor).
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user) {
@@ -29,13 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!detail) {
     return NextResponse.json({ pesan: "GL untuk laporan ini tidak ditemukan." }, { status: 404 });
   }
-  // Hari/Tanggal Survei: Tanggal Masuk (otomatis) kalau ada, kalau tidak
-  // pakai tanggalSurveiManual yang disimpan saat laporan dibuat (lihat
-  // app/gl/[idJaminan]/actions.ts) -- salah satunya WAJIB terisi, ditegakkan
-  // di sana saat penyimpanan, bukan di sini.
   const tanggalSurvei = detail.tanggalMasuk ?? laporan.tanggalSurveiManual;
-  // Tgl Kejadian (Tgl LAKA DASI) boleh digantikan Tanggal Masuk -- lihat
-  // komentar sama di simpanLaporanSurveiTkp (app/gl/[idJaminan]/actions.ts).
   const tglKejadianEfektif = detail.tglKejadian ?? detail.tanggalMasuk;
   if (!detail.lokasi || !tglKejadianEfektif || !tanggalSurvei) {
     return NextResponse.json(
@@ -44,9 +34,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     );
   }
 
-  // Kepala Cabang dan Petugas Survei KEDUANYA tetap/satu-satunya untuk
-  // semua laporan -- tidak lagi dipetakan dari PIC Pengajuan GL ini (lihat
-  // komentar sentinel di lib/laporan-tkp/tanda-tangan.ts).
   const [ttdKepalaCabang, ttdPetugasSurvei] = await Promise.all([
     ambilTandaTangan(PEMILIK_KEPALA_CABANG),
     ambilTandaTangan(PEMILIK_PETUGAS_SURVEI),
@@ -67,13 +54,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     ttdPetugasSurvei,
   });
 
-  // Nama berkas sengaja TIDAK memuat Nomor ID Jaminan/nama korban (CLAUDE.md
-  // aturan keras #4) -- pakai id lokal laporan saja.
   const namaBerkas = `laporan-survei-tkp-${laporan.id}.pdf`;
 
-  // ?unduh=1 -> paksa download (tombol "Unduh PDF"); tanpa itu -> tampil
-  // inline di tab baru (tombol "Lihat", browser modern langsung merender
-  // PDF-nya sendiri tanpa perlu viewer kustom di aplikasi ini).
   const modeUnduh = request.nextUrl.searchParams.get("unduh") === "1";
 
   return new NextResponse(new Uint8Array(pdfBytes), {

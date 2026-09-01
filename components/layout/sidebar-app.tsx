@@ -49,7 +49,7 @@ export function SidebarApp({
             </div>
             <div>
               <h1 className="font-mono text-lg font-extrabold tracking-wide text-primary">
-                SIGAP
+                GLTRACKER
               </h1>
               <p className="text-xs text-muted-foreground">Monitoring GL</p>
             </div>
