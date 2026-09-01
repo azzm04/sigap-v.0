@@ -2,6 +2,7 @@ import { simpanTandaTanganAction } from "@/app/pengaturan/actions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { FormAksi } from "@/components/ui/form-aksi";
+import { InputBerkas } from "@/components/ui/input-berkas";
 import { Label } from "@/components/ui/label";
 import type { BarisTandaTangan } from "@/lib/laporan-tkp/tanda-tangan";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
@@ -46,10 +47,9 @@ function BarisFormTandaTangan({
 
       <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-56">
         <Label htmlFor={`${idBase}-gambar`}>Gambar (PNG/JPEG)</Label>
-        <input
+        <InputBerkas
           id={`${idBase}-gambar`}
           name="gambar"
-          type="file"
           accept="image/png,image/jpeg"
           className="text-xs text-foreground file:mr-2 file:h-7 file:rounded-md file:border-0 file:bg-muted file:px-2.5 file:text-xs file:font-medium file:text-foreground"
         />

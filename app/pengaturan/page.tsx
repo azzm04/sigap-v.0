@@ -134,11 +134,6 @@ export default async function PengaturanPage() {
           pemilikKepalaCabang={PEMILIK_KEPALA_CABANG}
           pemilikPetugasSurvei={PEMILIK_PETUGAS_SURVEI}
         />
-
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-          Aplikasi tidak pernah menyentuh DASI atau JRCare secara langsung. Data
-          hanya masuk lewat unggahan berkas ekspor di halaman Kelola Data.
-        </p>
       </div>
     </AppShell>
   );

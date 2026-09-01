@@ -32,7 +32,7 @@ export function InputBerkas({
   }
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex min-w-0 items-center gap-1.5">
       <input
         ref={inputRef}
         id={id}
@@ -42,13 +42,13 @@ export function InputBerkas({
         required={required}
         disabled={disabled}
         onChange={(e) => setAdaBerkas(!!e.target.files?.length)}
-        className={className}
+        className={`min-w-0 shrink overflow-hidden ${className ?? ""}`}
       />
       {adaBerkas && !disabled && (
         <button
           type="button"
           onClick={batalkanBerkas}
-          className="text-muted-foreground hover:text-destructive"
+          className="shrink-0 text-muted-foreground hover:text-destructive"
           aria-label="Batalkan pilihan berkas"
         >
           <X className="size-4" />
