@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { describe, expect, it } from "vitest";
+import { nominalInvoiceKeRupiah } from "./sumber-sentralisasi";
 import { GalatValidasiSentralisasi, parseBerkasSentralisasi } from "./sumber-sentralisasi";
 
 const HEADER_ROW = [
@@ -146,5 +147,31 @@ describe("parseBerkasSentralisasi", () => {
 
     expect(hasil).toHaveLength(1);
     expect(hasil[0].statusInvoice).toBe("Dalam Proses");
+  });
+});
+
+describe("nominalInvoiceKeRupiah", () => {
+  it("membuang titik pemisah ribuan pada sel bertipe teks", () => {
+    expect(nominalInvoiceKeRupiah("20.968.750")).toBe(20968750);
+    expect(nominalInvoiceKeRupiah("50.000.000")).toBe(50000000);
+    expect(nominalInvoiceKeRupiah("4.000.000")).toBe(4000000);
+  });
+
+  it("mengembalikan sel bertipe angka dengan mengalikan 1000", () => {
+    // Excel menafsirkan "616.280" sebagai desimal 616.28 -- titik di berkas
+    // ini SELALU pemisah ribuan, tidak pernah koma desimal. Diuji ke 109
+    // sel bertipe angka pada berkas nyata: 109/109 cocok persis dengan
+    // gl_mirror.jumlah_pembayaran setelah dikalikan 1000.
+    expect(nominalInvoiceKeRupiah(616.28)).toBe(616280);
+    expect(nominalInvoiceKeRupiah(913.235)).toBe(913235);
+    expect(nominalInvoiceKeRupiah(200)).toBe(200000);
+    expect(nominalInvoiceKeRupiah(562.7)).toBe(562700);
+  });
+
+  it("mengembalikan 0 untuk sel kosong, bukan NaN", () => {
+    expect(nominalInvoiceKeRupiah(null)).toBe(0);
+    expect(nominalInvoiceKeRupiah(undefined)).toBe(0);
+    expect(nominalInvoiceKeRupiah("")).toBe(0);
+    expect(nominalInvoiceKeRupiah("   ")).toBe(0);
   });
 });
