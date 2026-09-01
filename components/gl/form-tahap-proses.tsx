@@ -12,12 +12,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
+import { LOKET_CABANG, TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
 
 // Gagal (termasuk "Dokumen Belum Lengkap" -- syarat Laporan Survei TKP +
-// KSKK untuk tahap "Berkas Diajukan Ke Pusat", lihat catatTahapProses di
-// actions.ts) ditampilkan sebagai pop-up modal, BUKAN error mentah/diam --
+// KSKK untuk tahap "Berkas Belum Di Limpah" DAN "Berkas Diajukan Ke
+// Pusat", lihat catatTahapProses di actions.ts) ditampilkan sebagai pop-up modal, BUKAN error mentah/diam --
 // arahan pemilik proyek supaya petugas tidak bisa mencatat tahap itu tanpa
 // sadar dokumennya belum lengkap.
+//
+// Memilih TAHAP_BELUM_LIMPAH ("Berkas Belum Di Limpah") memunculkan satu
+// dropdown tambahan: loket tujuan pelimpahan, wajib diisi (ditegakkan lagi
+// di server, lihat catatTahapProses). Daftar loketnya diimpor langsung dari
+// lib/gl/pelimpahan.ts -- modul itu murni tanpa db, jadi aman masuk bundel
+// client, beda dari lib/gl/tahap-proses.ts.
 //
 // Memilih TAHAP_PEMICU_PAID ("Berkas Selesai") dicegat dulu dengan pop-up
 // KONFIRMASI (bukan error) sebelum benar-benar submit -- konsekuensinya
@@ -95,6 +102,24 @@ export function FormTahapProses({
             onChange={(e) => setTahapDipilih(e.target.value)}
           />
         </div>
+        {tahapDipilih === TAHAP_BELUM_LIMPAH && (
+          <div className="flex flex-1 flex-col gap-1.5">
+            <label
+              htmlFor="loketPelimpahan"
+              className="text-sm md:text-base font-medium text-foreground"
+            >
+              Loket Cabang tujuan
+            </label>
+            <Select
+              id="loketPelimpahan"
+              name="loketPelimpahan"
+              required
+              placeholder="Pilih loket..."
+              options={[...LOKET_CABANG]}
+              className="w-full"
+            />
+          </div>
+        )}
         <button
           type="submit"
           disabled={sedangProses}

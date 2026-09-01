@@ -26,9 +26,12 @@ export function DetailTahapProsesPusat({
         <BantuanInfo>
           Diisi manual oleh petugas berdasarkan pengecekan langsung di
           sistem pusat, karena SIGAP tidak terhubung ke sistem pusat.
-          Tahap boleh dipilih bebas sesuai kondisi terkini. Begitu tahap
-          &quot;Berkas Selesai&quot; dicatat, Status Pembayaran otomatis
-          menjadi Paid.
+          Tahap boleh dipilih bebas sesuai kondisi terkini. Memilih
+          &quot;Berkas Belum Di Limpah&quot; mewajibkan pilih loket cabang
+          tujuan, dan GL-nya masuk ke halaman Pelimpahan sampai tahap
+          berikutnya dicatat. Dua tahap pertama sama-sama mensyaratkan
+          Laporan Survei TKP dan KSKK sudah ada. Begitu tahap &quot;Berkas
+          Selesai&quot; dicatat, Status Pembayaran otomatis menjadi Paid.
         </BantuanInfo>
       </h3>
 
@@ -39,7 +42,8 @@ export function DetailTahapProsesPusat({
           </span>
           {tahapTerkini ? (
             <span className="text-sm md:text-base font-semibold text-foreground">
-              {tahapTerkini.tahap}{" "}
+              {tahapTerkini.tahap}
+              {tahapTerkini.loketPelimpahan ? ` — ${tahapTerkini.loketPelimpahan}` : ""}{" "}
               <span className="font-normal text-muted-foreground">
                 — dicatat {formatWaktu(tahapTerkini.dicatatPada)} oleh{" "}
                 {tahapTerkini.namaPengguna}

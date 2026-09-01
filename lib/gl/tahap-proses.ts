@@ -1,9 +1,17 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror, pengguna, statusProsesPusat, tinjauan } from "../db/schema";
+import { TAHAP_BELUM_LIMPAH } from "./pelimpahan";
 
-// Disederhanakan jadi 2 tahap tetap atas arahan eksplisit pemilik proyek
-export const TAHAP_PROSES_PUSAT = ["Berkas Diajukan Ke Pusat", "Berkas Selesai"] as const;
+// Urutannya mewakili alur maju: berkas menunggu dilimpahkan ke loket lain,
+// lalu diajukan ke pusat, lalu selesai. TAHAP_BELUM_LIMPAH tidak wajib
+// dilalui -- cuma untuk GL yang berkasnya memang perlu berpindah loket
+// (lihat lib/gl/pelimpahan.ts).
+export const TAHAP_PROSES_PUSAT = [
+  TAHAP_BELUM_LIMPAH,
+  "Berkas Diajukan Ke Pusat",
+  "Berkas Selesai",
+] as const;
 
 // Tahap yang memicu status_pembayaran otomatis jadi Paid ketika petugas mencatatnya (lihat app/gl/[idJaminan]/actions.ts, catatTahapProses)
 export const TAHAP_PEMICU_PAID = "Berkas Selesai";
@@ -43,6 +51,8 @@ export async function tandaiBerkasSelesai(
 export interface BarisTahapProses {
   id: number;
   tahap: string;
+  /** Hanya terisi untuk tahap TAHAP_BELUM_LIMPAH -- loket tujuan pelimpahan */
+  loketPelimpahan: string | null;
   dicatatPada: Date;
   namaPengguna: string;
 }
@@ -54,6 +64,7 @@ export async function ambilRiwayatTahapProses(
     .select({
       id: statusProsesPusat.id,
       tahap: statusProsesPusat.tahap,
+      loketPelimpahan: statusProsesPusat.loketPelimpahan,
       dicatatPada: statusProsesPusat.dicatatPada,
       namaPengguna: pengguna.username,
     })
