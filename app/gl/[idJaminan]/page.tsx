@@ -59,27 +59,13 @@ export default async function DetailGLPage({
   const stagnasi = hitungStagnasi(riwayat, detail.tglGl);
   const diabaikanAktif = catatanTinjauan.find((c) => c.diabaikan) ?? null;
   const tahapTerkini = riwayatTahapProses[0] ?? null;
-  // Begitu GL sudah "Berkas Diajukan Ke Pusat" atau "Berkas Selesai", KSKK
-  // dan Laporan Survei TKP jadi bukti historis apa yang benar dikirim ke
-  // pusat -- tombol Hapus di TabelDokumen dikunci (Ganti berkas tetap
-  // aktif untuk koreksi). Mencegah GL "nyangkut" di Proses Pusat/status
-  // Diajukan Ke Pusat tanpa dokumen yang jadi syaratnya. Guard yang sama
-  // juga ditegakkan di server (hapusKskk/hapusLaporanTkp, actions.ts).
   const dokumenTerkunci =
     tahapTerkini?.tahap === TAHAP_KELUAR_PERINGATAN || tahapTerkini?.tahap === TAHAP_PEMICU_PAID;
   const namaPetugasSurvei = ttdPetugasSurvei?.namaTampil?.trim() || null;
-  // Tgl Kejadian (Tgl LAKA DASI) boleh digantikan Tanggal Masuk -- keduanya
-  // dianggap tanggal yang sama secara operasional (arahan pemilik proyek),
-  // dan Tanggal Masuk sudah punya jalur isi manual sendiri di form
-  // Kunjungan PIC Task Force, jadi tidak perlu input Tgl LAKA terpisah.
-  // Lokasi TETAP wajib -- diisi manual di form yang sama kalau DASI belum ada.
   const tglKejadianEfektif = detail.tglKejadian ?? detail.tanggalMasuk;
   const dataLaporanTkpLengkap = !!detail.lokasi && !!tglKejadianEfektif;
   const perluTanggalSurveiManual = !detail.tanggalMasuk;
 
-  // Laporan Survei TKP (bisa banyak, riwayat) dan KSKK (maks satu per GL,
-  // lihat kolom kskk* di gl_mirror) disatukan jadi satu tabel dokumen --
-  // lihat components/gl/tabel-dokumen.tsx.
   const daftarDokumen: BarisDokumen[] = [
     ...riwayatLaporanTkp.map((l) => ({
       jenis: "Laporan Survei TKP" as const,
@@ -93,17 +79,17 @@ export default async function DetailGLPage({
     })),
     ...(detail.kskkNamaBerkas && detail.kskkDiunggahPada
       ? [
-          {
-            jenis: "KSKK" as const,
-            key: "kskk",
-            label: detail.kskkNamaBerkas,
-            waktu: detail.kskkDiunggahPada,
-            petugas: null,
-            hrefLihat: `/api/kskk/${tokenMentah}`,
-            hrefUnduh: `/api/kskk/${tokenMentah}?unduh=1`,
-            laporanId: null,
-          },
-        ]
+        {
+          jenis: "KSKK" as const,
+          key: "kskk",
+          label: detail.kskkNamaBerkas,
+          waktu: detail.kskkDiunggahPada,
+          petugas: null,
+          hrefLihat: `/api/kskk/${tokenMentah}`,
+          hrefUnduh: `/api/kskk/${tokenMentah}?unduh=1`,
+          laporanId: null,
+        },
+      ]
       : []),
   ].sort((a, b) => b.waktu.getTime() - a.waktu.getTime());
 
@@ -146,6 +132,7 @@ export default async function DetailGLPage({
         <DetailKskk
           idJaminan={detail.idJaminan}
           kskkNamaBerkas={detail.kskkNamaBerkas}
+          kskkTempelTtd={detail.kskkTempelTtd}
           daftarDokumen={daftarDokumen}
           dokumenTerkunci={dokumenTerkunci}
         />

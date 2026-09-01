@@ -26,12 +26,12 @@ export function DetailLaporanTkp({
         Laporan Survei TKP
         <BantuanInfo>
           Nama Korban dan Tempat/Tgl Kecelakaan diambil otomatis dari data
-          GL. Petugas Survei TETAP untuk semua laporan (bukan dari PIC GL
+          GL. Mobile Service TETAP untuk semua laporan (bukan dari PIC GL
           ini) — hanya Nomor LP, Alamat Korban, Uraian dan Kesimpulan, Nama
           Saksi (+ Tanda Tangan Saksi, opsional) yang diisi manual.
           Hari/Tanggal Survei otomatis dari Tanggal Masuk kalau sudah
           diisi, kalau belum wajib diisi manual. Tanda tangan Kepala
-          Cabang dan Petugas Survei diambil dari halaman Pengaturan.
+          Cabang dan Mobile Service diambil dari halaman Pengaturan.
         </BantuanInfo>
       </h3>
 
@@ -54,7 +54,7 @@ export function DetailLaporanTkp({
       <Card className="min-w-0">
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-3">
           <Field label="Nama Korban (otomatis)" value={detail.namaKorban} />
-          <Field label="Petugas Survei (tetap)" value={namaPetugasSurvei} />
+          <Field label="Mobile Service (tetap)" value={namaPetugasSurvei} />
           <Field
             label={
               detail.tglKejadian
@@ -75,6 +75,7 @@ export function DetailLaporanTkp({
           perluTanggalSurveiManual={perluTanggalSurveiManual}
         />
       </Card>
+
     </section>
   );
 }

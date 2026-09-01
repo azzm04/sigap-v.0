@@ -1,6 +1,7 @@
 import { simpanTandaTanganAction } from "@/app/pengaturan/actions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { FormAksi } from "@/components/ui/form-aksi";
 import { Label } from "@/components/ui/label";
 import type { BarisTandaTangan } from "@/lib/laporan-tkp/tanda-tangan";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
@@ -19,9 +20,13 @@ function BarisFormTandaTangan({
   const idBase = pemilik.replace(/[^a-zA-Z0-9]/g, "-");
 
   return (
-    <form
+    <FormAksi
       action={simpanTandaTanganAction}
+      labelTombol="Simpan"
+      judulGagal={`Gagal Menyimpan Tanda Tangan ${label}`}
       className="flex flex-col gap-3 border-t border-border py-4 first:border-t-0 first:pt-0 sm:flex-row sm:items-end"
+      kelasBarisTombol="flex shrink-0 items-end"
+      kelasTombol="h-8 px-4"
     >
       <input type="hidden" name="pemilik" value={pemilik} />
 
@@ -65,13 +70,7 @@ function BarisFormTandaTangan({
         <Input id={`${idBase}-jabatan`} name="jabatan" defaultValue={data?.jabatan ?? ""} />
       </div>
 
-      <button
-        type="submit"
-        className="h-8 w-fit shrink-0 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
-      >
-        Simpan
-      </button>
-    </form>
+    </FormAksi>
   );
 }
 
@@ -90,9 +89,9 @@ export function TandaTanganLaporanTkp({
     <Card
       title={
         <span className="text-base md:text-lg font-semibold">
-          Tanda Tangan Laporan Survei TKP
+          Tanda Tangan Laporan Survei TKP &amp; KSKK
           <BantuanInfo>
-            Unggah tanda tangan digital (PNG/JPEG) dan nama tampil untuk Kepala Cabang Semarang dan Petugas Survei. Tanda tangan ini akan dicetak di Laporan Survei TKP.
+            Unggah tanda tangan digital (PNG/JPEG) dan nama tampil untuk Kepala Cabang Semarang dan Mobile Service. Dipakai di Laporan Survei TKP yang dibuat SIGAP, dan ditempelkan ke berkas KSKK saat dibuka -- kecuali kalau centang &quot;Tanda tangan Kepala Cabang &amp; Mobile Service&quot; dilepas saat mengunggah KSKK-nya.
           </BantuanInfo>
         </span>
       }
@@ -105,9 +104,9 @@ export function TandaTanganLaporanTkp({
       />
       <BarisFormTandaTangan
         pemilik={pemilikPetugasSurvei}
-        label="Petugas Survei"
+        label="Mobile Service"
         data={peta.get(pemilikPetugasSurvei)}
-        placeholderNama="Nama Petugas Survei"
+        placeholderNama="Nama Mobile Service"
       />
     </Card>
   );

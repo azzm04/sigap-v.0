@@ -4,10 +4,9 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { glMirror } from "@/lib/db/schema";
 import { dekripsiToken } from "@/lib/gl/token-url";
+import { ambilTandaTangan, PEMILIK_KEPALA_CABANG, PEMILIK_PETUGAS_SURVEI } from "@/lib/laporan-tkp/tanda-tangan";
+import { tempelTtdKskk } from "@/lib/laporan-tkp/tempel-ttd-kskk";
 
-// Sama seperti /gl/[idJaminan]: token terenkripsi di URL, BUKAN Nomor ID
-// Jaminan asli (CLAUDE.md aturan keras #4). Dilindungi middleware, dicek
-// lagi di sini sebagai lapisan kedua (pola sama seperti /api/laporan-tkp).
 export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const session = await auth();
   if (!session?.user) {
@@ -21,7 +20,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const [gl] = await db
-    .select({ kskk: glMirror.kskk, kskkNamaBerkas: glMirror.kskkNamaBerkas })
+    .select({
+      kskk: glMirror.kskk,
+      kskkNamaBerkas: glMirror.kskkNamaBerkas,
+      kskkTempelTtd: glMirror.kskkTempelTtd,
+    })
     .from(glMirror)
     .where(eq(glMirror.idJaminan, idJaminan))
     .limit(1);
@@ -31,17 +34,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const base64 = gl.kskk.split(",")[1] ?? "";
-  const bytes = Buffer.from(base64, "base64");
+  const bytesAsli = Buffer.from(base64, "base64");
 
-  // Nama berkas dipertahankan apa adanya (bisa saja memuat nama korban,
-  // sama seperti kebiasaan penamaan berkas manual yang sudah berjalan) --
-  // aman karena hanya diunduh lewat rute terautentikasi ini, bukan URL publik.
+  // Tempelkan tanda tangan Mobile Service dan Kepala Cabang dari Pengaturan
+  // ke halaman ke-2 PDF KSKK. Kalau belum ada tanda tangan yang diunggah,
+  // atau PDF tidak bisa dimodifikasi, PDF asli dikembalikan apa adanya.
+  //
+  // DILEWATI kalau petugas melepas centang "Tanda tangan Kepala Cabang &
+  // Mobile Service" saat mengunggah -- kasus GL pelimpahan, berkasnya sudah
+  // bertanda tangan dari loket lain. Penempelan terjadi saat berkas DIBACA,
+  // jadi tanpa penanda ini tanda tangannya akan dobel setiap kali dibuka.
+  let bytesAkhir: Uint8Array = bytesAsli;
+  if (gl.kskkTempelTtd) {
+    const [ttdPetugasSurvei, ttdKepalaCabang] = await Promise.all([
+      ambilTandaTangan(PEMILIK_PETUGAS_SURVEI),
+      ambilTandaTangan(PEMILIK_KEPALA_CABANG),
+    ]);
+    bytesAkhir = await tempelTtdKskk(bytesAsli, ttdPetugasSurvei, ttdKepalaCabang);
+  }
+
   const namaBerkas = gl.kskkNamaBerkas || "kskk.pdf";
 
-  // ?unduh=1 -> paksa download; tanpa itu -> tampil inline di tab baru (lihat komentar serupa di /api/laporan-tkp).
   const modeUnduh = request.nextUrl.searchParams.get("unduh") === "1";
 
-  return new NextResponse(new Uint8Array(bytes), {
+  return new NextResponse(new Uint8Array(bytesAkhir), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `${modeUnduh ? "attachment" : "inline"}; filename="${namaBerkas.replace(/"/g, "")}"`,

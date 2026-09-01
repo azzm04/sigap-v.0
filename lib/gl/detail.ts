@@ -27,6 +27,7 @@ export interface DetailGL {
   tanggalPulangPasien: string | null;
   kskkNamaBerkas: string | null;
   kskkDiunggahPada: Date | null;
+  kskkTempelTtd: boolean;
   diimporPada: Date;
 }
 
@@ -57,6 +58,7 @@ export async function ambilDetailGL(idJaminan: string): Promise<DetailGL | null>
       tanggalPulangPasien: glMirror.tanggalPulangPasien,
       kskkNamaBerkas: glMirror.kskkNamaBerkas,
       kskkDiunggahPada: glMirror.kskkDiunggahPada,
+      kskkTempelTtd: glMirror.kskkTempelTtd,
       diimporPada: glMirror.diimporPada,
     })
     .from(glMirror)
