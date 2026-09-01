@@ -23,8 +23,9 @@ export function FormUnggah() {
 
   function tambahBerkas(files: FileList | null) {
     if (!files || files.length === 0) return;
+    const berkasBaru = Array.from(files);
     setBerkasList((sebelumnya) => {
-      const gabungan = [...sebelumnya, ...Array.from(files)];
+      const gabungan = [...sebelumnya, ...berkasBaru];
       sinkronkanInput(inputRef.current, gabungan);
       return gabungan;
     });
