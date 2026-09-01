@@ -45,6 +45,13 @@ export const glMirror = pgTable("gl_mirror", {
   kskk: text("kskk"), // data URI base64 application/pdf
   kskkNamaBerkas: text("kskk_nama_berkas"),
   kskkDiunggahPada: timestamp("kskk_diunggah_pada", { withTimezone: true }),
+  // Apakah tanda tangan Kepala Cabang + Mobile Service perlu ditempelkan
+  // SIGAP saat berkas KSKK dibuka (app/api/kskk/[token]/route.ts).
+  // Dimatikan untuk GL pelimpahan: berkasnya datang dari loket lain dalam
+  // keadaan SUDAH bertanda tangan, jadi kalau tetap ditempel hasilnya
+  // dobel -- dan dobelnya berulang tiap kali dibuka, karena penempelan
+  // terjadi saat baca, bukan saat unggah. Default true = perilaku lama.
+  kskkTempelTtd: boolean("kskk_tempel_ttd").notNull().default(true),
 
   diimporPada: timestamp("diimpor_pada", { withTimezone: true })
     .notNull()
@@ -107,6 +114,11 @@ export const statusProsesPusat = pgTable("status_proses_pusat", {
     .notNull()
     .references(() => glMirror.idJaminan, { onDelete: "cascade" }),
   tahap: text("tahap").notNull(),
+  // Loket tujuan pelimpahan berkas -- HANYA terisi untuk tahap "Berkas
+  // Belum Di Limpah" (lib/gl/pelimpahan.ts), null untuk tahap lain.
+  // Disimpan per baris riwayat, bukan di gl_mirror, supaya kelihatan loket
+  // mana yang dicatat pada saat itu kalau petugas mengoreksinya belakangan.
+  loketPelimpahan: text("loket_pelimpahan"),
   userId: bigint("user_id", { mode: "number" })
     .notNull()
     .references(() => pengguna.id, { onDelete: "cascade" }),

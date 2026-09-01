@@ -1,0 +1,1 @@
+ALTER TABLE "status_proses_pusat" ADD COLUMN "loket_pelimpahan" text;
