@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { simpanLaporanSurveiTkp, type StatusLaporanTkp } from "@/app/gl/[idJaminan]/actions";
+import { InputBerkas } from "@/components/ui/input-berkas";
 import { Textarea } from "@/components/ui/textarea";
 
 export function FormLaporanTkp({
@@ -18,9 +19,17 @@ export function FormLaporanTkp({
     undefined,
   );
   const formRef = useRef<HTMLFormElement>(null);
+  // Dipakai sebagai key InputBerkas -- form.reset() tidak memicu onChange,
+  // jadi state internal tombol "x" perlu dipaksa remount setelah submit
+  // berhasil, supaya tidak nyangkut menampilkan tombol hapus untuk berkas
+  // yang sebenarnya sudah kosong.
+  const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
-    if (status?.berhasil) formRef.current?.reset();
+    if (status?.berhasil) {
+      formRef.current?.reset();
+      setResetKey((k) => k + 1);
+    }
   }, [status]);
 
   return (
@@ -96,10 +105,10 @@ export function FormLaporanTkp({
         <label htmlFor="ttdSaksi" className="text-xs md:text-sm font-medium text-foreground">
           Tanda Tangan Saksi (opsional, gambar atau PDF)
         </label>
-        <input
+        <InputBerkas
+          key={resetKey}
           id="ttdSaksi"
           name="ttdSaksi"
-          type="file"
           accept="image/png,image/jpeg,application/pdf"
           disabled={!dataLaporanTkpLengkap}
           className="text-xs text-foreground file:mr-2 file:h-8 file:rounded-md file:border-0 file:bg-muted file:px-2.5 file:text-xs file:font-medium file:text-foreground disabled:opacity-50 sm:w-80"

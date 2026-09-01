@@ -3,6 +3,7 @@ import { type BarisDokumen, TabelDokumen } from "@/components/gl/tabel-dokumen";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { Card } from "@/components/ui/card";
 import { FormAksi } from "@/components/ui/form-aksi";
+import { InputBerkas } from "@/components/ui/input-berkas";
 
 // Unggah KSKK (PDF, di luar sistem) + tabel gabungan dokumen GL (KSKK +
 // riwayat Laporan Survei TKP) -- lihat components/gl/tabel-dokumen.tsx.
@@ -47,10 +48,9 @@ export function DetailKskk({
             <label htmlFor="kskk" className="text-sm md:text-base font-medium text-foreground">
               {kskkNamaBerkas ? "Ganti berkas KSKK (PDF)" : "Berkas KSKK (PDF)"}
             </label>
-            <input
+            <InputBerkas
               id="kskk"
               name="kskk"
-              type="file"
               accept="application/pdf"
               className="text-sm text-foreground file:mr-2 file:h-8 file:rounded-md file:border-0 file:bg-muted file:px-2.5 file:text-sm file:font-medium file:text-foreground sm:w-80"
             />
