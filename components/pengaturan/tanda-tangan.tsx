@@ -30,7 +30,7 @@ function BarisFormTandaTangan({
     >
       <input type="hidden" name="pemilik" value={pemilik} />
 
-      <div className="flex w-full flex-col gap-1.5 sm:w-32">
+      <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-44">
         <span className="text-sm font-medium text-foreground">{label}</span>
         {data?.gambar ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -44,7 +44,7 @@ function BarisFormTandaTangan({
         )}
       </div>
 
-      <div className="flex w-full flex-col gap-1.5 sm:w-40">
+      <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-56">
         <Label htmlFor={`${idBase}-gambar`}>Gambar (PNG/JPEG)</Label>
         <input
           id={`${idBase}-gambar`}
@@ -55,7 +55,7 @@ function BarisFormTandaTangan({
         />
       </div>
 
-      <div className="flex w-full flex-col gap-1.5 sm:w-40">
+      <div className="flex w-full flex-col gap-1.5 sm:min-w-40 sm:flex-1">
         <Label htmlFor={`${idBase}-nama`}>Nama tampil</Label>
         <Input
           id={`${idBase}-nama`}
@@ -65,7 +65,7 @@ function BarisFormTandaTangan({
         />
       </div>
 
-      <div className="flex w-full flex-col gap-1.5 sm:w-40">
+      <div className="flex w-full flex-col gap-1.5 sm:min-w-40 sm:flex-1">
         <Label htmlFor={`${idBase}-jabatan`}>Jabatan</Label>
         <Input id={`${idBase}-jabatan`} name="jabatan" defaultValue={data?.jabatan ?? ""} />
       </div>
