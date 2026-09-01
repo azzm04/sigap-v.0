@@ -15,6 +15,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=3072
+# Dummy, hanya dipakai analisis statis next build (tidak ada query yang benar-benar
+# jalan di tahap ini). Nilai asli datang dari .env saat container app dijalankan --
+# stage "runner" di bawah mulai FROM base baru jadi ENV di sini tidak ikut terbawa.
+ENV DATABASE_URL="postgres://build:build@localhost:5432/build"
 RUN npm run build
 
 # --- runner: minimal production image ---
