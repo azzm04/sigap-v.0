@@ -3,7 +3,7 @@ import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
 import { pulihkanBatch } from "@/app/kelola-data/actions";
 import { AppShell } from "@/components/layout/app-shell";
 import { HapusPermanenDialog } from "@/components/kelola-data/hapus-permanen-dialog";
-import { Button } from "@/components/ui/button";
+import { FormAksi } from "@/components/ui/form-aksi";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatWaktu } from "@/lib/format";
@@ -66,13 +66,16 @@ export default async function SampahPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-2">
-                            <form action={pulihkanBatch}>
+                            <FormAksi
+                              action={pulihkanBatch}
+                              labelTombol="Pulihkan"
+                              ikonTombol={<RotateCcw />}
+                              labelTombolProses="Memulihkan..."
+                              judulGagal="Gagal Memulihkan Data"
+                              kelasTombol="h-8 px-3 text-xs"
+                            >
                               <input type="hidden" name="dihapusPada" value={waktuIso} />
-                              <Button type="submit" variant="outline" size="sm">
-                                <RotateCcw />
-                                Pulihkan
-                              </Button>
-                            </form>
+                            </FormAksi>
                             <HapusPermanenDialog dihapusPada={waktuIso} jumlahBaris={b.jumlahBaris} />
                           </div>
                         </td>

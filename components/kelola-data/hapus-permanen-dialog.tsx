@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DialogGagal } from "@/components/ui/form-aksi";
 
 export function HapusPermanenDialog({
   dihapusPada,
@@ -24,19 +25,27 @@ export function HapusPermanenDialog({
 }) {
   const [terbuka, setTerbuka] = useState(false);
   const [setuju, setSetuju] = useState(false);
+  const [pesanGagal, setPesanGagal] = useState<string | null>(null);
   const [pending, mulaiTransisi] = useTransition();
 
   function konfirmasi() {
     mulaiTransisi(async () => {
       const formData = new FormData();
       formData.set("dihapusPada", dihapusPada);
-      await hapusPermanenBatch(formData);
+      const hasil = await hapusPermanenBatch(undefined, formData);
+      if (!hasil.berhasil) setPesanGagal(hasil.pesan);
       setTerbuka(false);
       setSetuju(false);
     });
   }
 
   return (
+    <>
+      <DialogGagal
+        judul="Gagal Menghapus Permanen"
+        pesan={pesanGagal}
+        onTutup={() => setPesanGagal(null)}
+      />
     <Dialog
       open={terbuka}
       onOpenChange={(nilai) => {
@@ -81,5 +90,6 @@ export function HapusPermanenDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

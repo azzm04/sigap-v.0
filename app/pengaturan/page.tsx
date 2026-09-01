@@ -4,6 +4,7 @@ import { PicRumahSakit } from "@/components/pengaturan/pic-rumah-sakit";
 import { TandaTanganLaporanTkp } from "@/components/pengaturan/tanda-tangan";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { Card } from "@/components/ui/card";
+import { FormAksi } from "@/components/ui/form-aksi";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { ambilSemuaPicRumahSakit } from "@/lib/gl/pic";
@@ -51,9 +52,13 @@ export default async function PengaturanPage() {
               </span>
             }
           >
-            <form
+            <FormAksi
               action={ubahAmbangHari}
+              labelTombol="Simpan Perubahan"
+              judulGagal="Ambang Hari Tidak Valid"
               className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end"
+              kelasBarisTombol="w-full shrink-0 sm:w-auto"
+              kelasTombol="h-10 w-full px-6 sm:w-auto"
             >
               <div className="flex w-full flex-col gap-1.5 sm:w-auto">
                 <Label htmlFor="ambangHari" required>
@@ -70,13 +75,7 @@ export default async function PengaturanPage() {
                   className="h-10 w-full rounded-lg border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 sm:w-32"
                 />
               </div>
-              <button
-                type="submit"
-                className="h-10 w-full shrink-0 rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover sm:w-auto"
-              >
-                Simpan Perubahan
-              </button>
-            </form>
+            </FormAksi>
 
             <div className="flex flex-col gap-1.5 border-t border-border pt-3">
               <h4 className="inline-flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground">
@@ -86,9 +85,13 @@ export default async function PengaturanPage() {
                 Jumlah baris riwayat log data yang ditampilkan di halaman Kelola
                 Data.
               </p>
-              <form
+              <FormAksi
                 action={ubahBatasRiwayat}
+                labelTombol="Simpan Perubahan"
+                judulGagal="Batas Riwayat Tidak Valid"
                 className="flex flex-col gap-4 sm:flex-row sm:items-end"
+                kelasBarisTombol="w-full shrink-0 sm:w-auto"
+                kelasTombol="h-10 w-full px-6 sm:w-auto"
               >
                 <div className="flex w-full flex-col gap-1.5 sm:w-auto">
                   <Label htmlFor="batasRiwayat" required>
@@ -105,13 +108,7 @@ export default async function PengaturanPage() {
                     className="h-10 w-full rounded-lg border border-input bg-transparent px-3 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 sm:w-32"
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="h-10 w-full shrink-0 rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover sm:w-auto"
-                >
-                  Simpan Perubahan
-                </button>
-              </form>
+              </FormAksi>
             </div>
           </Card>
 

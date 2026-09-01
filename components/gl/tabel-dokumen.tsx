@@ -14,6 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DialogGagal } from "@/components/ui/form-aksi";
+import type { StatusAksi } from "@/lib/aksi";
 import { formatWaktu } from "@/lib/format";
 
 export interface BarisDokumen {
@@ -41,6 +43,7 @@ function TombolHapusDokumen({
   terkunci: boolean;
 }) {
   const [terbuka, setTerbuka] = useState(false);
+  const [pesanGagal, setPesanGagal] = useState<string | null>(null);
   const [pending, mulaiTransisi] = useTransition();
 
   if (terkunci) {
@@ -57,17 +60,21 @@ function TombolHapusDokumen({
     );
   }
 
+  // Kegagalan (mis. dokumen sudah terkunci karena GL-nya sudah diajukan ke
+  // pusat) ditampilkan sebagai pop-up, bukan dilempar -- lihat lib/aksi.ts.
   function konfirmasi() {
     mulaiTransisi(async () => {
       const formData = new FormData();
       formData.set("idJaminan", idJaminan);
+      let hasil: StatusAksi;
       if (baris.laporanId !== null) {
         formData.set("id", String(baris.laporanId));
-        await hapusLaporanTkp(formData);
+        hasil = await hapusLaporanTkp(undefined, formData);
       } else {
-        await hapusKskk(formData);
+        hasil = await hapusKskk(undefined, formData);
       }
       setTerbuka(false);
+      if (!hasil.berhasil) setPesanGagal(hasil.pesan);
     });
   }
 
@@ -98,6 +105,11 @@ function TombolHapusDokumen({
           </Button>
         </DialogFooter>
       </DialogContent>
+      <DialogGagal
+        judul="Gagal Menghapus Dokumen"
+        pesan={pesanGagal}
+        onTutup={() => setPesanGagal(null)}
+      />
     </Dialog>
   );
 }

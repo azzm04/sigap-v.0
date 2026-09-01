@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { gagal, type StatusAksi, sukses } from "@/lib/aksi";
 import { db } from "@/lib/db";
 import { pengguna } from "@/lib/db/schema";
 import { hapusPicRumahSakit, simpanPicRumahSakit } from "@/lib/gl/pic";
@@ -16,14 +17,17 @@ function revalidasiTampilanPic() {
   revalidatePath("/peringatan");
 }
 
-export async function simpanPic(formData: FormData) {
+export async function simpanPic(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const idMentah = formData.get("id");
   const namaRumahSakit = formData.get("namaRumahSakit");
   const picTaskForce = formData.get("picTaskForce");
   const picPengajuan = formData.get("picPengajuan");
 
   if (typeof namaRumahSakit !== "string" || !namaRumahSakit.trim()) {
-    throw new Error("Nama Rumah Sakit wajib diisi.");
+    return gagal("Nama Rumah Sakit wajib diisi.");
   }
 
   await simpanPicRumahSakit({
@@ -34,17 +38,24 @@ export async function simpanPic(formData: FormData) {
   });
 
   revalidasiTampilanPic();
+
+  return sukses("Pemetaan PIC tersimpan.");
 }
 
-export async function hapusPic(formData: FormData) {
+export async function hapusPic(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const id = formData.get("id");
   if (typeof id !== "string" || !id) {
-    throw new Error("Baris PIC tidak valid.");
+    return gagal("Baris PIC tidak valid.");
   }
 
   await hapusPicRumahSakit(Number(id));
 
   revalidasiTampilanPic();
+
+  return sukses("Pemetaan PIC dihapus.");
 }
 
 const TIPE_GAMBAR_DIIZINKAN = ["image/png", "image/jpeg"];
@@ -53,23 +64,29 @@ const UKURAN_MAKS_GAMBAR = 2 * 1024 * 1024; // 2 MB, cukup untuk gambar tanda ta
 // Simpan/perbarui tanda tangan untuk Laporan Survei TKP (lib/laporan-tkp/).
 // Gambar cuma diganti kalau petugas benar-benar unggah file baru --
 // mengosongkan input file di form edit tidak menghapus gambar yang sudah ada.
-export async function simpanTandaTanganAction(formData: FormData) {
+export async function simpanTandaTanganAction(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const pemilik = formData.get("pemilik");
   const namaTampil = formData.get("namaTampil");
   const jabatan = formData.get("jabatan");
   const berkas = formData.get("gambar");
 
   if (typeof pemilik !== "string" || !pemilik) {
-    throw new Error("Pemilik tanda tangan tidak valid.");
+    return gagal("Pemilik tanda tangan tidak valid.");
   }
 
   let gambar: string | undefined;
   if (berkas instanceof File && berkas.size > 0) {
     if (!TIPE_GAMBAR_DIIZINKAN.includes(berkas.type)) {
-      throw new Error("Gambar tanda tangan harus format PNG atau JPEG.");
+      return gagal(
+        `Gambar tanda tangan harus format PNG atau JPEG. Berkas "${berkas.name}" bukan PNG/JPEG.`,
+      );
     }
     if (berkas.size > UKURAN_MAKS_GAMBAR) {
-      throw new Error("Ukuran gambar tanda tangan maksimal 2 MB.");
+      const mb = Math.round((berkas.size / 1024 / 1024) * 10) / 10;
+      return gagal(`Ukuran gambar tanda tangan maksimal 2 MB, berkas ini ${mb} MB.`);
     }
     const arrayBuffer = await berkas.arrayBuffer();
     const base64 = Buffer.from(arrayBuffer).toString("base64");
@@ -84,14 +101,19 @@ export async function simpanTandaTanganAction(formData: FormData) {
   });
 
   revalidatePath("/pengaturan");
+
+  return sukses("Tanda tangan tersimpan.");
 }
 
-export async function ubahAmbangHari(formData: FormData) {
+export async function ubahAmbangHari(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const nilai = formData.get("ambangHari");
   const angka = Number(nilai);
 
   if (!Number.isFinite(angka) || !Number.isInteger(angka) || angka <= 0) {
-    throw new Error("Ambang hari harus berupa bilangan bulat positif.");
+    return gagal("Ambang hari harus berupa bilangan bulat positif, misalnya 14.");
   }
 
   await setAmbangHari(angka);
@@ -99,20 +121,27 @@ export async function ubahAmbangHari(formData: FormData) {
   revalidatePath("/pengaturan");
   revalidatePath("/peringatan");
   revalidatePath("/");
+
+  return sukses(`Ambang hari peringatan diubah menjadi ${angka} hari.`);
 }
 
-export async function ubahBatasRiwayat(formData: FormData) {
+export async function ubahBatasRiwayat(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const nilai = formData.get("batasRiwayat");
   const angka = Number(nilai);
 
   if (!Number.isFinite(angka) || !Number.isInteger(angka) || angka <= 0) {
-    throw new Error("Batas riwayat harus berupa bilangan bulat positif.");
+    return gagal("Batas riwayat harus berupa bilangan bulat positif, misalnya 100.");
   }
 
   await setBatasRiwayat(angka);
 
   revalidatePath("/pengaturan");
   revalidatePath("/kelola-data");
+
+  return sukses(`Batas riwayat log diubah menjadi ${angka} baris.`);
 }
 
 export interface StatusKataSandi {

@@ -1,6 +1,7 @@
 import { simpanKunjunganTaskForce } from "@/app/gl/[idJaminan]/actions";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { Card } from "@/components/ui/card";
+import { FormAksi } from "@/components/ui/form-aksi";
 
 // Form manual PIC Task Force (Tanggal Masuk/Pulang Pasien/Lokasi LAKA) --
 // lihat CLAUDE.md bagian 5 & 7 soal Peringatan PIC Task Force.
@@ -31,9 +32,12 @@ export function DetailKunjunganTaskForce({
       </h3>
 
       <Card className="min-w-0">
-        <form
+        <FormAksi
           action={simpanKunjunganTaskForce}
+          labelTombol="Simpan"
+          judulGagal="Gagal Menyimpan Data Kunjungan"
           className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:flex-wrap"
+          kelasBarisTombol="flex shrink-0 items-end"
         >
           <input type="hidden" name="idJaminan" value={idJaminan} />
           <div className="flex flex-col gap-1.5">
@@ -77,13 +81,7 @@ export function DetailKunjunganTaskForce({
               className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
           </div>
-          <button
-            type="submit"
-            className="h-9 w-fit shrink-0 rounded-lg bg-primary px-4 text-sm md:text-base font-medium text-primary-foreground hover:bg-primary-hover"
-          >
-            Simpan
-          </button>
-        </form>
+        </FormAksi>
       </Card>
     </section>
   );

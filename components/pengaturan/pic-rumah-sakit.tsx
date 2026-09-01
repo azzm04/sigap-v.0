@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DialogGagal } from "@/components/ui/form-aksi";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { BarisPicRumahSakit } from "@/lib/gl/pic";
@@ -31,6 +32,7 @@ function FormPic({
   const [namaRumahSakit, setNamaRumahSakit] = useState(awal?.namaRumahSakit ?? "");
   const [picTaskForce, setPicTaskForce] = useState(awal?.picTaskForce ?? "");
   const [picPengajuan, setPicPengajuan] = useState(awal?.picPengajuan ?? "");
+  const [pesanGagal, setPesanGagal] = useState<string | null>(null);
 
   function simpan() {
     if (!namaRumahSakit.trim()) return;
@@ -40,13 +42,19 @@ function FormPic({
       formData.set("namaRumahSakit", namaRumahSakit.trim());
       formData.set("picTaskForce", picTaskForce.trim());
       formData.set("picPengajuan", picPengajuan.trim());
-      await simpanPic(formData);
-      onSelesai();
+      const hasil = await simpanPic(undefined, formData);
+      if (hasil.berhasil) onSelesai();
+      else setPesanGagal(hasil.pesan);
     });
   }
 
   return (
     <>
+      <DialogGagal
+        judul="Gagal Menyimpan PIC"
+        pesan={pesanGagal}
+        onTutup={() => setPesanGagal(null)}
+      />
       <div className="mt-2 flex flex-col gap-3">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="namaRumahSakit" required>
@@ -92,6 +100,7 @@ export function PicRumahSakit({ data }: { data: BarisPicRumahSakit[] }) {
   const [dialogTerbuka, setDialogTerbuka] = useState(false);
   const [sedangDiedit, setSedangDiedit] = useState<BarisPicRumahSakit | undefined>(undefined);
   const [akanDihapus, setAkanDihapus] = useState<BarisPicRumahSakit | null>(null);
+  const [pesanGagal, setPesanGagal] = useState<string | null>(null);
   const [pendingHapus, mulaiTransisiHapus] = useTransition();
 
   function bukaTambah() {
@@ -109,12 +118,19 @@ export function PicRumahSakit({ data }: { data: BarisPicRumahSakit[] }) {
     mulaiTransisiHapus(async () => {
       const formData = new FormData();
       formData.set("id", String(akanDihapus.id));
-      await hapusPic(formData);
+      const hasil = await hapusPic(undefined, formData);
       setAkanDihapus(null);
+      if (!hasil.berhasil) setPesanGagal(hasil.pesan);
     });
   }
 
   return (
+    <>
+      <DialogGagal
+        judul="Gagal Menghapus PIC"
+        pesan={pesanGagal}
+        onTutup={() => setPesanGagal(null)}
+      />
     <Card
       title={
         <span className="inline-flex items-center gap-1.5">
@@ -210,5 +226,6 @@ export function PicRumahSakit({ data }: { data: BarisPicRumahSakit[] }) {
         </DialogContent>
       </Dialog>
     </Card>
+    </>
   );
 }

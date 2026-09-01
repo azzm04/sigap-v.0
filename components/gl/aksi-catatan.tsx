@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DialogGagal } from "@/components/ui/form-aksi";
 import { Textarea } from "@/components/ui/textarea";
 
 export function AksiCatatan({
@@ -33,6 +34,7 @@ export function AksiCatatan({
   const [hapusTerbuka, setHapusTerbuka] = useState(false);
   const [catatan, setCatatan] = useState(catatanAwal);
   const [perluTindakLanjut, setPerluTindakLanjut] = useState(perluTindakLanjutAwal);
+  const [pesanGagal, setPesanGagal] = useState<string | null>(null);
   const [pending, mulaiTransisi] = useTransition();
 
   function simpanEdit() {
@@ -43,8 +45,9 @@ export function AksiCatatan({
       formData.set("idJaminan", idJaminan);
       formData.set("catatan", catatan.trim());
       if (perluTindakLanjut) formData.set("perluTindakLanjut", "on");
-      await perbaruiTinjauan(formData);
+      const hasil = await perbaruiTinjauan(undefined, formData);
       setEditTerbuka(false);
+      if (!hasil.berhasil) setPesanGagal(hasil.pesan);
     });
   }
 
@@ -53,13 +56,19 @@ export function AksiCatatan({
       const formData = new FormData();
       formData.set("id", String(id));
       formData.set("idJaminan", idJaminan);
-      await hapusTinjauan(formData);
+      const hasil = await hapusTinjauan(undefined, formData);
       setHapusTerbuka(false);
+      if (!hasil.berhasil) setPesanGagal(hasil.pesan);
     });
   }
 
   return (
     <div className="flex flex-wrap gap-1.5">
+      <DialogGagal
+        judul="Gagal Memproses Catatan"
+        pesan={pesanGagal}
+        onTutup={() => setPesanGagal(null)}
+      />
       <Dialog
         open={editTerbuka}
         onOpenChange={(nilai) => {

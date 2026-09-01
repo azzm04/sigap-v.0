@@ -3,6 +3,7 @@
 import { eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { gagal, type StatusAksi, sukses } from "@/lib/aksi";
 import { db } from "@/lib/db";
 import { glMirror, imporLog } from "@/lib/db/schema";
 import { normalisasiDanSimpan } from "@/lib/sumber-data/normalizer";
@@ -124,7 +125,22 @@ async function prosesSatuBerkas(berkas: File, userId: number): Promise<HasilUngg
         return {
           namaBerkas,
           berhasil: true,
-          pesan: `Berhasil diimpor (Sentralisasi Pembayaran): ${hasil.jumlahBaris} baris, ${hasil.jumlahDiproses} sudah ada Transaction Reference, ${hasil.jumlahGlDiperbarui} GL ditandai Paid, ${hasil.jumlahTidakCocok} nama tidak cocok, ${hasil.jumlahBelumTerbayar} belum terbayar.`,
+          // Nama pada "perlu ditinjau manual" sengaja DITAMPILKAN (dibatasi
+          // 5 supaya pesannya tidak meledak): itu satu-satunya cara petugas
+          // tahu pembayaran mana yang belum tercatat dan harus dicek sendiri
+          // ke JRCare. Kalau cuma angka, temuannya hilang begitu saja.
+          pesan:
+            `Berhasil diimpor (Sentralisasi Pembayaran): ${hasil.jumlahBaris} baris, ` +
+            `${hasil.jumlahDiproses} sudah ada Transaction Reference, ` +
+            `${hasil.jumlahGlDiperbarui} GL ditandai Paid, ` +
+            `${hasil.jumlahSudahTercatat} sudah tercatat lunas sebelumnya, ` +
+            `${hasil.jumlahTidakCocok} nama tidak cocok, ` +
+            `${hasil.jumlahBelumTerbayar} belum terbayar.` +
+            (hasil.jumlahPerluTinjauManual > 0
+              ? ` ${hasil.jumlahPerluTinjauManual} perlu ditinjau manual (nama punya beberapa GL dan tidak ada yang jelas cocok): ` +
+                `${hasil.perluTinjauManual.slice(0, 5).join(", ")}` +
+                `${hasil.jumlahPerluTinjauManual > 5 ? `, dan ${hasil.jumlahPerluTinjauManual - 5} lainnya` : ""}.`
+              : ""),
         };
       } catch (errorSentralisasi) {
         // 4. Kalau bukan JRCare, bukan DASI, dan bukan Sentralisasi, gabungkan alasan penolakan
@@ -230,10 +246,13 @@ export async function hapusSemuaData() {
 // sama dengan batch ini -- baris yang sudah "hidup lagi" lewat impor ulang
 // (dihapusPada sudah null, lihat normalizer.ts) otomatis tidak ikut ter-
 // pengaruh.
-export async function pulihkanBatch(formData: FormData) {
+export async function pulihkanBatch(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const waktuIso = formData.get("dihapusPada");
   if (typeof waktuIso !== "string" || !waktuIso) {
-    throw new Error("Batch tidak valid.");
+    return gagal("Batch tidak valid.");
   }
 
   const baris = await db
@@ -251,6 +270,8 @@ export async function pulihkanBatch(formData: FormData) {
   });
 
   revalidasiTampilanGL();
+
+  return sukses(`${baris.length} baris GL dipulihkan.`);
 }
 
 // Hapus permanen: BENAR-BENAR menghapus baris dari gl_mirror (bukan soft
@@ -259,10 +280,13 @@ export async function pulihkanBatch(formData: FormData) {
 // hapusSemuaData/pulihkanBatch yang cuma menyembunyikan. Tidak perlu
 // revalidatePath ke "/", "/peringatan", "/sebaran" karena baris ini sudah
 // tersembunyi dari sana sejak di-soft-delete.
-export async function hapusPermanenBatch(formData: FormData) {
+export async function hapusPermanenBatch(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const waktuIso = formData.get("dihapusPada");
   if (typeof waktuIso !== "string" || !waktuIso) {
-    throw new Error("Batch tidak valid.");
+    return gagal("Batch tidak valid.");
   }
 
   const baris = await db
@@ -277,9 +301,12 @@ export async function hapusPermanenBatch(formData: FormData) {
     jumlahBerubah: 0,
     berhasil: true,
   });
+  const jumlahDihapusPermanen = baris.length;
 
   revalidatePath("/kelola-data");
   revalidatePath("/kelola-data/sampah");
+
+  return sukses(`${jumlahDihapusPermanen} baris GL dihapus permanen.`);
 }
 
 export interface StatusSinkronSheets {

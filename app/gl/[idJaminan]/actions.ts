@@ -3,6 +3,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { gagal, PESAN_SESI_TIDAK_VALID, type StatusAksi, sukses } from "@/lib/aksi";
 import { db } from "@/lib/db";
 import { glMirror, laporanSurveiTkp, statusProsesPusat, tinjauan } from "@/lib/db/schema";
 import {
@@ -12,6 +13,7 @@ import {
   TAHAP_PEMICU_PAID,
   tandaiBerkasSelesai,
 } from "@/lib/gl/tahap-proses";
+import { apakahLoketCabangValid, TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
 import { enkripsiIdJaminan } from "@/lib/gl/token-url";
 import { simpanLaporanTkp } from "@/lib/laporan-tkp/laporan";
 
@@ -23,10 +25,13 @@ function pathDetailGL(idJaminan: string): string {
   return `/gl/${encodeURIComponent(enkripsiIdJaminan(idJaminan))}`;
 }
 
-export async function tandaiDitinjau(formData: FormData) {
+export async function tandaiDitinjau(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Sesi tidak valid, silakan masuk ulang.");
+    return gagal(PESAN_SESI_TIDAK_VALID);
   }
   const userId = Number(session.user.id);
 
@@ -35,10 +40,10 @@ export async function tandaiDitinjau(formData: FormData) {
   const perluTindakLanjut = formData.get("perluTindakLanjut") === "on";
 
   if (typeof idJaminan !== "string" || !idJaminan) {
-    throw new Error("ID Jaminan tidak valid.");
+    return gagal("ID Jaminan tidak valid.");
   }
   if (typeof catatan !== "string" || !catatan.trim()) {
-    throw new Error("Catatan wajib diisi.");
+    return gagal("Catatan wajib diisi sebelum menandai GL ini sudah ditinjau.");
   }
 
   await db.insert(tinjauan).values({
@@ -50,6 +55,8 @@ export async function tandaiDitinjau(formData: FormData) {
 
   revalidatePath(pathDetailGL(idJaminan));
   revalidatePath("/peringatan");
+
+  return sukses("Catatan tinjauan tersimpan.");
 }
 
 export interface StatusTahapProses {
@@ -108,7 +115,36 @@ export async function catatTahapProses(
     return { berhasil: false, pesan: "Tahap proses tidak dikenali." };
   }
 
-  if (tahap === TAHAP_KELUAR_PERINGATAN) {
+  // Loket tujuan hanya relevan (dan wajib) untuk tahap pelimpahan. Untuk
+  // tahap lain nilainya diabaikan, bukan disimpan diam-diam -- supaya kolom
+  // loket_pelimpahan tidak terisi di baris yang tidak ada urusannya dengan
+  // pelimpahan dan bikin halaman Pelimpahan salah hitung.
+  let loketPelimpahan: string | null = null;
+  if (tahap === TAHAP_BELUM_LIMPAH) {
+    const nilaiLoket = formData.get("loketPelimpahan");
+    if (typeof nilaiLoket !== "string" || !nilaiLoket) {
+      return {
+        berhasil: false,
+        pesan: `Loket Cabang wajib dipilih untuk tahap "${TAHAP_BELUM_LIMPAH}".`,
+      };
+    }
+    if (!apakahLoketCabangValid(nilaiLoket)) {
+      return { berhasil: false, pesan: "Loket Cabang tidak dikenali." };
+    }
+    loketPelimpahan = nilaiLoket;
+  }
+
+  // Syarat dokumen berbeda per tahap, dan bedanya disengaja:
+  //
+  //   "Berkas Belum Di Limpah"   -> KSKK saja
+  //   "Berkas Diajukan Ke Pusat" -> Laporan Survei TKP DAN KSKK
+  //
+  // Untuk GL pelimpahan, survei TKP dikerjakan loket tujuan (wilayahnya di
+  // sana), bukan Semarang -- jadi mensyaratkan Laporan Survei TKP saat
+  // melimpahkan akan membuat tahap itu mustahil dicatat. Arahan pemilik
+  // proyek. Yang tetap wajib ikut berpindah tangan adalah KSKK.
+  const butuhLaporanTkp = tahap === TAHAP_KELUAR_PERINGATAN;
+  if (tahap === TAHAP_BELUM_LIMPAH || tahap === TAHAP_KELUAR_PERINGATAN) {
     const [gl] = await db
       .select({
         kskkNamaBerkas: glMirror.kskkNamaBerkas,
@@ -121,16 +157,15 @@ export async function catatTahapProses(
       .where(eq(glMirror.idJaminan, idJaminan))
       .limit(1);
 
-    if (!gl?.punyaLaporanTkp || !gl.kskkNamaBerkas) {
-      const kurang = [
-        !gl?.punyaLaporanTkp && "Laporan Survei TKP",
-        !gl?.kskkNamaBerkas && "KSKK",
-      ]
-        .filter(Boolean)
-        .join(" dan ");
+    const kurang = [
+      butuhLaporanTkp && !gl?.punyaLaporanTkp && "Laporan Survei TKP",
+      !gl?.kskkNamaBerkas && "KSKK",
+    ].filter((x): x is string => typeof x === "string");
+
+    if (kurang.length > 0) {
       return {
         berhasil: false,
-        pesan: `Dokumen Belum Lengkap: ${kurang} belum ada untuk GL ini. Lengkapi dulu sebelum mencatat tahap "${TAHAP_KELUAR_PERINGATAN}".`,
+        pesan: `Dokumen Belum Lengkap: ${kurang.join(" dan ")} belum ada untuk GL ini. Lengkapi dulu sebelum mencatat tahap "${tahap}".`,
       };
     }
   }
@@ -142,13 +177,14 @@ export async function catatTahapProses(
       const catatan = `Tahap proses pusat mencapai "${TAHAP_PEMICU_PAID}" — dikonfirmasi manual oleh petugas, status otomatis ditandai Paid.`;
       await tandaiBerkasSelesai(tx, idJaminan, userId, catatan);
     } else {
-      await tx.insert(statusProsesPusat).values({ idJaminan, tahap, userId });
+      await tx.insert(statusProsesPusat).values({ idJaminan, tahap, userId, loketPelimpahan });
     }
   });
 
   revalidatePath(pathDetailGL(idJaminan));
   revalidatePath("/peringatan");
   revalidatePath("/proses-pusat");
+  revalidatePath("/pelimpahan");
   if (sudahPaid) {
     revalidatePath("/");
     revalidatePath("/sebaran");
@@ -161,10 +197,13 @@ export async function catatTahapProses(
 // catatan dan perluTindakLanjut yang bisa diubah -- diabaikan/alasanAbaikan
 // tetap, karena itu adalah jejak keputusan bisnis (mis. dari
 // catatTahapProses di atas) yang tidak diubah lewat sini.
-export async function perbaruiTinjauan(formData: FormData) {
+export async function perbaruiTinjauan(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Sesi tidak valid, silakan masuk ulang.");
+    return gagal(PESAN_SESI_TIDAK_VALID);
   }
 
   const id = formData.get("id");
@@ -173,13 +212,13 @@ export async function perbaruiTinjauan(formData: FormData) {
   const perluTindakLanjut = formData.get("perluTindakLanjut") === "on";
 
   if (typeof id !== "string" || !id) {
-    throw new Error("Catatan tidak valid.");
+    return gagal("Catatan tidak valid.");
   }
   if (typeof idJaminan !== "string" || !idJaminan) {
-    throw new Error("ID Jaminan tidak valid.");
+    return gagal("ID Jaminan tidak valid.");
   }
   if (typeof catatan !== "string" || !catatan.trim()) {
-    throw new Error("Catatan wajib diisi.");
+    return gagal("Catatan tidak boleh kosong.");
   }
 
   await db
@@ -189,6 +228,8 @@ export async function perbaruiTinjauan(formData: FormData) {
 
   revalidatePath(pathDetailGL(idJaminan));
   revalidatePath("/peringatan");
+
+  return sukses("Catatan diperbarui.");
 }
 
 // Kalau baris yang dihapus punya diabaikan=true, hapus ini juga
@@ -197,20 +238,23 @@ export async function perbaruiTinjauan(formData: FormData) {
 // gl_mirror sendiri tidak berubah, jadi GL baru berpotensi muncul lagi di
 // peringatan kalau impor berikutnya membalikkan status_pembayaran ke
 // Unpaid. Makanya "/" dan "/sebaran" ikut di-revalidate.
-export async function hapusTinjauan(formData: FormData) {
+export async function hapusTinjauan(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Sesi tidak valid, silakan masuk ulang.");
+    return gagal(PESAN_SESI_TIDAK_VALID);
   }
 
   const id = formData.get("id");
   const idJaminan = formData.get("idJaminan");
 
   if (typeof id !== "string" || !id) {
-    throw new Error("Catatan tidak valid.");
+    return gagal("Catatan tidak valid.");
   }
   if (typeof idJaminan !== "string" || !idJaminan) {
-    throw new Error("ID Jaminan tidak valid.");
+    return gagal("ID Jaminan tidak valid.");
   }
 
   await db.delete(tinjauan).where(eq(tinjauan.id, Number(id)));
@@ -219,17 +263,22 @@ export async function hapusTinjauan(formData: FormData) {
   revalidatePath("/peringatan");
   revalidatePath("/");
   revalidatePath("/sebaran");
+
+  return sukses("Catatan dihapus.");
 }
 
 const POLA_TANGGAL_ISO = /^\d{4}-\d{2}-\d{2}$/;
 
-function ambilTanggalOpsional(formData: FormData, kunci: string): string | null {
+// Mengembalikan { salah: true } alih-alih melempar, supaya pemanggilnya
+// bisa menyampaikannya sebagai pop-up (lihat lib/aksi.ts).
+function ambilTanggalOpsional(
+  formData: FormData,
+  kunci: string,
+): { salah: true } | { salah: false; nilai: string | null } {
   const nilai = formData.get(kunci);
-  if (typeof nilai !== "string" || !nilai) return null;
-  if (!POLA_TANGGAL_ISO.test(nilai)) {
-    throw new Error(`Format tanggal "${kunci}" tidak valid.`);
-  }
-  return nilai;
+  if (typeof nilai !== "string" || !nilai) return { salah: false, nilai: null };
+  if (!POLA_TANGGAL_ISO.test(nilai)) return { salah: true };
+  return { salah: false, nilai };
 }
 
 // Diisi PIC Task Force lewat halaman detail GL -- Tanggal Masuk (kapan
@@ -249,19 +298,26 @@ function ambilTanggalOpsional(formData: FormData, kunci: string): string | null 
 // secara operasional) -- pakai COALESCE dalam satu UPDATE atomik supaya
 // TIDAK PERNAH menimpa Tgl LAKA yang sudah ada (baik dari DASI asli maupun
 // dari pengisian sebelumnya), hanya mengisi kalau benar-benar masih NULL.
-export async function simpanKunjunganTaskForce(formData: FormData) {
+export async function simpanKunjunganTaskForce(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Sesi tidak valid, silakan masuk ulang.");
+    return gagal(PESAN_SESI_TIDAK_VALID);
   }
 
   const idJaminan = formData.get("idJaminan");
   if (typeof idJaminan !== "string" || !idJaminan) {
-    throw new Error("ID Jaminan tidak valid.");
+    return gagal("ID Jaminan tidak valid.");
   }
 
-  const tanggalMasuk = ambilTanggalOpsional(formData, "tanggalMasuk");
-  const tanggalPulangPasien = ambilTanggalOpsional(formData, "tanggalPulangPasien");
+  const hasilMasuk = ambilTanggalOpsional(formData, "tanggalMasuk");
+  const hasilPulang = ambilTanggalOpsional(formData, "tanggalPulangPasien");
+  if (hasilMasuk.salah) return gagal("Format Tanggal Masuk tidak valid.");
+  if (hasilPulang.salah) return gagal("Format Tanggal Pulang Pasien tidak valid.");
+  const tanggalMasuk = hasilMasuk.nilai;
+  const tanggalPulangPasien = hasilPulang.nilai;
   const lokasiMentah = formData.get("lokasi");
   const lokasi = typeof lokasiMentah === "string" && lokasiMentah.trim() ? lokasiMentah.trim() : null;
 
@@ -280,6 +336,8 @@ export async function simpanKunjunganTaskForce(formData: FormData) {
   revalidatePath(pathDetailGL(idJaminan));
   revalidatePath("/peringatan");
   picuSinkronSheetsLatarBelakang();
+
+  return sukses("Data kunjungan tersimpan.");
 }
 
 const TIPE_TTD_SAKSI_DIIZINKAN = ["image/png", "image/jpeg", "application/pdf"];
@@ -435,30 +493,40 @@ const UKURAN_MAKS_KSKK = 10 * 1024 * 1024; // 10 MB, cukup untuk scan PDF bebera
 // generate-nya sendiri (beda dari Laporan Survei TKP), jadi cuma simpan
 // berkas apa adanya. Satu KSKK "terkini" per GL: unggah ulang menimpa yang
 // lama (lihat komentar kolom kskk di lib/db/schema.ts).
-export async function simpanKskk(formData: FormData) {
+export async function simpanKskk(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Sesi tidak valid, silakan masuk ulang.");
+    return gagal(PESAN_SESI_TIDAK_VALID);
   }
 
   const idJaminan = formData.get("idJaminan");
   const berkas = formData.get("kskk");
 
   if (typeof idJaminan !== "string" || !idJaminan) {
-    throw new Error("ID Jaminan tidak valid.");
+    return gagal("ID Jaminan tidak valid.");
   }
   if (!(berkas instanceof File) || berkas.size === 0) {
-    throw new Error("Pilih berkas PDF KSKK terlebih dahulu.");
+    return gagal("Pilih berkas PDF KSKK terlebih dahulu lewat tombol Choose File.");
   }
   if (berkas.type !== "application/pdf") {
-    throw new Error("Berkas KSKK harus format PDF.");
+    return gagal(`Berkas KSKK harus format PDF. Berkas "${berkas.name}" bukan PDF.`);
   }
   if (berkas.size > UKURAN_MAKS_KSKK) {
-    throw new Error("Ukuran berkas KSKK maksimal 10 MB.");
+    const mb = Math.round((berkas.size / 1024 / 1024) * 10) / 10;
+    return gagal(`Ukuran berkas KSKK maksimal 10 MB, berkas ini ${mb} MB.`);
   }
 
   const arrayBuffer = await berkas.arrayBuffer();
   const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  // Checkbox "Tanda tangan Kepala Cabang & Mobile Service". Tercentang =
+  // perilaku lama (SIGAP menempelkan tanda tangan saat berkas dibuka).
+  // Dilepas untuk KSKK GL pelimpahan yang sudah bertanda tangan dari loket
+  // lain -- lihat komentar kskkTempelTtd di lib/db/schema.ts.
+  const tempelTtd = formData.get("tempelTtd") === "on";
 
   await db
     .update(glMirror)
@@ -466,11 +534,14 @@ export async function simpanKskk(formData: FormData) {
       kskk: `data:application/pdf;base64,${base64}`,
       kskkNamaBerkas: berkas.name,
       kskkDiunggahPada: new Date(),
+      kskkTempelTtd: tempelTtd,
     })
     .where(eq(glMirror.idJaminan, idJaminan));
 
   revalidatePath(pathDetailGL(idJaminan));
   picuSinkronSheetsLatarBelakang();
+
+  return sukses(`KSKK "${berkas.name}" berhasil diunggah.`);
 }
 
 // Begitu GL sudah "Berkas Diajukan Ke Pusat" atau "Berkas Selesai", KSKK
@@ -480,37 +551,40 @@ export async function simpanKskk(formData: FormData) {
 // dokumen syaratnya sudah tidak ada. Jaring pengaman server -- tombol UI
 // juga sudah dikunci (components/gl/tabel-dokumen.tsx), ini cuma
 // pertahanan kalau ada yang memanggil action-nya langsung.
-async function pastikanDokumenBolehDihapus(idJaminan: string): Promise<void> {
+async function alasanDokumenTidakBolehDihapus(idJaminan: string): Promise<string | null> {
   const [tahapTerkini] = await ambilRiwayatTahapProses(idJaminan);
   if (
     tahapTerkini &&
     (tahapTerkini.tahap === TAHAP_KELUAR_PERINGATAN || tahapTerkini.tahap === TAHAP_PEMICU_PAID)
   ) {
-    throw new Error(
-      `GL ini sudah tahap "${tahapTerkini.tahap}" -- dokumen tidak bisa dihapus lagi, sudah jadi bukti historis. Gunakan "Ganti berkas" kalau perlu mengoreksi.`,
-    );
+    return `GL ini sudah tahap "${tahapTerkini.tahap}" -- dokumen tidak bisa dihapus lagi, sudah jadi bukti historis. Gunakan "Ganti berkas" kalau perlu mengoreksi.`;
   }
+  return null;
 }
 
 // Menghapus satu Laporan Survei TKP yang sudah dibuat (dari tabel gabungan
 // dokumen di halaman detail GL). Dicocokkan idJaminan sekaligus id supaya
 // tidak mungkin menghapus laporan milik GL lain lewat id yang salah ketik.
-export async function hapusLaporanTkp(formData: FormData) {
+export async function hapusLaporanTkp(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Sesi tidak valid, silakan masuk ulang.");
+    return gagal(PESAN_SESI_TIDAK_VALID);
   }
 
   const id = formData.get("id");
   const idJaminan = formData.get("idJaminan");
   if (typeof id !== "string" || !id) {
-    throw new Error("Laporan tidak valid.");
+    return gagal("Laporan tidak valid.");
   }
   if (typeof idJaminan !== "string" || !idJaminan) {
-    throw new Error("ID Jaminan tidak valid.");
+    return gagal("ID Jaminan tidak valid.");
   }
 
-  await pastikanDokumenBolehDihapus(idJaminan);
+  const alasan = await alasanDokumenTidakBolehDihapus(idJaminan);
+  if (alasan) return gagal(alasan);
 
   await db
     .delete(laporanSurveiTkp)
@@ -518,23 +592,29 @@ export async function hapusLaporanTkp(formData: FormData) {
 
   revalidatePath(pathDetailGL(idJaminan));
   picuSinkronSheetsLatarBelakang();
+
+  return sukses("Laporan Survei TKP dihapus.");
 }
 
 // Menghapus KSKK yang sudah diunggah -- cukup kosongkan kolomnya di
 // gl_mirror (bukan tabel terpisah, lihat lib/db/schema.ts), sama seperti
 // mekanisme "ganti berkas" tapi tanpa berkas pengganti.
-export async function hapusKskk(formData: FormData) {
+export async function hapusKskk(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error("Sesi tidak valid, silakan masuk ulang.");
+    return gagal(PESAN_SESI_TIDAK_VALID);
   }
 
   const idJaminan = formData.get("idJaminan");
   if (typeof idJaminan !== "string" || !idJaminan) {
-    throw new Error("ID Jaminan tidak valid.");
+    return gagal("ID Jaminan tidak valid.");
   }
 
-  await pastikanDokumenBolehDihapus(idJaminan);
+  const alasan = await alasanDokumenTidakBolehDihapus(idJaminan);
+  if (alasan) return gagal(alasan);
 
   await db
     .update(glMirror)
@@ -543,4 +623,7 @@ export async function hapusKskk(formData: FormData) {
 
   revalidatePath(pathDetailGL(idJaminan));
   picuSinkronSheetsLatarBelakang();
+
+  return sukses("KSKK dihapus.");
 }
+

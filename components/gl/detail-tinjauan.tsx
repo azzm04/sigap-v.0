@@ -2,6 +2,7 @@ import { tandaiDitinjau } from "@/app/gl/[idJaminan]/actions";
 import { AksiCatatan } from "@/components/gl/aksi-catatan";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { FormAksi } from "@/components/ui/form-aksi";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import type { BarisTinjauan } from "@/lib/gl/tinjauan";
@@ -24,7 +25,12 @@ export function DetailTinjauan({
       </h3>
 
       <Card className="min-w-0">
-        <form action={tandaiDitinjau} className="flex min-w-0 flex-col gap-3">
+        <FormAksi
+          action={tandaiDitinjau}
+          labelTombol="Tandai Sudah Ditinjau"
+          judulGagal="Gagal Menyimpan Catatan"
+          className="flex min-w-0 flex-col gap-3"
+        >
           <input type="hidden" name="idJaminan" value={idJaminan} />
           <label
             htmlFor="catatan"
@@ -42,13 +48,7 @@ export function DetailTinjauan({
           />
           <Checkbox name="perluTindakLanjut" label="Perlu tindak lanjut" />
 
-          <button
-            type="submit"
-            className="mt-1 h-8 w-fit rounded-lg bg-primary px-4 text-sm md:text-base font-medium text-primary-foreground hover:bg-primary-hover"
-          >
-            Tandai Sudah Ditinjau
-          </button>
-        </form>
+        </FormAksi>
       </Card>
 
       {catatanTinjauan.length === 0 ? (
