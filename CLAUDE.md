@@ -202,9 +202,15 @@ Autentikasi. Cukup sederhana, penggunanya satu orang.
 Daftar nilai enum terbuka, wajib dibaca dari sini, bukan di-hardcode (aturan keras #3). Kolom: `id`, `kategori`, `nilai` (unique per pasangan). Kategori yang sudah ada: `tahap_proses_pusat` (10 nilai, lihat `status_proses_pusat` di bawah). Diisi lewat `npm run seed:referensi` (`lib/seed-data.ts`), idempoten.
 
 ### `status_proses_pusat`
-Riwayat tahap proses GL di **sistem pusat** (Sub Pra-Verifikasi → Berkas Lengkap → ... → Berkas Selesai) -- bukan tahapan JRCare. Diisi **manual** oleh petugas di halaman detail GL, karena aplikasi tidak menyentuh sistem pusat sama sekali (aturan keras #1). Kolom: `id`, `id_jaminan`, `tahap`, `user_id`, `dicatat_pada`. Tahap terkini = baris terbaru per `id_jaminan`.
+Riwayat tahap proses GL di **sistem pusat** -- bukan tahapan JRCare. Diisi **manual** oleh petugas di halaman detail GL, karena aplikasi tidak menyentuh sistem pusat sama sekali (aturan keras #1). Kolom: `id`, `id_jaminan`, `tahap`, `loket_pelimpahan`, `user_id`, `dicatat_pada`. Tahap terkini = baris terbaru per `id_jaminan`.
+
+Tiga tahap, urut sesuai alur kerja (`TAHAP_PROSES_PUSAT` di `lib/gl/tahap-proses.ts`): **"Berkas Belum Di Limpah"** → **"Berkas Diajukan Ke Pusat"** → **"Berkas Selesai"**.
 
 Begitu tahap mencapai **"Berkas Selesai"**, `gl_mirror.status_pembayaran` otomatis diubah jadi `Paid` dan dikunci permanen lewat `tinjauan.diabaikan` (mekanisme yang sama seperti tombol Abaikan manual).
+
+**`loket_pelimpahan` hanya terisi untuk tahap "Berkas Belum Di Limpah"**, null untuk tahap lain. Disimpan per baris riwayat (bukan di `gl_mirror`) supaya kelihatan loket mana yang dicatat saat itu kalau petugas mengoreksinya belakangan. Daftar 11 loket tujuannya ada di `lib/gl/pelimpahan.ts` -- file konfigurasi murni tanpa impor db, sengaja begitu supaya boleh diimpor client component (dropdown di form tahap dan filter halaman Pelimpahan).
+
+**JANGAN campur `loket_pelimpahan` dengan `gl_mirror.loket`.** Yang kedua itu kode loket dari berkas ekspor JRCare (mis. `0400601`); yang pertama nama loket cabang tujuan pelimpahan yang dipilih petugas manual. Kebetulan sama-sama bernama "loket", tapi isinya beda bentuk dan beda sumber.
 
 ### `pic_rumah_sakit`
 Pemetaan PIC per rumah sakit, dua peran (bagian 1): `pic_task_force`, `pic_pengajuan`. Kolom: `id`, `nama_rumah_sakit` (unique), `pic_task_force`, `pic_pengajuan`, `diperbarui_pada`. Diedit lewat halaman Pengaturan (CRUD penuh), bukan hardcode.
@@ -227,6 +233,7 @@ Pemetaan PIC per rumah sakit, dua peran (bagian 1): `pic_task_force`, `pic_penga
 - Tandai sudah ditinjau, dengan catatan -- bisa diedit dan dihapus dari halaman detail GL (perbaikan salah ketik)
 - Tombol abaikan untuk menyingkirkan GL dari peringatan (mis. ternyata sudah dibayar)
 - Pencatatan tahap proses di sistem pusat (Sub Pra-Verifikasi s.d. Berkas Selesai) di halaman detail GL, manual, memicu `status_pembayaran` jadi `Paid` otomatis begitu mencapai "Berkas Selesai" (bagian 5, `status_proses_pusat`)
+- Halaman **Pelimpahan**: daftar GL yang tahap terkininya "Berkas Belum Di Limpah", dengan kolom Loket Cabang tujuan, rekap jumlah per loket yang bisa diklik untuk menyaring, filter (loket, PIC Pengajuan, rentang Tgl GL, pencarian), dan ekspor Excel yang mengikuti filter aktif (bagian 7, Pelimpahan berkas antar-loket)
 - Pencatatan `Tanggal Masuk`/`Tanggal Pulang Pasien` oleh PIC Task Force di halaman detail GL
 - Pemetaan PIC per rumah sakit (Task Force, Pengajuan), CRUD penuh di halaman Pengaturan (bagian 5, `pic_rumah_sakit`)
 - Kartu ringkasan dan 2 sampai 3 grafik
@@ -335,6 +342,59 @@ Catatan: kode angka Status Jaminan (0 sampai 5) berasal dari **form pencarian DA
 
 Sistem hanya sesegar berkas terakhir yang diunggah. Petugas perlu mengunggah berkas terbaru secara berkala agar status GL mutakhir. Tampilkan label jelas seperti "Data terakhir diperbarui: [tanggal impor terakhir]" di dashboard, supaya petugas selalu sadar tingkat kesegaran datanya dan tidak salah menyimpulkan dari data lama.
 
+### KSKK GL pelimpahan: checkbox tanda tangan
+
+Untuk GL yang dilimpahkan, KSKK datang dari loket lain dalam keadaan **sudah bertanda tangan**. Penempelan tanda tangan sendiri terjadi di `app/api/kskk/[token]/route.ts` **setiap kali berkas dibuka**, bukan sekali saat diunggah — jadi kalau berkas yang sudah bertanda tangan ikut ditempel, hasilnya dobel, dan dobelnya berulang tiap kali dibuka.
+
+Karena itu keputusannya disimpan di kolom `gl_mirror.kskk_tempel_ttd` (default `true` = perilaku lama), bukan cuma di form. Petugas melepas centang **"Tanda tangan Kepala Cabang & Mobile Service"** saat mengunggah KSKK pelimpahan.
+
+**Istilah "Mobile Service".** Label antarmuka untuk penanda tangan kedua adalah **Mobile Service**, bukan "Petugas Survei" — orang yang sama, sebutan berbeda (arahan pemilik proyek). Yang diganti hanya label antarmuka. Sentinel `PEMILIK_PETUGAS_SURVEI` di database **tidak** diubah (mengubahnya membuat tanda tangan yang sudah tersimpan tidak terbaca), dan teks di dalam PDF Laporan Survei TKP juga **tidak** diubah karena mengikuti format resmi "LHS TKP.pdf".
+
+**Laporan Survei TKP TIDAK bisa diunggah.** Sempat dibangun (unggah LHS yang sudah jadi dari loket lain) lalu dicabut total atas arahan pemilik proyek, termasuk kolom `berkas`/`nama_berkas` di `laporan_survei_tkp`. Alasannya di aturan syarat dokumen di bawah: untuk GL pelimpahan, LHS memang bukan urusan Semarang. Jangan dibangun ulang tanpa diminta eksplisit lagi.
+
+### Pencocokan impor Sentralisasi Pembayaran
+
+Berkas "Sentralisasi Pembayaran" berisi daftar invoice yang sudah dibayar pusat. Tiap baris dicocokkan ke SATU GL, lalu GL itu ditandai lunas lewat `tandaiBerkasSelesai()`. Aturannya di `lib/sumber-data/pencocokan-sentralisasi.ts` (fungsi murni, ada test-nya).
+
+**Patokan lunas = kolom Transaction Reference terisi**, bukan Status Invoice. Sudah diverifikasi pemilik proyek ke JRCare: Status Invoice "Kasir" pun bisa berarti sudah lunas.
+
+**Nama korban SAJA tidak cukup** — ini pernah jadi bug serius. Satu korban lazim punya beberapa GL. Versi lama mencocokkan lewat nama lalu menandai SEMUA GL Unpaid milik nama itu; pada berkas nyata perilaku itu menandai **320 GL** lunas padahal yang benar cuma **3**. Dua cacatnya:
+
+1. **Terlalu banyak ditandai** — satu pembayaran melunasi semua GL orang itu (contoh nyata: SUPRAPTIWI, 5 GL sekaligus).
+2. **Salah sasaran** — kandidat dibatasi ke GL Unpaid saja, sehingga GL yang benar (sudah Paid dari impor JRCare) tersembunyi dan pembayarannya nyasar ke GL lain milik orang yang sama. Contoh nyata DEBBY INDRIYANI WIRYANTO: pembayaran Rp 17.089.322 seharusnya untuk GL Tgl 26-05-2026 (sudah Paid), malah menandai GL Tgl 06-07-2026 yang nilainya cuma Rp 342.540.
+
+Urutan keputusan sekarang: (a) kalau ada GL Paid dengan `jumlah_pembayaran` **sama persis** dengan Nominal Invoice, baris dilewati karena sudah tercermin dari impor JRCare; (b) kalau semua kandidat sudah Paid, dilewati juga; (c) sisanya dipilih dari **Tgl GL yang paling dekat ke Tgl Pengajuan**, dengan selisih Nominal Invoice terhadap Nilai Disetujui sebagai pembanding kedua; (d) kalau dua kandidat sama kuat di kedua ukuran, **jangan ditebak** — namanya dilaporkan ke petugas di pesan hasil impor.
+
+**Jangan pakai Tgl GL harus lebih dulu dari Tgl Pengajuan.** Pada data nyata Tgl GL kerap SESUDAH Tgl Pengajuan (kasus DEBBY: pengajuan 25-05, Tgl GL 26-05). Yang dipakai jaraknya, bukan urutannya. Toleransi 365 hari diukur dari 487 baris tak-ambigu di berkas nyata: median 0 hari, 84% dalam 90 hari, seluruhnya dalam 365 hari.
+
+**Nominal Invoice BUKAN kunci keras** (arahan pemilik proyek) — nominalnya kerap berbeda dari Nilai Disetujui, sering tepat 1 juta. Dipakai sebagai pembanding saja, kecuali untuk mendeteksi pembayaran yang sudah tercatat, di mana yang dibandingkan `jumlah_pembayaran` dan harus sama persis.
+
+**Kolom Nominal Invoice punya dua tipe sel dalam satu berkas.** 694 sel teks (`"20.968.750"`, titik = pemisah ribuan) dan 109 sel angka (`616.28`), karena Excel menafsirkan titik ribuan sebagai koma desimal. Sel bertipe angka harus **dikalikan 1000**. Ini bukan tebakan: diuji ke seluruh 109 sel, 109/109 cocok persis dengan `jumlah_pembayaran` GL yang sudah lunas.
+
+### Pelimpahan berkas antar-loket
+
+Sebelum berkas GL bisa diajukan ke pusat, kadang berkasnya harus dilimpahkan dulu ke loket cabang yang berwenang. Selama itu belum terjadi, pengajuan ke pusat tidak bisa jalan -- ini penghambat nyata di lapangan, bukan sekadar penanda.
+
+Petugas mencatatnya lewat tahap **"Berkas Belum Di Limpah"** di halaman detail GL, yang memunculkan satu dropdown wajib: **Loket Cabang tujuan** (11 pilihan, `lib/gl/pelimpahan.ts`). GL itu lalu muncul di halaman **Pelimpahan** sampai tahap berikutnya dicatat.
+
+Tiga keputusan pemilik proyek yang menentukan bentuknya, jangan diubah tanpa konfirmasi ulang:
+
+1. **Keluar otomatis, tanpa tahap "sudah dilimpah".** Halaman Pelimpahan menampilkan GL yang tahap **TERKINI**-nya "Berkas Belum Di Limpah". Begitu petugas mencatat "Berkas Diajukan Ke Pusat", GL hilang sendiri dari daftar. Sengaja tidak memakai "pernah punya baris Belum Di Limpah", supaya GL yang dulu menunggu pelimpahan lalu sudah diajukan tidak nongol lagi.
+2. **Tetap muncul di Papan Peringatan.** GL yang menunggu pelimpahan umurnya tetap jalan dan tetap terlihat di peringatan -- tidak ada perlakuan khusus di `lib/gl/peringatan.ts`. Alasannya supaya tidak ada celah menyembunyikan GL yang mandek dengan menandainya menunggu pelimpahan.
+3. **Tidak wajib dilalui.** GL yang berkasnya sudah di loket yang benar boleh langsung dicatat "Berkas Diajukan Ke Pusat".
+
+**Syarat dokumen BERBEDA per tahap**, dan bedanya disengaja (`catatTahapProses` di `app/gl/[idJaminan]/actions.ts`):
+
+| Tahap | Syarat dokumen |
+| --- | --- |
+| Berkas Belum Di Limpah | KSKK saja |
+| Berkas Diajukan Ke Pusat | Laporan Survei TKP **dan** KSKK |
+| Berkas Selesai | tidak ada (punya pop-up konfirmasi sendiri) |
+
+Kenapa pelimpahan tidak mensyaratkan Laporan Survei TKP: untuk GL yang dilimpahkan, survei TKP dikerjakan **loket tujuan** karena wilayahnya di sana, bukan Semarang. Kalau LHS tetap disyaratkan, tahap itu mustahil dicatat dan GL-nya nyangkut selamanya. Yang tetap wajib ikut berpindah tangan cuma KSKK.
+
+Ekspornya (`/api/ekspor-pelimpahan`) menerima query string yang sama dengan halamannya, jadi menekan Ekspor saat sedang menyaring satu loket menghasilkan berkas berisi loket itu saja. Filter yang dipakai ikut ditulis di baris keterangan di dalam berkasnya, supaya penerima tahu cakupan isi yang dia pegang.
+
 ### Deteksi stagnasi (Tahap 2)
 
 ```
@@ -423,6 +483,21 @@ Sempat digali dan sempat berhasil diuji (cookie sliding session, IIS/ASP.NET), t
 Setelah petugas menandai sebuah GL sudah ditinjau, apakah hasilnya cukup disimpan di aplikasi ini? Dengan model impor, jawabannya hampir pasti ya, karena aplikasi memang tidak menulis ke mana pun. Tandai lokal, selesai.
 
 ---
+
+### Server Action tidak boleh melempar galat isian
+
+Kalau sebuah Server Action `throw new Error("Pilih berkas dulu")`, yang muncul ke petugas adalah **layar galat mentah Next.js** lengkap dengan potongan kode dan call stack. Tidak terbaca orang non-teknis, dan di produksi jadi halaman error yang membuang isi form yang sudah diketik.
+
+Aturannya: setiap Server Action yang bisa gagal karena kesalahan petugas **mengembalikan** `StatusAksi` (`lib/aksi.ts`), tidak melempar. Pakai helper `gagal(pesan)` dan `sukses(pesan)`. Lempar Error HANYA untuk hal yang bukan salah petugas dan tidak bisa dipulihkan di layar itu (mis. galat database), supaya tertangkap error boundary.
+
+Di sisi antarmuka ada dua pola, keduanya di `components/ui/form-aksi.tsx`:
+
+- **`<FormAksi>`** untuk form biasa — membungkus `<form>`, menjalankan aksi lewat `useActionState`, merender tombol submit sendiri (dengan status "sedang mengirim"), memunculkan pop-up saat gagal, dan menampilkan teks hijau kecil saat berhasil. Kolom-kolomnya dioper sebagai children biasa supaya komponen server tetap bisa memakainya.
+- **`<DialogGagal>`** untuk aksi berbentuk tombol yang memanggil action langsung lewat `useTransition` (tombol hapus, pulihkan, dan sejenisnya) — tampung hasilnya, lalu isi `pesan` kalau gagal.
+
+Kenapa pop-up hanya untuk kegagalan: dialog sukses memaksa petugas menutup jendela tiap kali menyimpan, dan di form yang sering dipakai itu justru mengganggu.
+
+**Pengecekan cepat sebelum deploy:** `grep -c "throw new Error"` di tiap berkas ber-`"use server"` harus 0.
 
 ## 9. Gaya Kerja
 
