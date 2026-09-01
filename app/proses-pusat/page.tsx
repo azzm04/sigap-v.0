@@ -14,6 +14,7 @@ import { ambilDaftarProsesPusat } from "@/lib/gl/proses-pusat";
 import { ambilOpsiFilter } from "@/lib/gl/queries";
 import { ambilKinerjaPengajuanPusat } from "@/lib/gl/ringkasan";
 import { TAHAP_KELUAR_PERINGATAN } from "@/lib/gl/tahap-proses";
+import { enkripsiTeks } from "@/lib/gl/token-url";
 
 function buatUrlHalaman(nilaiFilter: NilaiFilterProsesPusat, ukuran: number, halaman: number): string {
   const params = new URLSearchParams();
@@ -172,7 +173,7 @@ export default async function ProsesPusatPage({
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       {b.laporanTkpId ? (
                         <a
-                          href={`/api/laporan-tkp/${b.laporanTkpId}`}
+                          href={`/api/laporan-tkp/${enkripsiTeks(String(b.laporanTkpId))}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary underline-offset-2 hover:underline"

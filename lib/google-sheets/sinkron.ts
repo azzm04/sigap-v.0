@@ -3,7 +3,7 @@ import { db } from "../db";
 import { glMirror, laporanSurveiTkp, statusProsesPusat } from "../db/schema";
 import { formatBulanTahun, formatTanggal } from "../format";
 import { ambilPetaPicRumahSakit, cariPic } from "../gl/pic";
-import { enkripsiIdJaminan } from "../gl/token-url";
+import { enkripsiIdJaminan, enkripsiTeks } from "../gl/token-url";
 import { ambilAppUrl, ambilSheetId, ambilSheetsClient } from "./client";
 
 // Tiap bulan (berdasarkan Tgl GL) dapat sheet sendiri, mis. "GL - Agustus 2026" -- lebih rapi daripada satu sheet raksasa berisi semua GL.
@@ -215,7 +215,10 @@ async function ambilBarisPerBulan(): Promise<Map<string, BarisSheet[]>> {
     const baris: BarisSheet = {
       nilai,
       tautLaporanTkp: {
-        url: appUrl && laporanTerkini ? `${appUrl}/api/laporan-tkp/${laporanTerkini.id}` : null,
+        url:
+          appUrl && laporanTerkini
+            ? `${appUrl}/api/laporan-tkp/${enkripsiTeks(String(laporanTerkini.id))}`
+            : null,
         teks: laporanTerkini?.nomorLp ?? "",
       },
       tautKskk: {

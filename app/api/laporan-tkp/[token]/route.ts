@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { ambilDetailGL } from "@/lib/gl/detail";
+import { dekripsiToken } from "@/lib/gl/token-url";
 import { generateLaporanSurveiTkpPdf } from "@/lib/laporan-tkp/generate";
 import { ambilLaporanTkp } from "@/lib/laporan-tkp/laporan";
 import {
@@ -9,14 +10,20 @@ import {
   PEMILIK_PETUGAS_SURVEI,
 } from "@/lib/laporan-tkp/tanda-tangan";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json({ pesan: "Belum masuk." }, { status: 401 });
   }
 
-  const { id } = await params;
-  const laporan = await ambilLaporanTkp(Number(id));
+  const { token } = await params;
+  const idMentah = dekripsiToken(decodeURIComponent(token));
+  const id = idMentah ? Number(idMentah) : NaN;
+  if (!idMentah || !Number.isInteger(id)) {
+    return NextResponse.json({ pesan: "Token tidak valid." }, { status: 404 });
+  }
+
+  const laporan = await ambilLaporanTkp(id);
   if (!laporan) {
     return NextResponse.json({ pesan: "Laporan tidak ditemukan." }, { status: 404 });
   }

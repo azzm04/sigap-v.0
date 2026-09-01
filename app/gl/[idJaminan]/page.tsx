@@ -19,7 +19,7 @@ import {
   TAHAP_PEMICU_PAID,
 } from "@/lib/gl/tahap-proses";
 import { ambilTinjauan } from "@/lib/gl/tinjauan";
-import { dekripsiToken } from "@/lib/gl/token-url";
+import { dekripsiToken, enkripsiTeks } from "@/lib/gl/token-url";
 import { hitungUmurHari } from "@/lib/format";
 import { ambilRiwayatLaporanTkp } from "@/lib/laporan-tkp/laporan";
 import { ambilTandaTangan, PEMILIK_PETUGAS_SURVEI } from "@/lib/laporan-tkp/tanda-tangan";
@@ -73,8 +73,8 @@ export default async function DetailGLPage({
       label: l.nomorLp,
       waktu: l.dibuatPada,
       petugas: l.namaPengguna,
-      hrefLihat: `/api/laporan-tkp/${l.id}`,
-      hrefUnduh: `/api/laporan-tkp/${l.id}?unduh=1`,
+      hrefLihat: `/api/laporan-tkp/${enkripsiTeks(String(l.id))}`,
+      hrefUnduh: `/api/laporan-tkp/${enkripsiTeks(String(l.id))}?unduh=1`,
       laporanId: l.id,
     })),
     ...(detail.kskkNamaBerkas && detail.kskkDiunggahPada
