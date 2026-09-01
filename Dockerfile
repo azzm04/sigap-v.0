@@ -15,9 +15,6 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=3072
-# Dummy, hanya dipakai analisis statis next build (tidak ada query yang benar-benar
-# jalan di tahap ini). Nilai asli datang dari .env saat container app dijalankan --
-# stage "runner" di bawah mulai FROM base baru jadi ENV di sini tidak ikut terbawa.
 ENV DATABASE_URL="postgres://build:build@localhost:5432/build"
 RUN npm run build
 
@@ -36,8 +33,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# drizzle-kit migrate dijalankan manual dari luar container (lihat README deploy),
-# tapi berkas skema/migrasi perlu ikut kalau migrasi dijalankan lewat container ini.
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
 
