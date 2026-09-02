@@ -23,8 +23,6 @@ async function benamkanGambar(doc: PDFDocument, dataUri: string) {
   return denganBatasWaktu(promise, BATAS_WAKTU_EMBED_MS);
 }
 
-// --- Fallback: koordinat tetap, dipakai kalau pencarian anchor teks gagal
-// (mis. KSKK hasil scan tanpa layer teks, atau format di luar dugaan) ---
 const TTD_PETUGAS_X = 85;
 const TTD_PETUGAS_Y = 635;
 const TTD_PETUGAS_LEBAR_MAKS = 110;
@@ -36,26 +34,14 @@ const TTD_KACAB_LEBAR_MAKS = 120;
 const TTD_KACAB_TINGGI_MAKS = 55;
 
 // --- Posisi berbasis anchor teks -- lihat cariAnchorTeks() di bawah.
-// Kalibrasi diverifikasi visual terhadap docs/KSKK.pdf dan docs/KSKK-1.pdf
-// (dua contoh nyata dari DASI-JR, layoutnya bergeser vertikal sampai 15pt
-// antar-berkas tergantung panjang isi tabel data korban/uraian kejadian di
-// atasnya -- makanya koordinat tetap sering meleset, dan anchor teks yang
-// dipakai di sini).
-//
-// Kepala Cabang: anchor "MENGETAHUI", tanda tangan di ruang kosong antara
-// teks itu dan nama Kepala Cabang di bawahnya (jaraknya lebar, ~90pt).
-const ANCHOR_KACAB_OFFSET_X = -5;
-const ANCHOR_KACAB_OFFSET_Y = 75; // turun dari baseline "MENGETAHUI"
+const ANCHOR_KACAB_OFFSET_X = 15;
+const ANCHOR_KACAB_OFFSET_Y = 70; // turun dari baseline "MENGETAHUI"
 const ANCHOR_KACAB_LEBAR_MAKS = 125;
 const ANCHOR_KACAB_TINGGI_MAKS = 50;
 
 // Petugas Survei/Mobile Service: anchor "TANDA TANGAN" TERKIRI (teks ini
-// muncul dua kali di halaman -- kotak kiri berisi nama+jabatan staf, kotak
-// tengah kosong/tidak dipakai, dipilih lewat X terkecil). Beda arah dari
-// Kepala Cabang: ruang kosongnya di BAWAH label ini, bukan di atas --
-// karena di atasnya langsung nempel alamat/jabatan tanpa jarak.
-const ANCHOR_PETUGAS_OFFSET_X = 5;
-const ANCHOR_PETUGAS_OFFSET_Y = -47; // turun dari baseline "TANDA TANGAN"
+const ANCHOR_PETUGAS_OFFSET_X = 15;
+const ANCHOR_PETUGAS_OFFSET_Y = -50; // turun dari baseline "TANDA TANGAN"
 const ANCHOR_PETUGAS_LEBAR_MAKS = 115;
 const ANCHOR_PETUGAS_TINGGI_MAKS = 42;
 
@@ -70,19 +56,8 @@ interface HasilAnchor {
   tandaTangan: TitikAnchor | null;
 }
 
-// Cari posisi teks "MENGETAHUI" (anchor Kepala Cabang) dan "TANDA TANGAN"
-// terkiri (anchor Petugas Survei) lewat layer teks asli PDF -- bukan OCR,
-// karena berkas KSKK dari DASI-JR punya teks asli yang bisa diekstrak
-// (sudah dicek langsung terhadap contoh nyata). Null kalau PDF-nya tidak
-// punya layer teks (mis. hasil scan gambar) atau anchor-nya tidak ketemu
-// sama sekali -- pemanggil jatuh ke koordinat tetap sebagai fallback.
 async function cariAnchorTeks(pdfBytes: Uint8Array | Buffer): Promise<HasilAnchor | null> {
   try {
-    // pdfjs-dist menolak instance Buffer secara eksplisit walau
-    // `Buffer instanceof Uint8Array` bernilai true di JS -- harus benar-benar
-    // Uint8Array murni, jadi selalu dibungkus ulang tanpa syarat.
-    // pdfjs-dist mendeteksi lingkungan Node otomatis dan menonaktifkan Web
-    // Worker sendiri (jalan di thread utama) -- tidak perlu opsi tambahan.
     const data = new Uint8Array(pdfBytes);
     const doc = await pdfjsLib.getDocument({ data }).promise;
 
@@ -109,10 +84,6 @@ async function cariAnchorTeks(pdfBytes: Uint8Array | Buffer): Promise<HasilAncho
         return { halamanIndex: i - 1, mengetahui, tandaTangan };
       }
     }
-    // Sampai sini berarti PDF-nya berhasil dibaca tapi anchor-nya benar-benar
-    // tidak ada di teksnya -- kemungkinan KSKK hasil scan tanpa layer teks,
-    // atau format di luar dugaan. Bukan galat, tapi worth dicatat supaya
-    // beda dengan kasus "cariAnchorTeks error" di bawah saat men-diagnosis.
     console.error(
       `[tempelTtdKskk] Anchor "MENGETAHUI"/"TANDA TANGAN" tidak ditemukan di ${doc.numPages} halaman -- kemungkinan PDF hasil scan tanpa layer teks. Jatuh ke koordinat tetap.`,
     );
