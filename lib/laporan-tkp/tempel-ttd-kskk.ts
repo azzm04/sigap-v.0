@@ -109,8 +109,22 @@ async function cariAnchorTeks(pdfBytes: Uint8Array | Buffer): Promise<HasilAncho
         return { halamanIndex: i - 1, mengetahui, tandaTangan };
       }
     }
+    // Sampai sini berarti PDF-nya berhasil dibaca tapi anchor-nya benar-benar
+    // tidak ada di teksnya -- kemungkinan KSKK hasil scan tanpa layer teks,
+    // atau format di luar dugaan. Bukan galat, tapi worth dicatat supaya
+    // beda dengan kasus "cariAnchorTeks error" di bawah saat men-diagnosis.
+    console.error(
+      `[tempelTtdKskk] Anchor "MENGETAHUI"/"TANDA TANGAN" tidak ditemukan di ${doc.numPages} halaman -- kemungkinan PDF hasil scan tanpa layer teks. Jatuh ke koordinat tetap.`,
+    );
     return null;
-  } catch {
+  } catch (e) {
+    // Log teknis saja (pesan + nama error) -- TIDAK memuat isi PDF/data
+    // korban (aturan keras #4). Dicetak ke stdout supaya kelihatan lewat
+    // `docker compose logs app` kalau anchor gagal lagi di produksi.
+    console.error(
+      "[tempelTtdKskk] cariAnchorTeks gagal, jatuh ke koordinat tetap:",
+      e instanceof Error ? `${e.name}: ${e.message}` : String(e),
+    );
     return null;
   }
 }
