@@ -1,7 +1,9 @@
 import { PDFDocument } from "pdf-lib";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { BarisTandaTangan } from "./tanda-tangan";
 
 const BATAS_WAKTU_EMBED_MS = 5000;
+const BATAS_WAKTU_ANCHOR_MS = 5000;
 
 function denganBatasWaktu<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
@@ -21,6 +23,8 @@ async function benamkanGambar(doc: PDFDocument, dataUri: string) {
   return denganBatasWaktu(promise, BATAS_WAKTU_EMBED_MS);
 }
 
+// --- Fallback: koordinat tetap, dipakai kalau pencarian anchor teks gagal
+// (mis. KSKK hasil scan tanpa layer teks, atau format di luar dugaan) ---
 const TTD_PETUGAS_X = 85;
 const TTD_PETUGAS_Y = 635;
 const TTD_PETUGAS_LEBAR_MAKS = 110;
@@ -30,6 +34,86 @@ const TTD_KACAB_X = 410;
 const TTD_KACAB_Y = 711;
 const TTD_KACAB_LEBAR_MAKS = 120;
 const TTD_KACAB_TINGGI_MAKS = 55;
+
+// --- Posisi berbasis anchor teks -- lihat cariAnchorTeks() di bawah.
+// Kalibrasi diverifikasi visual terhadap docs/KSKK.pdf dan docs/KSKK-1.pdf
+// (dua contoh nyata dari DASI-JR, layoutnya bergeser vertikal sampai 15pt
+// antar-berkas tergantung panjang isi tabel data korban/uraian kejadian di
+// atasnya -- makanya koordinat tetap sering meleset, dan anchor teks yang
+// dipakai di sini).
+//
+// Kepala Cabang: anchor "MENGETAHUI", tanda tangan di ruang kosong antara
+// teks itu dan nama Kepala Cabang di bawahnya (jaraknya lebar, ~90pt).
+const ANCHOR_KACAB_OFFSET_X = -5;
+const ANCHOR_KACAB_OFFSET_Y = 75; // turun dari baseline "MENGETAHUI"
+const ANCHOR_KACAB_LEBAR_MAKS = 125;
+const ANCHOR_KACAB_TINGGI_MAKS = 50;
+
+// Petugas Survei/Mobile Service: anchor "TANDA TANGAN" TERKIRI (teks ini
+// muncul dua kali di halaman -- kotak kiri berisi nama+jabatan staf, kotak
+// tengah kosong/tidak dipakai, dipilih lewat X terkecil). Beda arah dari
+// Kepala Cabang: ruang kosongnya di BAWAH label ini, bukan di atas --
+// karena di atasnya langsung nempel alamat/jabatan tanpa jarak.
+const ANCHOR_PETUGAS_OFFSET_X = 5;
+const ANCHOR_PETUGAS_OFFSET_Y = -47; // turun dari baseline "TANDA TANGAN"
+const ANCHOR_PETUGAS_LEBAR_MAKS = 115;
+const ANCHOR_PETUGAS_TINGGI_MAKS = 42;
+
+interface TitikAnchor {
+  x: number;
+  y: number;
+}
+
+interface HasilAnchor {
+  halamanIndex: number;
+  mengetahui: TitikAnchor | null;
+  tandaTangan: TitikAnchor | null;
+}
+
+// Cari posisi teks "MENGETAHUI" (anchor Kepala Cabang) dan "TANDA TANGAN"
+// terkiri (anchor Petugas Survei) lewat layer teks asli PDF -- bukan OCR,
+// karena berkas KSKK dari DASI-JR punya teks asli yang bisa diekstrak
+// (sudah dicek langsung terhadap contoh nyata). Null kalau PDF-nya tidak
+// punya layer teks (mis. hasil scan gambar) atau anchor-nya tidak ketemu
+// sama sekali -- pemanggil jatuh ke koordinat tetap sebagai fallback.
+async function cariAnchorTeks(pdfBytes: Uint8Array | Buffer): Promise<HasilAnchor | null> {
+  try {
+    // pdfjs-dist menolak instance Buffer secara eksplisit walau
+    // `Buffer instanceof Uint8Array` bernilai true di JS -- harus benar-benar
+    // Uint8Array murni, jadi selalu dibungkus ulang tanpa syarat.
+    // pdfjs-dist mendeteksi lingkungan Node otomatis dan menonaktifkan Web
+    // Worker sendiri (jalan di thread utama) -- tidak perlu opsi tambahan.
+    const data = new Uint8Array(pdfBytes);
+    const doc = await pdfjsLib.getDocument({ data }).promise;
+
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+
+      const cariTeks = (target: string, pilihTerkiri = false): TitikAnchor | null => {
+        const cocok = content.items.filter(
+          (it): it is typeof it & { str: string; transform: number[] } =>
+            "str" in it && typeof (it as { str?: unknown }).str === "string" &&
+            (it as { str: string }).str.toUpperCase().includes(target),
+        );
+        if (cocok.length === 0) return null;
+        const dipilih = pilihTerkiri
+          ? cocok.reduce((a, b) => (a.transform[4] < b.transform[4] ? a : b))
+          : cocok[0];
+        return { x: dipilih.transform[4], y: dipilih.transform[5] };
+      };
+
+      const mengetahui = cariTeks("MENGETAHUI");
+      const tandaTangan = cariTeks("TANDA TANGAN", true);
+      if (mengetahui || tandaTangan) {
+        return { halamanIndex: i - 1, mengetahui, tandaTangan };
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export async function tempelTtdKskk(
   pdfBytes: Uint8Array | Buffer,
@@ -44,30 +128,47 @@ export async function tempelTtdKskk(
     const doc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
     const pages = doc.getPages();
 
-    if (pages.length < 2) {
+    if (pages.length < 1) {
       return pdfBytes instanceof Uint8Array
         ? pdfBytes
         : new Uint8Array(pdfBytes);
     }
 
-    const halaman2 = pages[1];
+    // Anchor teks dulu; kalau gagal/timeout, jatuh ke halaman ke-2 (perilaku
+    // lama) atau halaman terakhir kalau cuma satu halaman.
+    const anchor = await denganBatasWaktu(
+      cariAnchorTeks(pdfBytes),
+      BATAS_WAKTU_ANCHOR_MS,
+    ).catch(() => null);
+
+    const halamanIndex = anchor?.halamanIndex ?? (pages.length >= 2 ? 1 : 0);
+    if (halamanIndex >= pages.length) {
+      return pdfBytes instanceof Uint8Array
+        ? pdfBytes
+        : new Uint8Array(pdfBytes);
+    }
+    const halaman = pages[halamanIndex];
 
     if (ttdPetugasSurvei?.gambar) {
       try {
         const img = await benamkanGambar(doc, ttdPetugasSurvei.gambar);
+        const [x, y, lebarMaks, tinggiMaks] = anchor?.tandaTangan
+          ? [
+              anchor.tandaTangan.x + ANCHOR_PETUGAS_OFFSET_X,
+              anchor.tandaTangan.y + ANCHOR_PETUGAS_OFFSET_Y,
+              ANCHOR_PETUGAS_LEBAR_MAKS,
+              ANCHOR_PETUGAS_TINGGI_MAKS,
+            ]
+          : [TTD_PETUGAS_X, TTD_PETUGAS_Y, TTD_PETUGAS_LEBAR_MAKS, TTD_PETUGAS_TINGGI_MAKS];
+
         const rasio = img.width / img.height;
-        let lebar = TTD_PETUGAS_LEBAR_MAKS;
+        let lebar = lebarMaks;
         let tinggi = lebar / rasio;
-        if (tinggi > TTD_PETUGAS_TINGGI_MAKS) {
-          tinggi = TTD_PETUGAS_TINGGI_MAKS;
+        if (tinggi > tinggiMaks) {
+          tinggi = tinggiMaks;
           lebar = tinggi * rasio;
         }
-        halaman2.drawImage(img, {
-          x: TTD_PETUGAS_X,
-          y: TTD_PETUGAS_Y,
-          width: lebar,
-          height: tinggi,
-        });
+        halaman.drawImage(img, { x, y, width: lebar, height: tinggi });
       } catch {
         // Gambar rusak/tidak terbaca — biarkan area kosong, jangan gagalkan.
       }
@@ -77,19 +178,23 @@ export async function tempelTtdKskk(
     if (ttdKepalaCabang?.gambar) {
       try {
         const img = await benamkanGambar(doc, ttdKepalaCabang.gambar);
+        const [x, y, lebarMaks, tinggiMaks] = anchor?.mengetahui
+          ? [
+              anchor.mengetahui.x + ANCHOR_KACAB_OFFSET_X,
+              anchor.mengetahui.y - ANCHOR_KACAB_OFFSET_Y,
+              ANCHOR_KACAB_LEBAR_MAKS,
+              ANCHOR_KACAB_TINGGI_MAKS,
+            ]
+          : [TTD_KACAB_X, TTD_KACAB_Y, TTD_KACAB_LEBAR_MAKS, TTD_KACAB_TINGGI_MAKS];
+
         const rasio = img.width / img.height;
-        let lebar = TTD_KACAB_LEBAR_MAKS;
+        let lebar = lebarMaks;
         let tinggi = lebar / rasio;
-        if (tinggi > TTD_KACAB_TINGGI_MAKS) {
-          tinggi = TTD_KACAB_TINGGI_MAKS;
+        if (tinggi > tinggiMaks) {
+          tinggi = tinggiMaks;
           lebar = tinggi * rasio;
         }
-        halaman2.drawImage(img, {
-          x: TTD_KACAB_X,
-          y: TTD_KACAB_Y,
-          width: lebar,
-          height: tinggi,
-        });
+        halaman.drawImage(img, { x, y, width: lebar, height: tinggi });
       } catch {
         // Gambar rusak/tidak terbaca — biarkan area kosong, jangan gagalkan.
       }

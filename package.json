@@ -27,6 +27,7 @@
     "next": "^15.5.23",
     "next-auth": "5.0.0-beta.32",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.3.289",
     "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
