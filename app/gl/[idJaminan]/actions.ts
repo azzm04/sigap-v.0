@@ -15,7 +15,7 @@ import {
 } from "@/lib/gl/tahap-proses";
 import { apakahLoketCabangValid, TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
 import { enkripsiIdJaminan } from "@/lib/gl/token-url";
-import { simpanLaporanTkp } from "@/lib/laporan-tkp/laporan";
+import { simpanLaporanTkp, simpanLaporanTkpUnggahan } from "@/lib/laporan-tkp/laporan";
 
 // URL detail GL memakai token terenkripsi (bukan Nomor ID Jaminan asli --
 // lihat lib/gl/token-url.ts), jadi path yang di-revalidatePath() harus
@@ -223,7 +223,11 @@ export async function perbaruiTinjauan(
 
   await db
     .update(tinjauan)
-    .set({ catatan: catatan.trim(), perluTindakLanjut })
+    // ditinjauPada ikut diperbarui: kolom ini yang tampil sebagai "Waktu" di
+    // tabel catatan, dan petugas membacanya sebagai kapan catatan itu
+    // terakhir dikerjakan. Kalau dibiarkan, catatan yang diedit hari ini
+    // tetap tampil bertanggal lama dan riwayatnya menyesatkan.
+    .set({ catatan: catatan.trim(), perluTindakLanjut, ditinjauPada: new Date() })
     .where(eq(tinjauan.id, Number(id)));
 
   revalidatePath(pathDetailGL(idJaminan));
@@ -425,17 +429,19 @@ export async function simpanLaporanSurveiTkp(
     .limit(1);
 
   if (!gl) return { berhasil: false, pesan: "GL tidak ditemukan." };
-  // Tgl Kejadian (Tgl LAKA DASI) boleh digantikan Tanggal Masuk -- sesuai
-  // arahan pemilik proyek: keduanya dianggap tanggal yang sama secara
-  // operasional (Tanggal Masuk sudah punya jalur isi manual sendiri di
-  // form Kunjungan PIC Task Force, jadi tidak perlu input Tgl LAKA
-  // terpisah). Lokasi TETAP wajib -- diisi manual di form yang sama kalau
-  // DASI belum ada (lihat simpanKunjunganTaskForce).
-  if (!gl.lokasi || (!gl.tglKejadian && !gl.tanggalMasuk)) {
+  // SATU-SATUNYA syarat dari data GL adalah Lokasi LAKA (arahan pemilik
+  // proyek). Tanggal Masuk dan Tanggal Pulang Pasien TIDAK wajib -- banyak
+  // kasus lama yang laporannya perlu dibuat padahal PIC Task Force belum
+  // sempat mengisi keduanya. Tgl LAKA juga tidak wajib: kalau kosong,
+  // kolom Tempat/Tgl Kecelakaan di PDF cuma memuat tempatnya.
+  //
+  // Hari/Tanggal Survei tetap wajib, tapi itu isian form yang bisa diketik
+  // langsung petugas -- tidak bergantung pada data GL mana pun.
+  if (!gl.lokasi) {
     return {
       berhasil: false,
       pesan:
-        "Lokasi LAKA dan Tgl LAKA/Tanggal Masuk belum terisi untuk GL ini. Lengkapi dulu lewat form Kunjungan PIC Task Force sebelum membuat Laporan Survei TKP.",
+        "Lokasi LAKA belum terisi untuk GL ini. Isi dulu lewat form Kunjungan PIC Task Force di atas sebelum membuat Laporan Survei TKP.",
     };
   }
 
@@ -627,3 +633,60 @@ export async function hapusKskk(
   return sukses("KSKK dihapus.");
 }
 
+const UKURAN_MAKS_LHS_UNGGAHAN = 10 * 1024 * 1024; // 10 MB, sama seperti KSKK
+
+// Mengunggah Laporan Survei TKP yang SUDAH JADI dari luar sistem -- untuk
+// kasus lama yang laporannya sudah pernah dibuat sebelum SIGAP dipakai,
+// jadi tidak perlu diketik ulang lewat form generator.
+//
+// Disimpan ke tabel yang sama dengan laporan buatan SIGAP supaya seluruh
+// pengecekan kelengkapan dokumen ikut mengenalinya tanpa diubah (lihat
+// komentar laporanSurveiTkp di lib/db/schema.ts), bedanya kolom berkas
+// terisi sehingga PDF-nya dikirim apa adanya.
+//
+// Beda dari simpanKskk yang menimpa: tiap unggahan jadi baris BARU, sama
+// seperti laporan buatan SIGAP yang memang berupa riwayat.
+export async function unggahLaporanTkp(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return gagal(PESAN_SESI_TIDAK_VALID);
+  }
+  const userId = Number(session.user.id);
+
+  const idJaminan = formData.get("idJaminan");
+  const berkas = formData.get("berkas");
+
+  if (typeof idJaminan !== "string" || !idJaminan) {
+    return gagal("ID Jaminan tidak valid.");
+  }
+  if (!(berkas instanceof File) || berkas.size === 0) {
+    return gagal("Pilih berkas PDF Laporan Survei TKP terlebih dahulu lewat tombol Choose File.");
+  }
+  if (berkas.type !== "application/pdf") {
+    return gagal(`Laporan Survei TKP harus format PDF. Berkas "${berkas.name}" bukan PDF.`);
+  }
+  if (berkas.size > UKURAN_MAKS_LHS_UNGGAHAN) {
+    const mb = Math.round((berkas.size / 1024 / 1024) * 10) / 10;
+    return gagal(`Ukuran berkas Laporan Survei TKP maksimal 10 MB, berkas ini ${mb} MB.`);
+  }
+
+  const arrayBuffer = await berkas.arrayBuffer();
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  await simpanLaporanTkpUnggahan({
+    idJaminan,
+    berkas: `data:application/pdf;base64,${base64}`,
+    namaBerkas: berkas.name,
+    userId,
+  });
+
+  revalidatePath(pathDetailGL(idJaminan));
+  revalidatePath("/peringatan");
+  revalidatePath("/");
+  picuSinkronSheetsLatarBelakang();
+
+  return sukses(`Laporan Survei TKP "${berkas.name}" berhasil diunggah.`);
+}

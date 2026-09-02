@@ -350,7 +350,17 @@ Karena itu keputusannya disimpan di kolom `gl_mirror.kskk_tempel_ttd` (default `
 
 **Istilah "Mobile Service".** Label antarmuka untuk penanda tangan kedua adalah **Mobile Service**, bukan "Petugas Survei" — orang yang sama, sebutan berbeda (arahan pemilik proyek). Yang diganti hanya label antarmuka. Sentinel `PEMILIK_PETUGAS_SURVEI` di database **tidak** diubah (mengubahnya membuat tanda tangan yang sudah tersimpan tidak terbaca), dan teks di dalam PDF Laporan Survei TKP juga **tidak** diubah karena mengikuti format resmi "LHS TKP.pdf".
 
-**Laporan Survei TKP TIDAK bisa diunggah.** Sempat dibangun (unggah LHS yang sudah jadi dari loket lain) lalu dicabut total atas arahan pemilik proyek, termasuk kolom `berkas`/`nama_berkas` di `laporan_survei_tkp`. Alasannya di aturan syarat dokumen di bawah: untuk GL pelimpahan, LHS memang bukan urusan Semarang. Jangan dibangun ulang tanpa diminta eksplisit lagi.
+**Laporan Survei TKP bisa diunggah, bukan cuma di-generate.** Kolom `berkas` di `laporan_survei_tkp` menentukan asal-usulnya: `NULL` = dibuat SIGAP (PDF di-generate ulang tiap diunduh dari field manual + data GL terkini), terisi = sudah jadi dari luar dan dikirim apa adanya. Gunanya untuk kasus lama yang laporannya sudah pernah dibuat sebelum SIGAP dipakai, supaya tidak perlu diketik ulang.
+
+Riwayat singkat supaya tidak membingungkan: fitur ini sempat dibangun untuk GL pelimpahan (migrasi 0013), dicabut total karena ternyata pelimpahan tidak butuh LHS (0014), lalu dibangun lagi (0015) untuk alasan yang berbeda — kasus lama, bukan pelimpahan.
+
+**Sengaja satu tabel, bukan tabel terpisah.** Seluruh pengecekan kelengkapan dokumen bertanya hal yang sama — "apakah GL ini punya baris di `laporan_survei_tkp`?" — di enam tempat: syarat tahap "Berkas Belum Di Limpah" dan "Berkas Diajukan Ke Pusat", badge Status Dokumen, Kartu Kinerja, kolom Google Sheets, dan tabel Dokumen GL. Dengan satu tabel, keenamnya ikut benar tanpa disentuh. Konsekuensinya `nomor_lp`, `alamat_korban`, `uraian_kesimpulan`, dan `nama_saksi` **nullable** — laporan unggahan tidak punya isian itu.
+
+Karena `nomor_lp` bisa null, label dokumen dipusatkan di `labelLaporanTkp()` (`lib/laporan-tkp/laporan.ts`): Nomor LP kalau ada, kalau tidak nama berkas. **Jangan pakai `nomorLp` langsung** di tempat baru — tiga tempat sudah pernah salah karenanya (halaman detail, Proses Pusat, Google Sheets).
+
+**Syarat membuat Laporan Survei TKP: cukup Lokasi LAKA.** Tanggal Masuk, Tanggal Pulang Pasien, dan Tgl LAKA (DASI) TIDAK wajib (arahan pemilik proyek) — banyak kasus lama yang laporannya perlu dibuat padahal PIC Task Force belum sempat mengisi. Kalau Tgl LAKA kosong, baris "Tempat/Tgl. Kecelakaan" di PDF cuma memuat tempatnya, tanpa koma menggantung. Hari/Tanggal Survei tetap wajib, tapi itu isian form yang bisa diketik langsung, tidak bergantung pada data GL mana pun.
+
+**`tinjauan.ditinjauPada` ikut diperbarui saat catatan diedit** (`perbaruiTinjauan`). Kolom itu tampil sebagai "Waktu" di tabel catatan dan dibaca petugas sebagai kapan catatan terakhir dikerjakan — kalau dibiarkan, catatan yang diedit hari ini tetap bertanggal lama dan riwayatnya menyesatkan.
 
 ### Pencocokan impor Sentralisasi Pembayaran
 
@@ -414,6 +424,24 @@ Keluhan asli klien adalah stagnasi, bukan umur. Tahap 1 memakai umur karena riwa
 Klien menyebut kode GL berakhiran dua digit, `00` sebagai prioritas pengajuan pertama. Namun di berkas ekspor, kolom Nomor Surat Jaminan kosong di semua baris, sedangkan Nomor ID Jaminan berakhiran urutan angka seperti `001925`, `002000`. Belum jelas yang mana yang dimaksud klien.
 
 Sampai dikonfirmasi, jangan bangun logika prioritas berbasis akhiran 00. Untuk sementara, urutkan papan peringatan berdasarkan umur tertinggi. Lihat bagian 8.
+
+### Kartu Kunjungan PIC Task Force
+
+Di dashboard Monitoring, di atas Kartu Kinerja Pengajuan ke Pusat. Menjawab pertanyaan yang sebelumnya tidak terjawab di mana pun: **berapa GL yang harus dikunjungi PIC Task Force, dan berapa yang sudah**.
+
+| Kartu | Definisi |
+| --- | --- |
+| Harus Dikunjungi | `tipe_klaim = 'GL'` DAN `gl_status = 'Active'` DAN `dihapus_pada IS NULL` DAN `tahapan NOT IN ('Verifikasi User', 'Done')` |
+| Sudah Dikunjungi | Dari yang di atas: `tanggal_masuk`, `tanggal_pulang_pasien`, DAN `lokasi` terisi tiga-tiganya |
+| Belum Dikunjungi | Sisanya |
+
+**Umur GL TIDAK ikut menyaring** di sini — beda dari papan peringatan. Yang ditanyakan "berapa yang harus dikunjungi", bukan "berapa yang sudah telat", jadi GL berumur 1 hari maupun 300 hari sama-sama dihitung (arahan pemilik proyek).
+
+**Cakupannya sengaja sama dengan Peringatan PIC Task Force** (`tahapan` belum sampai `Verifikasi User`/`Done`). Konsekuensinya yang harus disadari: begitu sebuah GL maju ke `Verifikasi User`, GL itu keluar dari kartu ini — jadi angka "Sudah Dikunjungi" membaca sebagai **beban kerja saat ini**, bukan catatan prestasi kumulatif. Pemilik proyek memilih ini di antara tiga opsi (semua GL aktif = 3.698, tanpa yang lunas = 1.627, cakupan Task Force = 719).
+
+**Dinamis mengikuti filter PIC Task Force dan Rentang Tgl GL** — perhatikan filter PIC-nya BERBEDA dari Kartu Kinerja Pengajuan ke Pusat yang memakai PIC Pengajuan. Keduanya mengukur peran yang berbeda, jadi jangan disatukan.
+
+**Jebakan yang harus diingat:** `lokasi` (Lokasi LAKA) berasal dari berkas DASI yang dicocokkan lewat nama korban, BUKAN diketik PIC Task Force. Akibatnya GL yang sebenarnya sudah dikunjungi tetap terhitung "belum" selama berkas DASI-nya belum pernah diunggah untuk korban itu. Ini konsekuensi yang sama persis dengan aturan Peringatan PIC Task Force, jadi dibiarkan konsisten -- tapi kalau angkanya terasa terlalu kecil, penyebabnya sering di situ, bukan di kinerja petugas.
 
 ### Kartu Kinerja Pengajuan ke Pusat
 

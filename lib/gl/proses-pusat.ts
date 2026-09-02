@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror, laporanSurveiTkp, statusProsesPusat } from "../db/schema";
+import { labelLaporanTkp } from "../laporan-tkp/laporan";
 import { ambilPetaPicRumahSakit, cariPic } from "./pic";
 import { TAHAP_KELUAR_PERINGATAN } from "./tahap-proses";
 import { enkripsiIdJaminan } from "./token-url";
@@ -107,6 +108,7 @@ export async function ambilDaftarProsesPusat(
         id: laporanSurveiTkp.id,
         idJaminan: laporanSurveiTkp.idJaminan,
         nomorLp: laporanSurveiTkp.nomorLp,
+        namaBerkas: laporanSurveiTkp.namaBerkas,
       })
       .from(laporanSurveiTkp)
       .where(inArray(laporanSurveiTkp.idJaminan, idRelevan))
@@ -116,7 +118,7 @@ export async function ambilDaftarProsesPusat(
   const laporanTerkiniPerId = new Map<string, { id: number; nomorLp: string }>();
   for (const l of semuaLaporanTkp) {
     if (!laporanTerkiniPerId.has(l.idJaminan)) {
-      laporanTerkiniPerId.set(l.idJaminan, { id: l.id, nomorLp: l.nomorLp });
+      laporanTerkiniPerId.set(l.idJaminan, { id: l.id, nomorLp: labelLaporanTkp(l) });
     }
   }
 

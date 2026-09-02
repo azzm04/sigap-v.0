@@ -227,3 +227,83 @@ export async function ambilKinerjaPengajuanPusat(
 
   return hasil;
 }
+
+export interface KinerjaTaskForce {
+  /** GL aktif yang masih menjadi tanggung jawab PIC Task Force (belum sampai Verifikasi User/Done) */
+  totalHarusDikunjungi: number;
+  /** Tanggal Masuk, Tanggal Pulang Pasien, dan Lokasi LAKA sudah terisi tiga-tiganya */
+  sudahDikunjungi: number;
+  belumDikunjungi: number;
+}
+
+export interface FilterKinerjaTaskForce {
+  picTaskForce?: string;
+  /** ISO "YYYY-MM-DD", batas bawah Tgl GL */
+  dari?: string;
+  /** ISO "YYYY-MM-DD", batas atas Tgl GL */
+  sampai?: string;
+}
+
+// Kartu Kunjungan PIC Task Force di dashboard Monitoring.
+//
+// Cakupan "harus dikunjungi" SENGAJA sama dengan Peringatan PIC Task Force
+// (CLAUDE.md bagian 7): GL aktif yang tahapannya BELUM sampai "Verifikasi
+// User"/"Done". Begitu sampai situ, kunjungan dianggap selesai dan bolanya
+// pindah ke PIC Pengajuan -- jadi kartunya membaca sebagai beban kerja SAAT
+// INI, bukan catatan prestasi kumulatif. Arahan pemilik proyek.
+//
+// Umur GL TIDAK ikut menyaring di sini, beda dari papan peringatan: yang
+// ditanyakan "berapa yang harus dikunjungi", bukan "berapa yang sudah
+// telat".
+//
+// "Sudah dikunjungi" = Tanggal Masuk DAN Tanggal Pulang Pasien DAN Lokasi
+// LAKA terisi. Perhatikan Lokasi LAKA datang dari berkas DASI (dicocokkan
+// lewat nama korban), bukan diketik PIC Task Force -- jadi GL yang benar
+// sudah dikunjungi tetap terhitung "belum" selama berkas DASI-nya belum
+// pernah diunggah. Ini konsekuensi yang sama dengan aturan peringatannya.
+export async function ambilKinerjaTaskForce(
+  filter: FilterKinerjaTaskForce = {},
+): Promise<KinerjaTaskForce> {
+  const kosong: KinerjaTaskForce = {
+    totalHarusDikunjungi: 0,
+    sudahDikunjungi: 0,
+    belumDikunjungi: 0,
+  };
+
+  const kondisi = [
+    KONDISI_AKTIF,
+    eq(glMirror.tipeKlaim, "GL"),
+    eq(glMirror.glStatus, "Active"),
+    notInArray(glMirror.tahapan, [...TAHAPAN_DIPANTAU]),
+  ];
+  if (filter.dari) kondisi.push(gte(glMirror.tglGl, filter.dari));
+  if (filter.sampai) kondisi.push(lte(glMirror.tglGl, filter.sampai));
+
+  if (filter.picTaskForce) {
+    const rsList = await ambilRumahSakitUntukPic({ picTaskForce: filter.picTaskForce });
+    if (rsList.length === 0) return kosong;
+    kondisi.push(inArray(glMirror.namaRumahSakit, rsList));
+  }
+
+  const [hasil] = await db
+    .select({
+      total: count(),
+      sudah: sql<number>`COUNT(*) FILTER (
+        WHERE ${glMirror.tanggalMasuk} IS NOT NULL
+          AND ${glMirror.tanggalPulangPasien} IS NOT NULL
+          AND ${glMirror.lokasi} IS NOT NULL
+          AND ${glMirror.lokasi} <> ''
+      )::int`,
+    })
+    .from(glMirror)
+    .where(and(...kondisi));
+
+  const total = hasil?.total ?? 0;
+  const sudah = Number(hasil?.sudah ?? 0);
+
+  return {
+    totalHarusDikunjungi: total,
+    sudahDikunjungi: sudah,
+    belumDikunjungi: total - sudah,
+  };
+}

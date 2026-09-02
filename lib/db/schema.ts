@@ -184,10 +184,26 @@ export const laporanSurveiTkp = pgTable("laporan_survei_tkp", {
   idJaminan: text("id_jaminan")
     .notNull()
     .references(() => glMirror.idJaminan, { onDelete: "cascade" }),
-  nomorLp: text("nomor_lp").notNull(),
-  alamatKorban: text("alamat_korban").notNull(),
-  uraianKesimpulan: text("uraian_kesimpulan").notNull(),
-  namaSaksi: text("nama_saksi").notNull(),
+  // Empat field manual ini NULLABLE karena satu tabel menampung DUA
+  // asal-usul laporan:
+  //
+  //   berkas = NULL  -> dibuat SIGAP, PDF di-generate ulang tiap diunduh
+  //                     dari field di bawah + data GL terkini
+  //   berkas terisi  -> laporan sudah jadi dari luar (kasus lama yang
+  //                     LHS-nya sudah ada), disimpan dan dikirim apa adanya
+  //
+  // Sengaja satu tabel, bukan tabel terpisah: seluruh pengecekan
+  // kelengkapan dokumen bertanya hal yang sama -- "apakah GL ini punya
+  // baris di laporan_survei_tkp?" -- di enam tempat (syarat tahap proses
+  // pusat, badge Status Dokumen, Kartu Kinerja, kolom Google Sheets, tabel
+  // Dokumen GL). Dengan satu tabel, keenamnya ikut benar tanpa disentuh.
+  nomorLp: text("nomor_lp"),
+  alamatKorban: text("alamat_korban"),
+  uraianKesimpulan: text("uraian_kesimpulan"),
+  namaSaksi: text("nama_saksi"),
+  /** data URI base64 application/pdf, null kalau laporan di-generate SIGAP */
+  berkas: text("berkas"),
+  namaBerkas: text("nama_berkas"),
   ttdSaksi: text("ttd_saksi"),
   tanggalSurveiManual: date("tanggal_survei_manual"),
   userId: bigint("user_id", { mode: "number" })

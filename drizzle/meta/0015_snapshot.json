@@ -1,0 +1,851 @@
+{
+  "id": "f856341b-cbb7-4087-a984-37fc8e2fd113",
+  "prevId": "1b7d41c6-8c80-4ec3-8866-d524f9239990",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.gl_mirror": {
+      "name": "gl_mirror",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_jaminan": {
+          "name": "id_jaminan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipe_klaim": {
+          "name": "tipe_klaim",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipe_cidera": {
+          "name": "tipe_cidera",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nama_rumah_sakit": {
+          "name": "nama_rumah_sakit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loket": {
+          "name": "loket",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nama_korban": {
+          "name": "nama_korban",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nomor_surat_jaminan": {
+          "name": "nomor_surat_jaminan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tgl_gl": {
+          "name": "tgl_gl",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gl_status": {
+          "name": "gl_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tahapan": {
+          "name": "tahapan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tgl_diajukan": {
+          "name": "tgl_diajukan",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_verifikasi": {
+          "name": "status_verifikasi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nilai_diajukan": {
+          "name": "nilai_diajukan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nilai_disetujui": {
+          "name": "nilai_disetujui",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tgl_verifikasi": {
+          "name": "tgl_verifikasi",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_pembayaran": {
+          "name": "status_pembayaran",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jumlah_pembayaran": {
+          "name": "jumlah_pembayaran",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tgl_pembayaran": {
+          "name": "tgl_pembayaran",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tgl_kejadian": {
+          "name": "tgl_kejadian",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lokasi": {
+          "name": "lokasi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tanggal_masuk": {
+          "name": "tanggal_masuk",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tanggal_pulang_pasien": {
+          "name": "tanggal_pulang_pasien",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kskk": {
+          "name": "kskk",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kskk_nama_berkas": {
+          "name": "kskk_nama_berkas",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kskk_diunggah_pada": {
+          "name": "kskk_diunggah_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kskk_tempel_ttd": {
+          "name": "kskk_tempel_ttd",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "diimpor_pada": {
+          "name": "diimpor_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "dihapus_pada": {
+          "name": "dihapus_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "gl_mirror_id_jaminan_unique": {
+          "name": "gl_mirror_id_jaminan_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id_jaminan"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.gl_snapshot": {
+      "name": "gl_snapshot",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_jaminan": {
+          "name": "id_jaminan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tahapan": {
+          "name": "tahapan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status_verifikasi": {
+          "name": "status_verifikasi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_pembayaran": {
+          "name": "status_pembayaran",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "direkam_pada": {
+          "name": "direkam_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "gl_snapshot_id_jaminan_gl_mirror_id_jaminan_fk": {
+          "name": "gl_snapshot_id_jaminan_gl_mirror_id_jaminan_fk",
+          "tableFrom": "gl_snapshot",
+          "tableTo": "gl_mirror",
+          "columnsFrom": [
+            "id_jaminan"
+          ],
+          "columnsTo": [
+            "id_jaminan"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.impor_log": {
+      "name": "impor_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "jenis": {
+          "name": "jenis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'impor'"
+        },
+        "nama_berkas": {
+          "name": "nama_berkas",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diimpor_pada": {
+          "name": "diimpor_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "jumlah_baris": {
+          "name": "jumlah_baris",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jumlah_baru": {
+          "name": "jumlah_baru",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jumlah_berubah": {
+          "name": "jumlah_berubah",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "berhasil": {
+          "name": "berhasil",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alasan_penolakan": {
+          "name": "alasan_penolakan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.laporan_survei_tkp": {
+      "name": "laporan_survei_tkp",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_jaminan": {
+          "name": "id_jaminan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nomor_lp": {
+          "name": "nomor_lp",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alamat_korban": {
+          "name": "alamat_korban",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "uraian_kesimpulan": {
+          "name": "uraian_kesimpulan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nama_saksi": {
+          "name": "nama_saksi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "berkas": {
+          "name": "berkas",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nama_berkas": {
+          "name": "nama_berkas",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ttd_saksi": {
+          "name": "ttd_saksi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tanggal_survei_manual": {
+          "name": "tanggal_survei_manual",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "laporan_survei_tkp_id_jaminan_gl_mirror_id_jaminan_fk": {
+          "name": "laporan_survei_tkp_id_jaminan_gl_mirror_id_jaminan_fk",
+          "tableFrom": "laporan_survei_tkp",
+          "tableTo": "gl_mirror",
+          "columnsFrom": [
+            "id_jaminan"
+          ],
+          "columnsTo": [
+            "id_jaminan"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "laporan_survei_tkp_user_id_pengguna_id_fk": {
+          "name": "laporan_survei_tkp_user_id_pengguna_id_fk",
+          "tableFrom": "laporan_survei_tkp",
+          "tableTo": "pengguna",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.nilai_referensi": {
+      "name": "nilai_referensi",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "kategori": {
+          "name": "kategori",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nilai": {
+          "name": "nilai",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "nilai_referensi_kategori_nilai_unique": {
+          "name": "nilai_referensi_kategori_nilai_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "kategori",
+            "nilai"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pengaturan": {
+      "name": "pengaturan",
+      "schema": "",
+      "columns": {
+        "kunci": {
+          "name": "kunci",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nilai": {
+          "name": "nilai",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pengguna": {
+      "name": "pengguna",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dibuat_pada": {
+          "name": "dibuat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pengguna_username_unique": {
+          "name": "pengguna_username_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "username"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pic_rumah_sakit": {
+      "name": "pic_rumah_sakit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nama_rumah_sakit": {
+          "name": "nama_rumah_sakit",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pic_task_force": {
+          "name": "pic_task_force",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pic_pengajuan": {
+          "name": "pic_pengajuan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diperbarui_pada": {
+          "name": "diperbarui_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "pic_rumah_sakit_nama_rumah_sakit_unique": {
+          "name": "pic_rumah_sakit_nama_rumah_sakit_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "nama_rumah_sakit"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.status_proses_pusat": {
+      "name": "status_proses_pusat",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_jaminan": {
+          "name": "id_jaminan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tahap": {
+          "name": "tahap",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "loket_pelimpahan": {
+          "name": "loket_pelimpahan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dicatat_pada": {
+          "name": "dicatat_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "status_proses_pusat_id_jaminan_gl_mirror_id_jaminan_fk": {
+          "name": "status_proses_pusat_id_jaminan_gl_mirror_id_jaminan_fk",
+          "tableFrom": "status_proses_pusat",
+          "tableTo": "gl_mirror",
+          "columnsFrom": [
+            "id_jaminan"
+          ],
+          "columnsTo": [
+            "id_jaminan"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "status_proses_pusat_user_id_pengguna_id_fk": {
+          "name": "status_proses_pusat_user_id_pengguna_id_fk",
+          "tableFrom": "status_proses_pusat",
+          "tableTo": "pengguna",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tanda_tangan": {
+      "name": "tanda_tangan",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "pemilik": {
+          "name": "pemilik",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gambar": {
+          "name": "gambar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nama_tampil": {
+          "name": "nama_tampil",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "jabatan": {
+          "name": "jabatan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diperbarui_pada": {
+          "name": "diperbarui_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tanda_tangan_pemilik_unique": {
+          "name": "tanda_tangan_pemilik_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "pemilik"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tinjauan": {
+      "name": "tinjauan",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "bigserial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "id_jaminan": {
+          "name": "id_jaminan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "catatan": {
+          "name": "catatan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "perlu_tindak_lanjut": {
+          "name": "perlu_tindak_lanjut",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "diabaikan": {
+          "name": "diabaikan",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "alasan_abaikan": {
+          "name": "alasan_abaikan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ditinjau_pada": {
+          "name": "ditinjau_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "tinjauan_id_jaminan_gl_mirror_id_jaminan_fk": {
+          "name": "tinjauan_id_jaminan_gl_mirror_id_jaminan_fk",
+          "tableFrom": "tinjauan",
+          "tableTo": "gl_mirror",
+          "columnsFrom": [
+            "id_jaminan"
+          ],
+          "columnsTo": [
+            "id_jaminan"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tinjauan_user_id_pengguna_id_fk": {
+          "name": "tinjauan_user_id_pengguna_id_fk",
+          "tableFrom": "tinjauan",
+          "tableTo": "pengguna",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

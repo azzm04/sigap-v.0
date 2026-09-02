@@ -21,7 +21,7 @@ import {
 import { ambilTinjauan } from "@/lib/gl/tinjauan";
 import { dekripsiToken, enkripsiTeks } from "@/lib/gl/token-url";
 import { hitungUmurHari } from "@/lib/format";
-import { ambilRiwayatLaporanTkp } from "@/lib/laporan-tkp/laporan";
+import { ambilRiwayatLaporanTkp, labelLaporanTkp } from "@/lib/laporan-tkp/laporan";
 import { ambilTandaTangan, PEMILIK_PETUGAS_SURVEI } from "@/lib/laporan-tkp/tanda-tangan";
 
 export default async function DetailGLPage({
@@ -63,14 +63,17 @@ export default async function DetailGLPage({
     tahapTerkini?.tahap === TAHAP_KELUAR_PERINGATAN || tahapTerkini?.tahap === TAHAP_PEMICU_PAID;
   const namaPetugasSurvei = ttdPetugasSurvei?.namaTampil?.trim() || null;
   const tglKejadianEfektif = detail.tglKejadian ?? detail.tanggalMasuk;
-  const dataLaporanTkpLengkap = !!detail.lokasi && !!tglKejadianEfektif;
+  // Syarat membuat Laporan Survei TKP: cukup Lokasi LAKA. Tgl LAKA,
+  // Tanggal Masuk, dan Tanggal Pulang Pasien tidak wajib (arahan pemilik
+  // proyek) -- lihat simpanLaporanSurveiTkp di actions.ts.
+  const dataLaporanTkpLengkap = !!detail.lokasi;
   const perluTanggalSurveiManual = !detail.tanggalMasuk;
 
   const daftarDokumen: BarisDokumen[] = [
     ...riwayatLaporanTkp.map((l) => ({
       jenis: "Laporan Survei TKP" as const,
       key: `tkp-${l.id}`,
-      label: l.nomorLp,
+      label: labelLaporanTkp(l),
       waktu: l.dibuatPada,
       petugas: l.namaPengguna,
       hrefLihat: `/api/laporan-tkp/${enkripsiTeks(String(l.id))}`,

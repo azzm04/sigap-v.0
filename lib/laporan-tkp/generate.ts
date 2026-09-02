@@ -13,7 +13,8 @@ export interface DataLaporanTkp {
   namaKorban: string;
   namaPetugasSurvei: string; // Tetap, dari Pengaturan (PEMILIK_PETUGAS_SURVEI) -- bukan per-PIC
   lokasi: string;
-  tglKejadian: string;
+  /** null kalau Tgl LAKA (DASI) maupun Tanggal Masuk belum ada -- PDF cuma memuat tempatnya */
+  tglKejadian: string | null;
   tanggalSurvei: string; 
   // Tanda tangan, null kalau belum diunggah di Pengaturan
   ttdKepalaCabang: BarisTandaTangan | null;
@@ -216,7 +217,11 @@ export async function generateLaporanSurveiTkpPdf(data: DataLaporanTkp): Promise
   y -= 10 * barisAlamat.length + 11;
 
   // --- Tempat/Tgl. Kecelakaan ---
-  const tempatTgl = `Tempat/Tgl. Kecelakaan : ${data.lokasi}, ${formatTanggal(data.tglKejadian)}`;
+  // Tanpa Tgl LAKA, baris ini cuma memuat tempat -- jangan tulis koma
+  // menggantung atau tanggal kosong yang membingungkan pembaca dokumen.
+  const tempatTgl = data.tglKejadian
+    ? `Tempat/Tgl. Kecelakaan : ${data.lokasi}, ${formatTanggal(data.tglKejadian)}`
+    : `Tempat/Tgl. Kecelakaan : ${data.lokasi}`;
   const barisTempat = bungkusTeks(font, tempatTgl, UKURAN_DASAR, LEBAR_ISI);
   barisTempat.forEach((baris, i) => {
     page.drawText(baris, { x: MARGIN, y: y - i * 10, size: UKURAN_DASAR, font });

@@ -1,6 +1,8 @@
+import { unggahLaporanTkp } from "@/app/gl/[idJaminan]/actions";
 import { FormLaporanTkp } from "@/components/gl/form-laporan-tkp";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { Card } from "@/components/ui/card";
+import { FormAksi } from "@/components/ui/form-aksi";
 import { Field } from "@/components/ui/field";
 import type { DetailGL } from "@/lib/gl/detail";
 import { formatTanggal } from "@/lib/format";
@@ -44,9 +46,7 @@ export function DetailLaporanTkp({
             {!detail.lokasi && (
               <li>Lokasi LAKA belum terisi -- isi manual lewat form Kunjungan PIC Task Force di atas</li>
             )}
-            {!tglKejadianEfektif && (
-              <li>Tgl LAKA (DASI) dan Tanggal Masuk dua-duanya belum terisi</li>
-            )}
+
           </ul>
         </div>
       )}
@@ -74,6 +74,46 @@ export function DetailLaporanTkp({
           dataLaporanTkpLengkap={dataLaporanTkpLengkap}
           perluTanggalSurveiManual={perluTanggalSurveiManual}
         />
+      </Card>
+
+      <Card className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="text-sm md:text-base font-medium text-foreground">
+            Atau unggah laporan yang sudah ada
+          </span>
+          <span className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+            Untuk kasus lama yang Laporan Survei TKP-nya sudah pernah dibuat di luar SIGAP --
+            tidak perlu diketik ulang lewat form di atas. Berkas PDF disimpan apa adanya,
+            maksimal 10 MB, dan tetap dihitung sebagai Laporan Survei TKP untuk syarat
+            kelengkapan dokumen.
+          </span>
+        </div>
+
+        <FormAksi
+          action={unggahLaporanTkp}
+          labelTombol="Unggah Laporan"
+          labelTombolProses="Mengunggah..."
+          judulGagal="Gagal Mengunggah Laporan Survei TKP"
+          className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end"
+          kelasBarisTombol="flex shrink-0 items-end"
+        >
+          <input type="hidden" name="idJaminan" value={detail.idJaminan} />
+          <div className="flex min-w-0 flex-col gap-1.5">
+            <label
+              htmlFor="berkasLaporanTkp"
+              className="text-sm md:text-base font-medium text-foreground"
+            >
+              Berkas Laporan Survei TKP (PDF)
+            </label>
+            <input
+              id="berkasLaporanTkp"
+              name="berkas"
+              type="file"
+              accept="application/pdf"
+              className="text-sm text-foreground file:mr-2 file:h-8 file:rounded-md file:border-0 file:bg-muted file:px-2.5 file:text-sm file:font-medium file:text-foreground sm:w-80"
+            />
+          </div>
+        </FormAksi>
       </Card>
 
     </section>

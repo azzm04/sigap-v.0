@@ -2,6 +2,7 @@ import { desc, isNull } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror, laporanSurveiTkp, statusProsesPusat } from "../db/schema";
 import { formatBulanTahun, formatTanggal } from "../format";
+import { labelLaporanTkp } from "../laporan-tkp/laporan";
 import { ambilPetaPicRumahSakit, cariPic } from "../gl/pic";
 import { enkripsiIdJaminan, enkripsiTeks } from "../gl/token-url";
 import { ambilAppUrl, ambilSheetId, ambilSheetsClient } from "./client";
@@ -160,6 +161,7 @@ async function ambilBarisPerBulan(): Promise<Map<string, BarisSheet[]>> {
         id: laporanSurveiTkp.id,
         idJaminan: laporanSurveiTkp.idJaminan,
         nomorLp: laporanSurveiTkp.nomorLp,
+        namaBerkas: laporanSurveiTkp.namaBerkas,
       })
       .from(laporanSurveiTkp)
       .orderBy(desc(laporanSurveiTkp.dibuatPada)),
@@ -176,7 +178,7 @@ async function ambilBarisPerBulan(): Promise<Map<string, BarisSheet[]>> {
   const laporanTerkiniPerId = new Map<string, { id: number; nomorLp: string }>();
   for (const l of semuaLaporanTkp) {
     if (!laporanTerkiniPerId.has(l.idJaminan)) {
-      laporanTerkiniPerId.set(l.idJaminan, { id: l.id, nomorLp: l.nomorLp });
+      laporanTerkiniPerId.set(l.idJaminan, { id: l.id, nomorLp: labelLaporanTkp(l) });
     }
   }
 

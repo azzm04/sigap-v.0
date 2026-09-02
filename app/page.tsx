@@ -2,6 +2,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { FilterGL, type NilaiFilterGL } from "@/components/gl/filter-gl";
 import { GrafikSebaranTahapan, GrafikStatusPembayaran, GrafikTrenBulanan } from "@/components/gl/grafik";
 import { KartuKinerjaPengajuanPusat } from "@/components/gl/kartu-kinerja-pusat";
+import { KartuKunjunganTaskForce } from "@/components/gl/kartu-kunjungan-task-force";
 import { KartuRingkasanGL } from "@/components/gl/kartu-ringkasan";
 import { LompatHalaman } from "@/components/gl/lompat-halaman";
 import { TabelGL } from "@/components/gl/tabel-gl";
@@ -12,6 +13,7 @@ import { ambilDaftarGL, ambilOpsiFilter } from "@/lib/gl/queries";
 import {
   ambilKartuRingkasan,
   ambilKinerjaPengajuanPusat,
+  ambilKinerjaTaskForce,
   ambilSebaranStatusPembayaran,
   ambilSebaranTahapan,
   ambilTrenBulanan,
@@ -38,8 +40,17 @@ export default async function Home({
       ? sp.status_duplikat_nama
       : undefined;
 
-  const [opsiFilter, hasil, ringkasan, kinerjaPusat, sebaranTahapan, sebaranStatusPembayaran, trenBulanan, ambangHari] =
-    await Promise.all([
+  const [
+    opsiFilter,
+    hasil,
+    ringkasan,
+    kinerjaPusat,
+    kinerjaTaskForce,
+    sebaranTahapan,
+    sebaranStatusPembayaran,
+    trenBulanan,
+    ambangHari,
+  ] = await Promise.all([
       ambilOpsiFilter(),
       ambilDaftarGL({
         loket: sp.loket || undefined,
@@ -58,6 +69,13 @@ export default async function Home({
       ambilKartuRingkasan(),
       ambilKinerjaPengajuanPusat({
         picPengajuan: sp.pic_pengajuan || undefined,
+        dari: sp.dari || undefined,
+        sampai: sp.sampai || undefined,
+      }),
+      // Ikut filter PIC TASK FORCE, bukan PIC Pengajuan -- kartunya mengukur
+      // peran yang berbeda. Rentang Tgl GL sama-sama dipakai.
+      ambilKinerjaTaskForce({
+        picTaskForce: sp.pic_task_force || undefined,
         dari: sp.dari || undefined,
         sampai: sp.sampai || undefined,
       }),
@@ -97,6 +115,8 @@ export default async function Home({
         </div>
 
         <hr className="border-t border-border/60" />
+
+        <KartuKunjunganTaskForce data={kinerjaTaskForce} />
 
         <KartuKinerjaPengajuanPusat data={kinerjaPusat} />
 
