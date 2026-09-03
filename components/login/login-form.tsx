@@ -3,10 +3,16 @@
 import { useActionState } from "react";
 import { ArrowRight, Eye, EyeOff, Lock, User } from "lucide-react";
 import { useState } from "react";
+import Script from "next/script";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { masuk, type StatusLogin } from "@/app/login/actions";
+
+// Kosong kalau TURNSTILE_SECRET_KEY belum diisi di server (lihat
+// lib/auth/turnstile.ts) -- widget-nya sengaja tidak dirender sama sekali
+// supaya form login tetap jalan normal sebelum kunci Cloudflare didaftarkan.
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 export function FormLogin() {
   const [tampilkanSandi, setTampilkanSandi] = useState(false);
@@ -83,6 +89,13 @@ export function FormLogin() {
           Ingat Saya
         </span>
       </label>
+
+      {TURNSTILE_SITE_KEY && (
+        <>
+          <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+          <div className="cf-turnstile" data-sitekey={TURNSTILE_SITE_KEY} data-theme="light" />
+        </>
+      )}
 
       {state?.galat && (
         <p role="alert" className="text-sm text-destructive">
