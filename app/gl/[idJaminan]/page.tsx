@@ -11,6 +11,7 @@ import { DetailTahapProsesPusat } from "@/components/gl/detail-tahap-proses-pusa
 import { DetailTinjauan } from "@/components/gl/detail-tinjauan";
 import { type BarisDokumen } from "@/components/gl/tabel-dokumen";
 import { ambilDetailGL, ambilRiwayatTahapan } from "@/lib/gl/detail";
+import { ambilNamaLoketPelimpahan } from "@/lib/gl/loket-pelimpahan";
 import { hitungStagnasi } from "@/lib/gl/stagnasi";
 import {
   ambilPilihanTahapProses,
@@ -42,16 +43,25 @@ export default async function DetailGLPage({
   const { dari } = await searchParams;
   const dariPeringatan = dari === "peringatan";
 
-  const [detail, riwayat, catatanTinjauan, pilihanTahapProses, riwayatTahapProses, ttdPetugasSurvei, riwayatLaporanTkp] =
-    await Promise.all([
-      ambilDetailGL(idJaminan),
-      ambilRiwayatTahapan(idJaminan),
-      ambilTinjauan(idJaminan),
-      ambilPilihanTahapProses(),
-      ambilRiwayatTahapProses(idJaminan),
-      ambilTandaTangan(PEMILIK_PETUGAS_SURVEI),
-      ambilRiwayatLaporanTkp(idJaminan),
-    ]);
+  const [
+    detail,
+    riwayat,
+    catatanTinjauan,
+    pilihanTahapProses,
+    riwayatTahapProses,
+    ttdPetugasSurvei,
+    riwayatLaporanTkp,
+    daftarLoket,
+  ] = await Promise.all([
+    ambilDetailGL(idJaminan),
+    ambilRiwayatTahapan(idJaminan),
+    ambilTinjauan(idJaminan),
+    ambilPilihanTahapProses(),
+    ambilRiwayatTahapProses(idJaminan),
+    ambilTandaTangan(PEMILIK_PETUGAS_SURVEI),
+    ambilRiwayatLaporanTkp(idJaminan),
+    ambilNamaLoketPelimpahan(),
+  ]);
 
   if (!detail) notFound();
 
@@ -146,6 +156,7 @@ export default async function DetailGLPage({
           idJaminan={detail.idJaminan}
           pilihanTahapProses={pilihanTahapProses}
           tahapTerkini={tahapTerkini}
+          daftarLoket={daftarLoket}
         />
 
         <DetailTinjauan idJaminan={detail.idJaminan} catatanTinjauan={catatanTinjauan} />

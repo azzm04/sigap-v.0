@@ -13,7 +13,8 @@ import {
   TAHAP_PEMICU_PAID,
   tandaiBerkasSelesai,
 } from "@/lib/gl/tahap-proses";
-import { apakahLoketCabangValid, TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
+import { apakahLoketPelimpahanValid } from "@/lib/gl/loket-pelimpahan";
+import { TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
 import { enkripsiIdJaminan } from "@/lib/gl/token-url";
 import { simpanLaporanTkp, simpanLaporanTkpUnggahan } from "@/lib/laporan-tkp/laporan";
 
@@ -128,7 +129,7 @@ export async function catatTahapProses(
         pesan: `Loket Cabang wajib dipilih untuk tahap "${TAHAP_BELUM_LIMPAH}".`,
       };
     }
-    if (!apakahLoketCabangValid(nilaiLoket)) {
+    if (!(await apakahLoketPelimpahanValid(nilaiLoket))) {
       return { berhasil: false, pesan: "Loket Cabang tidak dikenali." };
     }
     loketPelimpahan = nilaiLoket;

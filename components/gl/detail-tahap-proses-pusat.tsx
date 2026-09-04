@@ -14,10 +14,12 @@ export function DetailTahapProsesPusat({
   idJaminan,
   pilihanTahapProses,
   tahapTerkini,
+  daftarLoket,
 }: {
   idJaminan: string;
   pilihanTahapProses: string[];
   tahapTerkini: BarisTahapProses | null;
+  daftarLoket: string[];
 }) {
   return (
     <section className="flex flex-col gap-3">
@@ -60,6 +62,7 @@ export function DetailTahapProsesPusat({
           idJaminan={idJaminan}
           pilihanTahapProses={pilihanTahapProses}
           tahapPemicuPaid={TAHAP_PEMICU_PAID}
+          daftarLoket={daftarLoket}
         />
       </Card>
     </section>

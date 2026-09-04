@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { FormKataSandi } from "@/components/pengaturan/form-kata-sandi";
+import { LoketPelimpahan } from "@/components/pengaturan/loket-pelimpahan";
 import { PicRumahSakit } from "@/components/pengaturan/pic-rumah-sakit";
 import { TandaTanganLaporanTkp } from "@/components/pengaturan/tanda-tangan";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
@@ -7,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { FormAksi } from "@/components/ui/form-aksi";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
+import { ambilSemuaLoketPelimpahan } from "@/lib/gl/loket-pelimpahan";
 import { ambilSemuaPicRumahSakit } from "@/lib/gl/pic";
 import {
   ambilSemuaTandaTangan,
@@ -17,12 +19,13 @@ import { ambilAmbangHari, ambilBatasRiwayat } from "@/lib/pengaturan";
 import { ubahAmbangHari, ubahBatasRiwayat } from "./actions";
 
 export default async function PengaturanPage() {
-  const [ambangHari, batasRiwayat, picRumahSakit, daftarTandaTangan] =
+  const [ambangHari, batasRiwayat, picRumahSakit, daftarTandaTangan, daftarLoketPelimpahan] =
     await Promise.all([
       ambilAmbangHari(),
       ambilBatasRiwayat(),
       ambilSemuaPicRumahSakit(),
       ambilSemuaTandaTangan(),
+      ambilSemuaLoketPelimpahan(),
     ]);
 
   return (
@@ -128,6 +131,8 @@ export default async function PengaturanPage() {
         </div>
 
         <PicRumahSakit data={picRumahSakit} />
+
+        <LoketPelimpahan data={daftarLoketPelimpahan} />
 
         <TandaTanganLaporanTkp
           daftarTandaTangan={daftarTandaTangan}

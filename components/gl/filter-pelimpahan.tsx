@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RentangTanggal } from "@/components/ui/rentang-tanggal";
 import { Select } from "@/components/ui/select";
-import { LOKET_CABANG } from "@/lib/gl/pelimpahan";
 
 export interface NilaiFilterPelimpahan {
   cari?: string;
@@ -24,7 +23,7 @@ export function FilterPelimpahan({
   ukuran,
 }: {
   nilai: NilaiFilterPelimpahan;
-  opsi: { picPengajuan: string[] };
+  opsi: { picPengajuan: string[]; loketCabang: string[] };
   ukuran: number;
 }) {
   const router = useRouter();
@@ -80,7 +79,7 @@ export function FilterPelimpahan({
               terapkan({ loket_pelimpahan: e.target.value || undefined })
             }
             placeholder="Semua"
-            options={[...LOKET_CABANG]}
+            options={opsi.loketCabang}
             className="w-full sm:w-64"
           />
         </div>

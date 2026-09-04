@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
-import { LOKET_CABANG, TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
+import { TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
 
 // Gagal (termasuk "Dokumen Belum Lengkap" -- syarat Laporan Survei TKP +
 // KSKK untuk tahap "Berkas Belum Di Limpah" DAN "Berkas Diajukan Ke
@@ -22,9 +22,10 @@ import { LOKET_CABANG, TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
 //
 // Memilih TAHAP_BELUM_LIMPAH ("Berkas Belum Di Limpah") memunculkan satu
 // dropdown tambahan: loket tujuan pelimpahan, wajib diisi (ditegakkan lagi
-// di server, lihat catatTahapProses). Daftar loketnya diimpor langsung dari
-// lib/gl/pelimpahan.ts -- modul itu murni tanpa db, jadi aman masuk bundel
-// client, beda dari lib/gl/tahap-proses.ts.
+// di server, lihat catatTahapProses). Daftar loketnya DB-backed
+// (lib/gl/loket-pelimpahan.ts, diedit lewat halaman Pengaturan) -- diteruskan
+// sebagai prop dari server component, bukan diimpor langsung di sini, karena
+// modul itu mengimpor db/postgres yang tidak boleh masuk bundel client.
 //
 // Memilih TAHAP_PEMICU_PAID ("Berkas Selesai") dicegat dulu dengan pop-up
 // KONFIRMASI (bukan error) sebelum benar-benar submit -- konsekuensinya
@@ -36,6 +37,7 @@ export function FormTahapProses({
   idJaminan,
   pilihanTahapProses,
   tahapPemicuPaid,
+  daftarLoket,
 }: {
   idJaminan: string;
   pilihanTahapProses: string[];
@@ -44,6 +46,8 @@ export function FormTahapProses({
    * karena modul itu juga mengimpor db/postgres yang tidak boleh masuk ke
    * bundel client. */
   tahapPemicuPaid: string;
+  /** Daftar nama loket cabang tujuan pelimpahan (lib/gl/loket-pelimpahan.ts) */
+  daftarLoket: string[];
 }) {
   const [status, formAction, sedangProses] = useActionState<StatusTahapProses | undefined, FormData>(
     catatTahapProses,
@@ -115,7 +119,7 @@ export function FormTahapProses({
               name="loketPelimpahan"
               required
               placeholder="Pilih loket..."
-              options={[...LOKET_CABANG]}
+              options={daftarLoket}
               className="w-full"
             />
           </div>
