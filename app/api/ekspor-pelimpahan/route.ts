@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     `Rentang Tgl GL: ${dari || sampai ? `${dari ?? "awal"} s.d. ${sampai ?? "akhir"}` : "Semua"}`,
     cari ? `Pencarian: ${cari}` : null,
     `Jumlah GL: ${total}`,
-    `Dicetak: ${formatWaktu(new Date())} WIB`,
+    `Dicetak: ${formatWaktu(new Date())}`,
   ].filter((t): t is string => t !== null);
 
   for (const teks of keterangan) {

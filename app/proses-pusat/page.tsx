@@ -1,20 +1,27 @@
-import { Eye, FileWarning, Send } from "lucide-react";
+import { Download, Eye, Send } from "lucide-react";
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { FilterProsesPusat, type NilaiFilterProsesPusat } from "@/components/gl/filter-proses-pusat";
-import { persen } from "@/components/gl/kartu-kinerja-pusat";
 import { LompatHalaman } from "@/components/gl/lompat-halaman";
 import { PilihanUkuranHalaman } from "@/components/gl/ukuran-halaman";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import { PageHeader } from "@/components/ui/page-header";
-import { formatWaktu } from "@/lib/format";
+import { formatTanggal, formatWaktu } from "@/lib/format";
 import { ambilDaftarProsesPusat } from "@/lib/gl/proses-pusat";
 import { ambilOpsiFilter } from "@/lib/gl/queries";
 import { ambilKinerjaPengajuanPusat } from "@/lib/gl/ringkasan";
 import { TAHAP_KELUAR_PERINGATAN } from "@/lib/gl/tahap-proses";
 import { enkripsiTeks } from "@/lib/gl/token-url";
+
+function bangunQuery(nilaiFilter: NilaiFilterProsesPusat): string {
+  const params = new URLSearchParams();
+  for (const [kunci, nilai] of Object.entries(nilaiFilter)) {
+    if (nilai) params.set(kunci, nilai);
+  }
+  return params.toString();
+}
 
 function buatUrlHalaman(nilaiFilter: NilaiFilterProsesPusat, ukuran: number, halaman: number): string {
   const params = new URLSearchParams();
@@ -44,10 +51,6 @@ export default async function ProsesPusatPage({
       dari: sp.dari || undefined,
       sampai: sp.sampai || undefined,
     }),
-    // Angka "Dokumen Belum Lengkap" dipakai ulang persis dari fungsi yang
-    // sama dengan Kartu Kinerja Pengajuan ke Pusat di dashboard (CLAUDE.md
-    // bagian 7) -- satu sumber definisi, bukan dihitung ulang di sini,
-    // supaya tidak ada risiko dua tempat beda angka untuk konsep yang sama.
     ambilKinerjaPengajuanPusat({
       picPengajuan: sp.pic_pengajuan || undefined,
       dari: sp.dari || undefined,
@@ -79,22 +82,26 @@ export default async function ProsesPusatPage({
           }
         />
 
-        <div className="grid grid-cols-1 gap-4">
-          <div className="relative flex items-center gap-5 overflow-hidden rounded-xl border border-primary/30 bg-card p-6 shadow-sm">
-            <div className="absolute inset-0 z-0 bg-primary/5" aria-hidden="true" />
-            <div className="z-10 flex size-14 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-status-info-bg">
+        <div className="relative flex flex-col gap-5 overflow-hidden rounded-xl border border-primary/30 bg-card p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="absolute inset-0 z-0 bg-primary/5" aria-hidden="true" />
+          <div className="z-10 flex items-center gap-5">
+            <div className="flex size-14 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-status-info-bg">
               <Send className="size-7 text-primary" />
             </div>
-            <div className="z-10 flex flex-col gap-0.5">
-              <div className="flex items-baseline gap-2">
-                <span className="font-mono text-4xl font-bold text-primary">{hasil.total}</span>
-                <span className="text-sm text-muted-foreground">GL Sudah Diajukan ke Pusat</span>
-              </div>
-              {/* <span className="text-xs text-muted-foreground">
-                {persen(hasil.total, kinerjaPusat.totalAktif)}
-              </span> */}
+            <div className="flex items-baseline gap-2">
+              <span className="font-mono text-4xl font-bold text-primary">{hasil.total}</span>
+              <span className="text-sm text-muted-foreground">GL Sudah Diajukan ke Pusat</span>
             </div>
           </div>
+          {/* Ekspor memakai query string yang sama dengan halamannya, jadi
+              berkas yang terunduh persis mengikuti filter yang sedang aktif. */}
+          <a
+            href={`/api/ekspor-proses-pusat?${bangunQuery(nilaiFilter)}`}
+            className="z-10 flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-input bg-card px-4 text-sm font-medium text-foreground hover:bg-muted md:w-auto"
+          >
+            <Download className="size-4" />
+            Ekspor Data
+          </a>
         </div>
 
         <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
@@ -120,6 +127,9 @@ export default async function ProsesPusatPage({
                     PIC Pengajuan
                   </th>
                   <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
+                    Tgl GL
+                  </th>
+                  <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
                     Tahap Proses
                   </th>
                   <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
@@ -128,14 +138,13 @@ export default async function ProsesPusatPage({
                   <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
                     Status Pembayaran
                   </th>
-                  <th className="px-3 py-2 text-left font-semibold text-foreground">Dokumen</th>
                   <th className="px-3 py-2 text-left font-semibold text-foreground">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {hasil.baris.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="px-3 py-8 text-center text-muted-foreground">
+                    <td colSpan={11} className="px-3 py-8 text-center text-muted-foreground">
                       Belum ada GL yang sudah diajukan ke pusat.
                     </td>
                   </tr>
@@ -156,6 +165,9 @@ export default async function ProsesPusatPage({
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">{b.namaRumahSakit ?? "-"}</td>
                     <td className="px-3 py-2.5 whitespace-nowrap">{b.picPengajuan ?? "-"}</td>
+                    <td className="px-3 py-2.5 font-mono whitespace-nowrap">
+                      {formatTanggal(b.tglGl)}
+                    </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <Badge tone="info">{b.tahapProses}</Badge>
                     </td>
@@ -169,20 +181,6 @@ export default async function ProsesPusatPage({
                       >
                         {b.statusPembayaran}
                       </Badge>
-                    </td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      {b.laporanTkpId ? (
-                        <a
-                          href={`/api/laporan-tkp/${enkripsiTeks(String(b.laporanTkpId))}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary underline-offset-2 hover:underline"
-                        >
-                          {b.laporanTkpNomorLp}
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
                     </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <Link
