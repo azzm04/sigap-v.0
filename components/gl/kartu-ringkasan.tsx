@@ -12,24 +12,23 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
           <span className="inline-flex items-center gap-1.5">
             Total GL
             <BantuanInfo>
-              {data.totalAktif.toLocaleString("id-ID")} GL berstatus Active
-              {data.rincianNonAktif.map((r) => (
-                <span key={r.glStatus}>
-                  , {r.jumlah.toLocaleString("id-ID")} GL berstatus {r.glStatus}
-                </span>
-              ))}
-              . Dari yang Active,{" "}
+              {data.totalAktif.toLocaleString("id-ID")} GL berstatus Active (
               {data.totalMasihTahapAwal.toLocaleString("id-ID")} masih di tahap
-              awal (ditangani rumah sakit, belum sampai Verifikasi User) dan{" "}
-              {data.totalTahapDipantau.toLocaleString("id-ID")} sudah di tahap
-              Verifikasi User/Done (
-              {data.rincianTahapDipantau.map((r, i) => (
+              awal, ditangani rumah sakit, belum sampai Verifikasi User
+              {data.rincianTahapDipantau.map((r) => (
                 <span key={r.tahapan}>
-                  {i > 0 && ", "}
-                  {r.jumlah.toLocaleString("id-ID")} di &quot;{r.tahapan}&quot;
+                  {" "}
+                  + {r.jumlah.toLocaleString("id-ID")} di {r.tahapan}
                 </span>
               ))}
-              ).
+              ) dan{" "}
+              {data.rincianNonAktif.map((r, i) => (
+                <span key={r.glStatus}>
+                  {i > 0 && ", "}
+                  {r.jumlah.toLocaleString("id-ID")} GL berstatus {r.glStatus}
+                </span>
+              ))}
+              .
             </BantuanInfo>
           </span>
         }
@@ -41,9 +40,8 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
           <span className="inline-flex items-center gap-1.5">
             Rata-rata Umur GL (hari)
             <BantuanInfo>
-              Rata-rata umur (hari ini dikurangi Tgl GL) GL bertipe GL,
-              berstatus Active, dan belum dibayar -- semua tahapan, tidak
-              disaring lebih jauh.
+              GL Active dengan status &quot;Unpaid&quot; terhitung dari tanggal
+              terbit GL
             </BantuanInfo>
           </span>
         }
@@ -56,10 +54,8 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
           <span className="inline-flex items-center gap-1.5">
             Tagihan Klaim Belum Dibayar
             <BantuanInfo>
-              Total Nilai Disetujui GL bertipe GL, berstatus Active, tahapan
-              &quot;Verifikasi User&quot;, dan belum dibayar. Cakupannya beda
-              dari Rata-rata Umur Tagihan di samping, yang mencakup semua
-              tahapan (bukan cuma &quot;Verifikasi User&quot;).
+              Nominal GL Active status &quot;Unpaid&quot; yang telah disetujui
+              JRCare.
             </BantuanInfo>
           </span>
         }
@@ -72,9 +68,7 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
           <span className="inline-flex items-center gap-1.5">
             Belum Dibayar
             <BantuanInfo>
-              GL bertipe GL, berstatus Active, dan status pembayarannya
-              &quot;Unpaid&quot; -- semua tahapan dihitung, termasuk yang
-              masih di tahap awal (ditangani rumah sakit). Rinciannya:
+              GL Active dengan status &quot;Unpaid&quot;. Rinciannya:
               {data.rincianUnpaidPerTahapan.map((r) => (
                 <span key={r.tahapan}>
                   , {r.jumlah.toLocaleString("id-ID")} di &quot;{r.tahapan}
@@ -107,11 +101,9 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
             ikut memicu navigasi setiap kali diklik. */}
         <div className="absolute top-5 right-5 z-20">
           <BantuanInfo>
-            GL berstatus Active dan Unpaid, tahapannya sudah &quot;Verifikasi
-            User&quot; atau &quot;Done&quot;, dan umurnya (dihitung dari Tanggal
-            Pulang Pasien, atau Tgl GL kalau belum diisi) sudah melewati ambang
-            hari peringatan yang diset di halaman Pengaturan. Klik kartu ini
-            untuk melihat daftarnya di Papan Peringatan.
+            GL Active dengan status &quot;Unpaid&quot; yang sudah terbit lebih
+            dari batas ambang hari &quot;{data.ambangHari} hari&quot;. Klik
+            tombol ini untuk melihat daftar GL yang perlu ditinjau.
           </BantuanInfo>
         </div>
       </div>

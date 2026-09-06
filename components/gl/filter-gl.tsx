@@ -1,5 +1,6 @@
 "use client";
 
+import { Download } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -71,6 +72,14 @@ export function FilterGL({
     setCari(nilaiBaru);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => terapkan({ cari: nilaiBaru || undefined }), 450);
+  }
+
+  // Ekspor mengikuti filter yang aktif saat ini, tanpa batas halaman
+  // (lib/gl/ekspor.ts). Tidak menyertakan halaman/ukuran karena keduanya
+  // urusan tampilan tabel, bukan cakupan data yang diekspor.
+  const queryEkspor = new URLSearchParams();
+  for (const [kunci, v] of Object.entries(nilai)) {
+    if (v) queryEkspor.set(kunci, v);
   }
 
   return (
@@ -176,6 +185,14 @@ export function FilterGL({
             className="sm:w-56"
           />
         </div>
+
+        <a
+          href={`/api/ekspor?${queryEkspor.toString()}`}
+          className="flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-input bg-card px-4 text-sm font-medium text-foreground hover:bg-muted"
+        >
+          <Download className="size-4" />
+          Ekspor Data
+        </a>
 
         {adaFilterAktif && (
           <Link href={basePath} className="h-8 shrink-0 pb-1 text-sm text-muted-foreground underline sm:pb-2">

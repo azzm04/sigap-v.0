@@ -27,6 +27,8 @@ export interface KartuRingkasan {
   /** Rincian totalUnpaid per tahapan -- supaya kelihatan komposisinya, bukan cuma angka total */
   rincianUnpaidPerTahapan: { tahapan: string; jumlah: number }[];
   totalPeringatan: number;
+  /** Ambang hari peringatan yang berlaku saat ini, dari halaman Pengaturan (`pengaturan.ambang_hari_peringatan`) -- TIDAK di-hardcode (CLAUDE.md aturan keras #2) */
+  ambangHari: number;
   /** Rata-rata umur (hari, sejak Tgl GL) GL bertipe GL, berstatus Active, dan Unpaid -- semua tahapan, tidak disaring lebih jauh */
   rataRataUmurTagihan: number;
   /** Total Nilai Disetujui GL bertipe GL, Active, tahapan "Verifikasi User", dan Unpaid -- total tagihan klaim yang bolanya ada di PIC Pengajuan tapi belum dibayar pusat */
@@ -135,6 +137,7 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
     totalUnpaid,
     rincianUnpaidPerTahapan,
     totalPeringatan: peringatan.total,
+    ambangHari: peringatan.ambangHari,
     rataRataUmurTagihan: Number(rataRataUmurTagihan),
     totalTagihanBelumDibayar: Number(totalTagihanBelumDibayar),
     diimporTerakhir: diimporTerakhir ?? null,
