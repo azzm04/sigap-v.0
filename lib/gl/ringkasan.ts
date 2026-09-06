@@ -23,8 +23,10 @@ export interface KartuRingkasan {
   totalTahapDipantau: number;
   totalUnpaid: number;
   totalPeringatan: number;
-  /** Rata-rata umur (hari) GL bertipe GL, Active, tahapan "Verifikasi User", dan Unpaid — seberapa lama tagihan yang sudah di tangan PIC Pengajuan tapi belum dibayar sudah mengendap. Sengaja TIDAK ikut "Done" (arahan pemilik proyek) */
+  /** Rata-rata umur (hari, sejak Tgl GL) GL bertipe GL, berstatus Active, dan Unpaid -- semua tahapan, tidak disaring lebih jauh */
   rataRataUmurTagihan: number;
+  /** Total Nilai Disetujui GL bertipe GL, Active, tahapan "Verifikasi User", dan Unpaid -- total tagihan klaim yang bolanya ada di PIC Pengajuan tapi belum dibayar pusat */
+  totalTagihanBelumDibayar: number;
   diimporTerakhir: Date | null;
 }
 
@@ -32,7 +34,8 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
   const [
     rincianStatus,
     [{ totalMasihTahapAwal }],
-    [{ totalUnpaid, rataRataUmurTagihan }],
+    [{ rataRataUmurTagihan }],
+    [{ totalUnpaid, totalTagihanBelumDibayar }],
     [{ diimporTerakhir }],
     peringatan,
   ] = await Promise.all([
@@ -54,11 +57,24 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
       ),
     db
       .select({
+        rataRataUmurTagihan: sql<number>`coalesce(avg(current_date - ${glMirror.tglGl})::float8, 0)`,
+      })
+      .from(glMirror)
+      .where(
+        and(
+          KONDISI_AKTIF,
+          eq(glMirror.tipeKlaim, "GL"),
+          eq(glMirror.glStatus, "Active"),
+          eq(glMirror.statusPembayaran, "Unpaid"),
+        ),
+      ),
+    db
+      .select({
         totalUnpaid: count(),
-        // Rata-rata umur tagihan sengaja dibatasi tahapan "Verifikasi User" saja
-        // (arahan pemilik proyek) -- BUKAN termasuk "Done", jadi pakai FILTER
-        // terpisah, bukan syarat where() di atas yang juga menentukan totalUnpaid
-        rataRataUmurTagihan: sql<number>`coalesce(avg(current_date - ${glMirror.tglGl}) filter (where ${glMirror.tahapan} = 'Verifikasi User')::float8, 0)`,
+        // Total Nilai Disetujui, cakupan sama persis dengan totalTagihanBelumDibayar
+        // (tahapan "Verifikasi User" saja, BUKAN termasuk "Done") -- pakai
+        // FILTER terpisah, bukan syarat where() di atas yang juga menentukan totalUnpaid
+        totalTagihanBelumDibayar: sql<number>`coalesce(sum(${glMirror.nilaiDisetujui}) filter (where ${glMirror.tahapan} = 'Verifikasi User'), 0)`,
       })
       .from(glMirror)
       .where(
@@ -86,6 +102,7 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
     totalUnpaid,
     totalPeringatan: peringatan.total,
     rataRataUmurTagihan: Number(rataRataUmurTagihan),
+    totalTagihanBelumDibayar: Number(totalTagihanBelumDibayar),
     diimporTerakhir: diimporTerakhir ?? null,
   };
 }
