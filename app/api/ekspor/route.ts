@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     tahapan: sp.get("tahapan") || undefined,
     statusPembayaran: sp.get("status_pembayaran") || undefined,
     glStatus: sp.get("gl_status") || undefined,
+    namaRumahSakit: sp.get("nama_rumah_sakit") || undefined,
     picTaskForce: sp.get("pic_task_force") || undefined,
     picPengajuan: sp.get("pic_pengajuan") || undefined,
     dari: sp.get("dari") || undefined,

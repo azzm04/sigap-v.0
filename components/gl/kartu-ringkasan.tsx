@@ -22,7 +22,14 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
               {data.totalMasihTahapAwal.toLocaleString("id-ID")} masih di tahap
               awal (ditangani rumah sakit, belum sampai Verifikasi User) dan{" "}
               {data.totalTahapDipantau.toLocaleString("id-ID")} sudah di tahap
-              Verifikasi User/Done.
+              Verifikasi User/Done (
+              {data.rincianTahapDipantau.map((r, i) => (
+                <span key={r.tahapan}>
+                  {i > 0 && ", "}
+                  {r.jumlah.toLocaleString("id-ID")} di &quot;{r.tahapan}&quot;
+                </span>
+              ))}
+              ).
             </BantuanInfo>
           </span>
         }

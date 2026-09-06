@@ -14,6 +14,7 @@ export interface NilaiFilterGL {
   tahapan?: string;
   status_pembayaran?: string;
   gl_status?: string;
+  nama_rumah_sakit?: string;
   pic_task_force?: string;
   pic_pengajuan?: string;
   status_duplikat_nama?: string;
@@ -39,6 +40,7 @@ export function FilterGL({
     tahapan: string[];
     statusPembayaran: string[];
     glStatus: string[];
+    namaRumahSakit: string[];
     picTaskForce: string[];
     picPengajuan: string[];
   };
@@ -114,6 +116,18 @@ export function FilterGL({
             placeholder="Semua"
             options={opsi.glStatus}
             className="w-full sm:w-28"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="nama_rumah_sakit">Nama Rumah Sakit</Label>
+          <Select
+            id="nama_rumah_sakit"
+            value={nilai.nama_rumah_sakit ?? ""}
+            onChange={(e) => terapkan({ nama_rumah_sakit: e.target.value || undefined })}
+            placeholder="Semua"
+            options={opsi.namaRumahSakit}
+            className="w-full sm:w-48"
           />
         </div>
 

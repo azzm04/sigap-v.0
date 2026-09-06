@@ -19,6 +19,7 @@ export interface FilterDaftarGL {
   tahapan?: string;
   statusPembayaran?: string;
   glStatus?: string;
+  namaRumahSakit?: string;
   picTaskForce?: string;
   picPengajuan?: string;
   dari?: string;
@@ -64,36 +65,43 @@ export interface HasilDaftarGL {
 
 export async function ambilOpsiFilter() {
   const kondisiAktif = isNull(glMirror.dihapusPada);
-  const [loket, tahapan, statusPembayaran, glStatus, picTaskForce, picPengajuan] = await Promise.all([
-    db
-      .selectDistinct({ nilai: glMirror.loket })
-      .from(glMirror)
-      .where(kondisiAktif)
-      .orderBy(asc(glMirror.loket)),
-    db
-      .selectDistinct({ nilai: glMirror.tahapan })
-      .from(glMirror)
-      .where(kondisiAktif)
-      .orderBy(asc(glMirror.tahapan)),
-    db
-      .selectDistinct({ nilai: glMirror.statusPembayaran })
-      .from(glMirror)
-      .where(kondisiAktif)
-      .orderBy(asc(glMirror.statusPembayaran)),
-    db
-      .selectDistinct({ nilai: glMirror.glStatus })
-      .from(glMirror)
-      .where(kondisiAktif)
-      .orderBy(asc(glMirror.glStatus)),
-    ambilNamaPicTaskForce(),
-    ambilNamaPicPengajuan(),
-  ]);
+  const [loket, tahapan, statusPembayaran, glStatus, namaRumahSakit, picTaskForce, picPengajuan] =
+    await Promise.all([
+      db
+        .selectDistinct({ nilai: glMirror.loket })
+        .from(glMirror)
+        .where(kondisiAktif)
+        .orderBy(asc(glMirror.loket)),
+      db
+        .selectDistinct({ nilai: glMirror.tahapan })
+        .from(glMirror)
+        .where(kondisiAktif)
+        .orderBy(asc(glMirror.tahapan)),
+      db
+        .selectDistinct({ nilai: glMirror.statusPembayaran })
+        .from(glMirror)
+        .where(kondisiAktif)
+        .orderBy(asc(glMirror.statusPembayaran)),
+      db
+        .selectDistinct({ nilai: glMirror.glStatus })
+        .from(glMirror)
+        .where(kondisiAktif)
+        .orderBy(asc(glMirror.glStatus)),
+      db
+        .selectDistinct({ nilai: glMirror.namaRumahSakit })
+        .from(glMirror)
+        .where(and(kondisiAktif, sql`${glMirror.namaRumahSakit} is not null`))
+        .orderBy(asc(glMirror.namaRumahSakit)),
+      ambilNamaPicTaskForce(),
+      ambilNamaPicPengajuan(),
+    ]);
 
   return {
     loket: loket.map((r) => r.nilai),
     tahapan: tahapan.map((r) => r.nilai),
     statusPembayaran: statusPembayaran.map((r) => r.nilai),
     glStatus: glStatus.map((r) => r.nilai),
+    namaRumahSakit: namaRumahSakit.map((r) => r.nilai as string),
     picTaskForce,
     picPengajuan,
   };
@@ -105,6 +113,7 @@ export async function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
   if (filter.tahapan) kondisi.push(eq(glMirror.tahapan, filter.tahapan));
   if (filter.statusPembayaran) kondisi.push(eq(glMirror.statusPembayaran, filter.statusPembayaran));
   if (filter.glStatus) kondisi.push(eq(glMirror.glStatus, filter.glStatus));
+  if (filter.namaRumahSakit) kondisi.push(eq(glMirror.namaRumahSakit, filter.namaRumahSakit));
   if (filter.dari) kondisi.push(gte(glMirror.tglGl, filter.dari));
   if (filter.sampai) kondisi.push(lte(glMirror.tglGl, filter.sampai));
   if (filter.cari) {

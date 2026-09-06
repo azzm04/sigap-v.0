@@ -21,6 +21,8 @@ export interface KartuRingkasan {
   totalMasihTahapAwal: number;
   /** Dari totalAktif: tahapan IN TAHAPAN_DIPANTAU -- basis Kartu Kinerja Pengajuan ke Pusat */
   totalTahapDipantau: number;
+  /** Rincian totalTahapDipantau per tahapan ("Verifikasi User" vs "Done") -- supaya tidak perlu hitung manual gabungannya */
+  rincianTahapDipantau: { tahapan: string; jumlah: number }[];
   totalUnpaid: number;
   /** Rincian totalUnpaid per tahapan -- supaya kelihatan komposisinya, bukan cuma angka total */
   rincianUnpaidPerTahapan: { tahapan: string; jumlah: number }[];
@@ -36,6 +38,7 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
   const [
     rincianStatus,
     [{ totalMasihTahapAwal }],
+    rincianTahapDipantau,
     [{ rataRataUmurTagihan }],
     [{ totalUnpaid, totalTagihanBelumDibayar }],
     rincianUnpaidPerTahapan,
@@ -58,6 +61,19 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
           notInArray(glMirror.tahapan, [...TAHAPAN_DIPANTAU]),
         ),
       ),
+    db
+      .select({ tahapan: glMirror.tahapan, jumlah: count() })
+      .from(glMirror)
+      .where(
+        and(
+          KONDISI_AKTIF,
+          eq(glMirror.tipeKlaim, "GL"),
+          eq(glMirror.glStatus, "Active"),
+          inArray(glMirror.tahapan, [...TAHAPAN_DIPANTAU]),
+        ),
+      )
+      .groupBy(glMirror.tahapan)
+      .orderBy(desc(count())),
     db
       .select({
         rataRataUmurTagihan: sql<number>`coalesce(avg(current_date - ${glMirror.tglGl})::float8, 0)`,
@@ -115,6 +131,7 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
     rincianNonAktif,
     totalMasihTahapAwal,
     totalTahapDipantau: totalAktif - totalMasihTahapAwal,
+    rincianTahapDipantau,
     totalUnpaid,
     rincianUnpaidPerTahapan,
     totalPeringatan: peringatan.total,
