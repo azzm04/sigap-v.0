@@ -32,7 +32,7 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
       <StatCard
         label={
           <span className="inline-flex items-center gap-1.5">
-            Rata-rata Umur Tagihan (hari)
+            Rata-rata Umur GL (hari)
             <BantuanInfo>
               Rata-rata umur (hari ini dikurangi Tgl GL) GL bertipe GL,
               berstatus Active, dan belum dibayar -- semua tahapan, tidak
