@@ -13,6 +13,10 @@ export interface BarisProsesPusat {
   namaRumahSakit: string | null;
   picPengajuan: string | null;
   nomorSuratJaminan: string | null;
+  /** ISO "YYYY-MM-DD" -- tanggal terbit GL, dipakai kolom tabel dan ekspor */
+  tglGl: string;
+  /** Rupiah, dipakai rincian per GL di sheet rekap ekspor */
+  nilaiDiajukan: number;
   statusPembayaran: string;
   tahapProses: string;
   tahapDicatatPada: Date;
@@ -99,6 +103,8 @@ export async function ambilDaftarProsesPusat(
         namaKorban: glMirror.namaKorban,
         namaRumahSakit: glMirror.namaRumahSakit,
         nomorSuratJaminan: glMirror.nomorSuratJaminan,
+        tglGl: glMirror.tglGl,
+        nilaiDiajukan: glMirror.nilaiDiajukan,
         statusPembayaran: glMirror.statusPembayaran,
       })
       .from(glMirror)
@@ -133,6 +139,8 @@ export async function ambilDaftarProsesPusat(
         namaRumahSakit: b.namaRumahSakit,
         picPengajuan: cariPic(petaPic, b.namaRumahSakit).picPengajuan,
         nomorSuratJaminan: b.nomorSuratJaminan,
+        tglGl: b.tglGl,
+        nilaiDiajukan: b.nilaiDiajukan,
         statusPembayaran: b.statusPembayaran,
         tahapProses: tahap.tahap,
         tahapDicatatPada: tahap.dicatatPada,

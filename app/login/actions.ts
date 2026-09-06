@@ -3,6 +3,7 @@
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 import { cekRateLimit, catatGagal } from "@/lib/auth/rate-limit";
+import { verifikasiTurnstile } from "@/lib/auth/turnstile";
 
 export interface StatusLogin {
   galat?: string;
@@ -21,6 +22,18 @@ export async function masuk(
   }
   if (typeof password !== "string" || !password) {
     return { galat: "Kata sandi wajib diisi." };
+  }
+
+  // Verifikasi CAPTCHA (Cloudflare Turnstile) -- dicek paling awal, sebelum
+  // rate limit maupun Auth.js, supaya percobaan otomatis (bot) tidak pernah
+  // sempat menyentuh keduanya. Tidak aktif sama sekali kalau
+  // TURNSTILE_SECRET_KEY belum diisi (lihat lib/auth/turnstile.ts).
+  const turnstileToken = formData.get("cf-turnstile-response");
+  const turnstileLolos = await verifikasiTurnstile(
+    typeof turnstileToken === "string" ? turnstileToken : null,
+  );
+  if (!turnstileLolos) {
+    return { galat: "Verifikasi CAPTCHA gagal. Coba lagi." };
   }
 
   // Rate limiting — cek sebelum menyentuh Auth.js

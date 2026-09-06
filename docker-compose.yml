@@ -20,6 +20,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
     restart: unless-stopped
     env_file:
       - .env
@@ -31,12 +33,6 @@ services:
       db:
         condition: service_healthy
 
-  # Runner sekali-pakai untuk migrasi & skrip admin (drizzle-kit, tsx, dsb
-  # butuh devDependencies yang tidak ikut di image production "app").
-  # Contoh pakai:
-  #   docker compose run --rm tools npx drizzle-kit migrate
-  #   docker compose run --rm tools npm run seed
-  #   docker compose run --rm tools npm run buat-akun
   tools:
     build:
       context: .

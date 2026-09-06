@@ -25,13 +25,13 @@ function BarisFormTandaTangan({
       action={simpanTandaTanganAction}
       labelTombol="Simpan"
       judulGagal={`Gagal Menyimpan Tanda Tangan ${label}`}
-      className="flex flex-col gap-3 border-t border-border py-4 first:border-t-0 first:pt-0 sm:flex-row sm:items-end"
+      className="flex flex-col gap-3 border-t border-border py-4 first:border-t-0 first:pt-0 xl:flex-row xl:flex-wrap xl:items-end"
       kelasBarisTombol="flex shrink-0 items-end"
       kelasTombol="h-8 px-4"
     >
       <input type="hidden" name="pemilik" value={pemilik} />
 
-      <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-44">
+      <div className="flex w-full shrink-0 flex-col gap-1.5 xl:w-44">
         <span className="text-sm font-medium text-foreground">{label}</span>
         {data?.gambar ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -45,7 +45,7 @@ function BarisFormTandaTangan({
         )}
       </div>
 
-      <div className="flex w-full shrink-0 flex-col gap-1.5 sm:w-56">
+      <div className="flex w-full shrink-0 flex-col gap-1.5 xl:w-56">
         <Label htmlFor={`${idBase}-gambar`}>Gambar (PNG/JPEG)</Label>
         <InputBerkas
           id={`${idBase}-gambar`}
@@ -55,7 +55,7 @@ function BarisFormTandaTangan({
         />
       </div>
 
-      <div className="flex w-full flex-col gap-1.5 sm:min-w-40 sm:flex-1">
+      <div className="flex w-full flex-col gap-1.5 xl:min-w-40 xl:flex-1">
         <Label htmlFor={`${idBase}-nama`}>Nama tampil</Label>
         <Input
           id={`${idBase}-nama`}
@@ -65,7 +65,7 @@ function BarisFormTandaTangan({
         />
       </div>
 
-      <div className="flex w-full flex-col gap-1.5 sm:min-w-40 sm:flex-1">
+      <div className="flex w-full flex-col gap-1.5 xl:min-w-40 xl:flex-1">
         <Label htmlFor={`${idBase}-jabatan`}>Jabatan</Label>
         <Input id={`${idBase}-jabatan`} name="jabatan" defaultValue={data?.jabatan ?? ""} />
       </div>

@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { formatTanggal, formatWaktu } from "@/lib/format";
 import { ambilDaftarPelimpahan } from "@/lib/gl/daftar-pelimpahan";
+import { ambilNamaLoketPelimpahan } from "@/lib/gl/loket-pelimpahan";
 import { TAHAP_BELUM_LIMPAH } from "@/lib/gl/pelimpahan";
 import { ambilOpsiFilter } from "@/lib/gl/queries";
 
@@ -33,8 +34,9 @@ export default async function PelimpahanPage({
   const sp = await searchParams;
   const halaman = sp.halaman ? Number(sp.halaman) : 1;
 
-  const [opsiFilter, hasil] = await Promise.all([
+  const [opsiFilter, daftarLoket, hasil] = await Promise.all([
     ambilOpsiFilter(),
+    ambilNamaLoketPelimpahan(),
     ambilDaftarPelimpahan({
       halaman,
       ukuran: sp.ukuran ? Number(sp.ukuran) : undefined,
@@ -134,7 +136,7 @@ export default async function PelimpahanPage({
           <FilterPelimpahan
             nilai={nilaiFilter}
             ukuran={hasil.ukuran}
-            opsi={{ picPengajuan: opsiFilter.picPengajuan }}
+            opsi={{ picPengajuan: opsiFilter.picPengajuan, loketCabang: daftarLoket }}
           />
 
           <div className="overflow-x-auto">

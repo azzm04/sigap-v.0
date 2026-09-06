@@ -1,6 +1,24 @@
 import { db } from "./db";
-import { pengaturan, picRumahSakit } from "./db/schema";
+import { loketPelimpahan, pengaturan, picRumahSakit } from "./db/schema";
 import { KUNCI_AMBANG_HARI, KUNCI_BATAS_RIWAYAT } from "./pengaturan";
+
+// Daftar awal loket tujuan pelimpahan, sesuai daftar dari pemilik proyek
+// (lib/gl/loket-pelimpahan.ts) -- boleh ditambah/diubah lewat halaman
+// Pengaturan sesudah ini, bukan lagi lewat kode.
+const LOKET_PELIMPAHAN_AWAL = [
+  "LOKET KANTOR WILAYAH JAWA TENGAH",
+  "LOKET KANTOR CABANG SURAKARTA",
+  "LOKET KANTOR CABANG MAGELANG",
+  "LOKET KANTOR CABANG PURWOKERTO",
+  "LOKET KANTOR CABANG PATI",
+  "LOKET KANTOR CABANG SEMARANG",
+  "LOKET KANTOR CABANG SUKOHARJO",
+  "LOKET KANTOR CABANG PEKALONGAN",
+  "LOKET KANTOR PELAYANAN KLATEN",
+  "LOKET KANTOR PELAYANAN WANGON",
+  "LOKET KANTOR PELAYANAN DEMAK",
+  "LOKET KANTOR PELAYANAN TEGAL",
+];
 
 // Pemetaan awal PIC per rumah sakit, sesuai daftar yang diberikan pemilik proyek. Nama rumah sakit di sini SUDAH disesuaikan ke ejaan persis yang
 // muncul di gl_mirror.nama_rumah_sakit (dicek manual satu-satu terhadap
@@ -62,4 +80,9 @@ export async function seedReferensiDanPengaturan() {
     .insert(picRumahSakit)
     .values(PIC_RUMAH_SAKIT_AWAL)
     .onConflictDoNothing({ target: picRumahSakit.namaRumahSakit });
+
+  await db
+    .insert(loketPelimpahan)
+    .values(LOKET_PELIMPAHAN_AWAL.map((nama) => ({ nama })))
+    .onConflictDoNothing({ target: loketPelimpahan.nama });
 }

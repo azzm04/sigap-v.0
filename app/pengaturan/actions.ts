@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { gagal, type StatusAksi, sukses } from "@/lib/aksi";
 import { db } from "@/lib/db";
 import { pengguna } from "@/lib/db/schema";
+import { hapusLoketPelimpahan, simpanLoketPelimpahan } from "@/lib/gl/loket-pelimpahan";
 import { hapusPicRumahSakit, simpanPicRumahSakit } from "@/lib/gl/pic";
 import { simpanTandaTangan } from "@/lib/laporan-tkp/tanda-tangan";
 import { setAmbangHari, setBatasRiwayat } from "@/lib/pengaturan";
@@ -56,6 +57,48 @@ export async function hapusPic(
   revalidasiTampilanPic();
 
   return sukses("Pemetaan PIC dihapus.");
+}
+
+function revalidasiTampilanLoketPelimpahan() {
+  revalidatePath("/pengaturan");
+  revalidatePath("/pelimpahan");
+}
+
+export async function simpanLoket(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
+  const idMentah = formData.get("id");
+  const nama = formData.get("nama");
+
+  if (typeof nama !== "string" || !nama.trim()) {
+    return gagal("Nama loket wajib diisi.");
+  }
+
+  await simpanLoketPelimpahan({
+    id: typeof idMentah === "string" && idMentah ? Number(idMentah) : undefined,
+    nama,
+  });
+
+  revalidasiTampilanLoketPelimpahan();
+
+  return sukses("Loket pelimpahan tersimpan.");
+}
+
+export async function hapusLoket(
+  _sebelumnya: StatusAksi | undefined,
+  formData: FormData,
+): Promise<StatusAksi> {
+  const id = formData.get("id");
+  if (typeof id !== "string" || !id) {
+    return gagal("Baris loket tidak valid.");
+  }
+
+  await hapusLoketPelimpahan(Number(id));
+
+  revalidasiTampilanLoketPelimpahan();
+
+  return sukses("Loket pelimpahan dihapus.");
 }
 
 const TIPE_GAMBAR_DIIZINKAN = ["image/png", "image/jpeg"];

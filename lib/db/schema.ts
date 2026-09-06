@@ -140,6 +140,19 @@ export const picRumahSakit = pgTable("pic_rumah_sakit", {
     .defaultNow(),
 });
 
+// Daftar loket cabang tujuan pelimpahan berkas (lib/gl/pelimpahan.ts).
+// Diedit lewat halaman Pengaturan, BUKAN di-hardcode di kode -- klien bisa
+// menambah loket baru (mis. Pekalongan) kapan saja tanpa perlu deploy.
+//
+// JANGAN dicampur dengan status_proses_pusat.loketPelimpahan -- itu nilai
+// per baris riwayat GL (loket yang dipilih petugas saat itu), sedangkan ini
+// daftar pilihan yang tersedia di dropdown/filter.
+export const loketPelimpahan = pgTable("loket_pelimpahan", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  nama: text("nama").notNull().unique(),
+  dibuatPada: timestamp("dibuat_pada", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Pengaturan key-value. Minimal berisi ambang hari peringatan (CLAUDE.md aturan keras #2).
 export const pengaturan = pgTable("pengaturan", {
   kunci: text("kunci").primaryKey(),
