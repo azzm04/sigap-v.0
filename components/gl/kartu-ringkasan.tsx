@@ -61,7 +61,23 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
         className="col-span-2 text-sm md:order-5 md:col-span-1 md:text-base lg:order-6 lg:col-span-2"
       />
       <StatCard
-        label="Belum Dibayar"
+        label={
+          <span className="inline-flex items-center gap-1.5">
+            Belum Dibayar
+            <BantuanInfo>
+              GL bertipe GL, berstatus Active, dan status pembayarannya
+              &quot;Unpaid&quot; -- semua tahapan dihitung, termasuk yang
+              masih di tahap awal (ditangani rumah sakit). Rinciannya:
+              {data.rincianUnpaidPerTahapan.map((r) => (
+                <span key={r.tahapan}>
+                  , {r.jumlah.toLocaleString("id-ID")} di &quot;{r.tahapan}
+                  &quot;
+                </span>
+              ))}
+              .
+            </BantuanInfo>
+          </span>
+        }
         value={data.totalUnpaid.toLocaleString("id-ID")}
         tone="warn"
         className="text-sm md:text-base lg:order-3 lg:col-span-2"

@@ -22,6 +22,8 @@ export interface KartuRingkasan {
   /** Dari totalAktif: tahapan IN TAHAPAN_DIPANTAU -- basis Kartu Kinerja Pengajuan ke Pusat */
   totalTahapDipantau: number;
   totalUnpaid: number;
+  /** Rincian totalUnpaid per tahapan -- supaya kelihatan komposisinya, bukan cuma angka total */
+  rincianUnpaidPerTahapan: { tahapan: string; jumlah: number }[];
   totalPeringatan: number;
   /** Rata-rata umur (hari, sejak Tgl GL) GL bertipe GL, berstatus Active, dan Unpaid -- semua tahapan, tidak disaring lebih jauh */
   rataRataUmurTagihan: number;
@@ -36,6 +38,7 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
     [{ totalMasihTahapAwal }],
     [{ rataRataUmurTagihan }],
     [{ totalUnpaid, totalTagihanBelumDibayar }],
+    rincianUnpaidPerTahapan,
     [{ diimporTerakhir }],
     peringatan,
   ] = await Promise.all([
@@ -85,6 +88,19 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
           eq(glMirror.statusPembayaran, "Unpaid"),
         ),
       ),
+    db
+      .select({ tahapan: glMirror.tahapan, jumlah: count() })
+      .from(glMirror)
+      .where(
+        and(
+          KONDISI_AKTIF,
+          eq(glMirror.tipeKlaim, "GL"),
+          eq(glMirror.glStatus, "Active"),
+          eq(glMirror.statusPembayaran, "Unpaid"),
+        ),
+      )
+      .groupBy(glMirror.tahapan)
+      .orderBy(desc(count())),
     db.select({ diimporTerakhir: max(glMirror.diimporPada) }).from(glMirror),
     ambilPapanPeringatan(),
   ]);
@@ -100,6 +116,7 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
     totalMasihTahapAwal,
     totalTahapDipantau: totalAktif - totalMasihTahapAwal,
     totalUnpaid,
+    rincianUnpaidPerTahapan,
     totalPeringatan: peringatan.total,
     rataRataUmurTagihan: Number(rataRataUmurTagihan),
     totalTagihanBelumDibayar: Number(totalTagihanBelumDibayar),
