@@ -29,7 +29,16 @@ export function KartuRingkasanGL({ data }: { data: KartuRingkasan }) {
         className="text-sm md:text-base lg:order-1 lg:col-span-3"
       />
       <StatCard
-        label="Rata-rata Umur Tagihan (hari)"
+        label={
+          <span className="inline-flex items-center gap-1.5">
+            Rata-rata Umur Tagihan (hari)
+            <BantuanInfo>
+              Rata-rata umur (Tgl GL sampai hari ini) GL bertipe GL, berstatus Active, tahapan{" "}
+              &quot;Verifikasi User&quot;, dan belum dibayar. Tidak termasuk tahapan
+              &quot;Done&quot;.
+            </BantuanInfo>
+          </span>
+        }
         value={data.rataRataUmurTagihan.toFixed(2)}
         tone="accent"
         className=" text-sm md:text-base lg:order-5 lg:col-span-2"

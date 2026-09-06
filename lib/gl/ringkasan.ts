@@ -23,7 +23,7 @@ export interface KartuRingkasan {
   totalTahapDipantau: number;
   totalUnpaid: number;
   totalPeringatan: number;
-  /** Rata-rata umur (hari) GL bertipe GL, Active, dan Unpaid — seberapa lama tagihan yang belum dibayar sudah mengendap */
+  /** Rata-rata umur (hari) GL bertipe GL, Active, tahapan "Verifikasi User", dan Unpaid — seberapa lama tagihan yang sudah di tangan PIC Pengajuan tapi belum dibayar sudah mengendap. Sengaja TIDAK ikut "Done" (arahan pemilik proyek) */
   rataRataUmurTagihan: number;
   diimporTerakhir: Date | null;
 }
@@ -55,7 +55,10 @@ export async function ambilKartuRingkasan(): Promise<KartuRingkasan> {
     db
       .select({
         totalUnpaid: count(),
-        rataRataUmurTagihan: sql<number>`coalesce(avg(current_date - ${glMirror.tglGl})::float8, 0)`,
+        // Rata-rata umur tagihan sengaja dibatasi tahapan "Verifikasi User" saja
+        // (arahan pemilik proyek) -- BUKAN termasuk "Done", jadi pakai FILTER
+        // terpisah, bukan syarat where() di atas yang juga menentukan totalUnpaid
+        rataRataUmurTagihan: sql<number>`coalesce(avg(current_date - ${glMirror.tglGl}) filter (where ${glMirror.tahapan} = 'Verifikasi User')::float8, 0)`,
       })
       .from(glMirror)
       .where(

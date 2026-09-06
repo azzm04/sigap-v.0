@@ -27,13 +27,13 @@ export function DetailLaporanTkp({
       <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
         Laporan Survei TKP
         <BantuanInfo>
-          Nama Korban dan Tempat/Tgl Kecelakaan diambil otomatis dari data
-          GL. Mobile Service TETAP untuk semua laporan (bukan dari PIC GL
-          ini) — hanya Nomor LP, Alamat Korban, Uraian dan Kesimpulan, Nama
-          Saksi (+ Tanda Tangan Saksi, opsional) yang diisi manual.
-          Hari/Tanggal Survei otomatis dari Tanggal Masuk kalau sudah
-          diisi, kalau belum wajib diisi manual. Tanda tangan Kepala
-          Cabang dan Mobile Service diambil dari halaman Pengaturan.
+          Nama Korban dan Tempat/Tgl Kecelakaan diambil otomatis dari data GL.
+          Mobile Service TETAP untuk semua laporan (bukan dari PIC GL ini) —
+          hanya Nomor LP, Alamat Korban, Uraian dan Kesimpulan, Nama Saksi (+
+          Tanda Tangan Saksi, opsional) yang diisi manual. Hari/Tanggal Survei
+          otomatis dari Tanggal Masuk kalau sudah diisi, kalau belum wajib diisi
+          manual. Tanda tangan Kepala Cabang dan Mobile Service diambil dari
+          halaman Pengaturan.
         </BantuanInfo>
       </h3>
 
@@ -44,9 +44,11 @@ export function DetailLaporanTkp({
           </p>
           <ul className="list-inside list-disc text-muted-foreground">
             {!detail.lokasi && (
-              <li>Lokasi LAKA belum terisi -- isi manual lewat form Kunjungan PIC Task Force di atas</li>
+              <li>
+                Lokasi LAKA belum terisi -- isi manual lewat form Kunjungan PIC
+                Task Force di atas
+              </li>
             )}
-
           </ul>
         </div>
       )}
@@ -82,10 +84,13 @@ export function DetailLaporanTkp({
             Atau unggah laporan yang sudah ada
           </span>
           <span className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-            Untuk kasus lama yang Laporan Survei TKP-nya sudah pernah dibuat di luar SIGAP --
-            tidak perlu diketik ulang lewat form di atas. Berkas PDF disimpan apa adanya,
-            maksimal 10 MB, dan tetap dihitung sebagai Laporan Survei TKP untuk syarat
-            kelengkapan dokumen.
+            Untuk kasus lama yang Laporan Survei TKP-nya sudah pernah dibuat di
+            luar Sistem, tidak perlu diketik ulang lewat form di atas. Bisa
+            diunggah langsung berkas PDF-nya, tapi pastikan sudah ada tanda
+            tangan Kepala Cabang dan Mobile Service di berkas PDF tersebut. Jika
+            belum ada tanda tangan, unggah berkas PDF-nya tanpa tanda tangan,
+            lalu sistem akan menempelkan tanda tangan Kepala Cabang dan Mobile
+            Service dari halaman Pengaturan.
           </span>
         </div>
 
@@ -115,7 +120,6 @@ export function DetailLaporanTkp({
           </div>
         </FormAksi>
       </Card>
-
     </section>
   );
 }
