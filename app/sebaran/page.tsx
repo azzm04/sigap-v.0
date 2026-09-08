@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { LompatHalaman } from "@/components/gl/lompat-halaman";
 import { PilihanUkuranHalaman } from "@/components/gl/ukuran-halaman";
@@ -8,6 +9,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { ambilPapanPeringatan } from "@/lib/gl/peringatan";
 import {
+  LABEL_RS_KOSONG,
   ambilSebaranRumahSakit,
   ambilTotalGLAktif,
   ambilTotalRumahSakitMitra,
@@ -109,7 +111,18 @@ export default async function SebaranPage({
                     key={`${rs.namaRumahSakit}-${rs.loket}`}
                     className="border-t border-border transition-colors hover:bg-muted/40"
                   >
-                    <td className="px-3 py-2.5 font-medium text-foreground">{rs.namaRumahSakit}</td>
+                    <td className="px-3 py-2.5 font-medium text-foreground">
+                      {rs.namaRumahSakit === LABEL_RS_KOSONG ? (
+                        rs.namaRumahSakit
+                      ) : (
+                        <Link
+                          href={`/sebaran/${encodeURIComponent(rs.namaRumahSakit)}`}
+                          className="underline-offset-2 hover:text-primary hover:underline"
+                        >
+                          {rs.namaRumahSakit}
+                        </Link>
+                      )}
+                    </td>
                     <td className="px-3 py-2.5 whitespace-nowrap">{rs.loket}</td>
                     <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
                       {rs.jumlah.toLocaleString("id-ID")}

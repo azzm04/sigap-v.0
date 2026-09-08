@@ -1,4 +1,5 @@
-import type { SebaranRumahSakit } from "@/lib/gl/sebaran";
+import Link from "next/link";
+import { LABEL_RS_KOSONG, type SebaranRumahSakit } from "@/lib/gl/sebaran";
 
 export function DistribusiRumahSakit({ data }: { data: SebaranRumahSakit[] }) {
   const maks = data.reduce((m, d) => Math.max(m, d.jumlah), 0) || 1;
@@ -16,7 +17,16 @@ export function DistribusiRumahSakit({ data }: { data: SebaranRumahSakit[] }) {
       {data.map((d) => (
         <div key={`${d.namaRumahSakit}-${d.loket}`} className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-3">
-            <span className="truncate text-sm text-foreground">{d.namaRumahSakit}</span>
+            {d.namaRumahSakit === LABEL_RS_KOSONG ? (
+              <span className="truncate text-sm text-foreground">{d.namaRumahSakit}</span>
+            ) : (
+              <Link
+                href={`/sebaran/${encodeURIComponent(d.namaRumahSakit)}`}
+                className="truncate text-sm text-foreground underline-offset-2 hover:text-primary hover:underline"
+              >
+                {d.namaRumahSakit}
+              </Link>
+            )}
             <span className="shrink-0 font-mono text-sm text-primary">
               {d.jumlah.toLocaleString("id-ID")} GL
             </span>
