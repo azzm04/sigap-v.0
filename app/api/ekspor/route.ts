@@ -47,6 +47,7 @@ const JUDUL_KOLOM = [
   "Tahapan",
   "Status Pembayaran",
   "Nilai Diajukan",
+  "Nilai Disetujui",
 ];
 
 function labelStatusDuplikatNama(nilai: string | undefined): string {
@@ -108,6 +109,7 @@ export async function GET(request: NextRequest) {
     { width: 24 }, // Tahapan
     { width: 18 }, // Status Pembayaran
     { width: 18 }, // Nilai Diajukan
+    { width: 18 }, // Nilai Disetujui
   ];
 
   const judul = ws.addRow(["DAFTAR GL"]);
@@ -166,6 +168,7 @@ export async function GET(request: NextRequest) {
       b.tahapan,
       b.statusPembayaran,
       b.nilaiDiajukan,
+      b.nilaiDisetujui,
     ]);
     barisData.eachCell((sel) => {
       sel.font = FONT_BODY;
@@ -173,6 +176,7 @@ export async function GET(request: NextRequest) {
       sel.alignment = { vertical: "middle", wrapText: true };
     });
     barisData.getCell(11).numFmt = "#,##0";
+    barisData.getCell(12).numFmt = "#,##0";
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
