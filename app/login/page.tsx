@@ -40,7 +40,7 @@ export default function HalamanLogin() {
         </div>
 
         <p className="relative z-10 text-xs text-login-panel-muted">
-          © 2026 SIGAP All rights reserved.
+          © 2026 GL-Tracker All rights reserved.
         </p>
       </div>
 
@@ -60,7 +60,7 @@ export default function HalamanLogin() {
 
           {/* Footer Mobile */}
           <p className="mt-8 text-center text-xs text-muted-foreground lg:hidden">
-            © 2026 SIGAP All rights reserved.
+            © 2026 GL-Tracker All rights reserved.
           </p>
         </div>
       </div>

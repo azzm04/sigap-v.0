@@ -19,14 +19,19 @@ import { ambilAmbangHari, ambilBatasRiwayat } from "@/lib/pengaturan";
 import { ubahAmbangHari, ubahBatasRiwayat } from "./actions";
 
 export default async function PengaturanPage() {
-  const [ambangHari, batasRiwayat, picRumahSakit, daftarTandaTangan, daftarLoketPelimpahan] =
-    await Promise.all([
-      ambilAmbangHari(),
-      ambilBatasRiwayat(),
-      ambilSemuaPicRumahSakit(),
-      ambilSemuaTandaTangan(),
-      ambilSemuaLoketPelimpahan(),
-    ]);
+  const [
+    ambangHari,
+    batasRiwayat,
+    picRumahSakit,
+    daftarTandaTangan,
+    daftarLoketPelimpahan,
+  ] = await Promise.all([
+    ambilAmbangHari(),
+    ambilBatasRiwayat(),
+    ambilSemuaPicRumahSakit(),
+    ambilSemuaTandaTangan(),
+    ambilSemuaLoketPelimpahan(),
+  ]);
 
   return (
     <AppShell>
@@ -51,7 +56,8 @@ export default async function PengaturanPage() {
             }
             description={
               <span className="text-sm md:text-base text-muted-foreground">
-                Jika GL sudah melewati ambang ini, status GL akan berubah menjadi Peringatan.
+                Jika GL sudah melewati ambang ini, status GL akan berubah
+                menjadi Peringatan.
               </span>
             }
           >
@@ -119,10 +125,6 @@ export default async function PengaturanPage() {
             title={
               <span className="inline-flex items-center gap-1.5">
                 Ubah Kata Sandi
-                <BantuanInfo>
-                  Ganti kata sandi Anda secara berkala untuk menjaga keamanan
-                  akun SIGAP.
-                </BantuanInfo>
               </span>
             }
           >

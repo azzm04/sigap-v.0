@@ -5,7 +5,11 @@ import { formatWaktu } from "@/lib/format";
 // Riwayat perubahan Tahapan/Status Verifikasi/Status Pembayaran dari
 // gl_snapshot -- lihat CLAUDE.md bagian 5, satu baris per impor yang
 // benar-benar mengubah nilainya (bukan tiap impor).
-export function DetailRiwayatTahapan({ riwayat }: { riwayat: BarisRiwayatTahapan[] }) {
+export function DetailRiwayatTahapan({
+  riwayat,
+}: {
+  riwayat: BarisRiwayatTahapan[];
+}) {
   return (
     <section className="flex flex-col gap-3">
       <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
@@ -13,7 +17,7 @@ export function DetailRiwayatTahapan({ riwayat }: { riwayat: BarisRiwayatTahapan
         {riwayat.length <= 1 && (
           <BantuanInfo>
             Riwayat baru mulai tercatat sejak GL ini pertama kali diimpor ke
-            SIGAP. Belum ada perubahan tahapan yang tercatat di luar keadaan
+            Sistem. Belum ada perubahan tahapan yang tercatat di luar keadaan
             saat ini.
           </BantuanInfo>
         )}

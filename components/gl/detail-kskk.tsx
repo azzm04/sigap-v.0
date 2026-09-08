@@ -26,11 +26,12 @@ export function DetailKskk({
       <h3 className="flex items-center gap-1.5 text-sm md:text-base font-semibold text-foreground sm:text-base">
         KSKK
         <BantuanInfo>
-          KSKK tidak bisa dibuat otomatis oleh SIGAP -- unggah berkas PDF hasil kerja PIC
-          Pengajuan di luar sistem. Tanda tangan Kepala Cabang dan Mobile Service ditempelkan
-          SIGAP saat berkas dibuka, memakai gambar dari halaman Pengaturan. Lepas centangnya
-          untuk KSKK GL pelimpahan yang sudah bertanda tangan dari loket lain, supaya tanda
-          tangannya tidak dobel.
+          KSKK tidak bisa dibuat otomatis oleh sistem -- unggah berkas PDF hasil
+          kerja PIC Pengajuan di luar sistem. Tanda tangan Kepala Cabang dan
+          Mobile Service ditempelkan sistem saat berkas dibuka, memakai gambar
+          dari halaman Pengaturan. Lepas centangnya untuk KSKK GL pelimpahan
+          yang sudah bertanda tangan dari loket lain, supaya tanda tangannya
+          tidak dobel.
         </BantuanInfo>
       </h3>
 
@@ -45,7 +46,10 @@ export function DetailKskk({
         >
           <input type="hidden" name="idJaminan" value={idJaminan} />
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="kskk" className="text-sm md:text-base font-medium text-foreground">
+            <label
+              htmlFor="kskk"
+              className="text-sm md:text-base font-medium text-foreground"
+            >
               {kskkNamaBerkas ? "Ganti berkas KSKK (PDF)" : "Berkas KSKK (PDF)"}
             </label>
             <InputBerkas
@@ -70,8 +74,8 @@ export function DetailKskk({
             <span>
               Tanda tangan Kepala Cabang &amp; Mobile Service
               <span className="block text-xs text-muted-foreground">
-                Lepas centang kalau berkasnya sudah bertanda tangan dari loket lain (GL
-                pelimpahan).
+                Lepas centang kalau berkasnya sudah bertanda tangan dari loket
+                lain (GL pelimpahan).
               </span>
             </span>
           </label>
@@ -83,7 +87,11 @@ export function DetailKskk({
           Dokumen GL (Laporan Survei TKP &amp; KSKK)
         </h3>
       )}
-      <TabelDokumen idJaminan={idJaminan} daftar={daftarDokumen} terkunci={dokumenTerkunci} />
+      <TabelDokumen
+        idJaminan={idJaminan}
+        daftar={daftarDokumen}
+        terkunci={dokumenTerkunci}
+      />
     </section>
   );
 }

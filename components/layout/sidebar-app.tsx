@@ -41,7 +41,7 @@ export function SidebarApp({
             <div className="flex size-10 shrink-0 overflow-hidden rounded-full bg-primary/10">
               <Image
                 src="/logojr.png"
-                alt="Logo SIGAP"
+                alt="Logo Sistem"
                 width={128}
                 height={128}
                 className="h-full w-full object-cover"
