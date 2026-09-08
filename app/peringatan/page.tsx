@@ -24,6 +24,9 @@ export default async function PapanPeringatanPage({
       ukuran_catatan?: string;
       cari_catatan?: string;
       label?: string;
+      rumah_sakit_catatan?: string;
+      dari_catatan?: string;
+      sampai_catatan?: string;
       halaman_task_force?: string;
       ukuran_task_force?: string;
       cari_task_force?: string;
@@ -79,12 +82,18 @@ export default async function PapanPeringatanPage({
         ukuran: sp.ukuran_catatan ? Number(sp.ukuran_catatan) : undefined,
         cari: sp.cari_catatan || undefined,
         label: labelFilter,
+        namaRumahSakit: sp.rumah_sakit_catatan || undefined,
+        dari: sp.dari_catatan || undefined,
+        sampai: sp.sampai_catatan || undefined,
       })
     : null;
 
   const nilaiFilterCatatan: NilaiFilterCatatan = {
     cari_catatan: sp.cari_catatan,
     label: sp.label,
+    rumah_sakit_catatan: sp.rumah_sakit_catatan,
+    dari_catatan: sp.dari_catatan,
+    sampai_catatan: sp.sampai_catatan,
   };
 
   // Ambil data Peringatan PIC Task Force hanya saat tab-nya aktif
@@ -162,7 +171,11 @@ export default async function PapanPeringatanPage({
             }
             slotCatatan={
               hasilCatatan && (
-                <PeringatanTabCatatan hasil={hasilCatatan} nilaiFilter={nilaiFilterCatatan} />
+                <PeringatanTabCatatan
+                  hasil={hasilCatatan}
+                  nilaiFilter={nilaiFilterCatatan}
+                  opsiNamaRumahSakit={opsiFilter.namaRumahSakit}
+                />
               )
             }
           >

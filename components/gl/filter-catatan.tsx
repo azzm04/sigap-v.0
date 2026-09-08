@@ -5,11 +5,15 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RentangTanggal } from "@/components/ui/rentang-tanggal";
 import { Select } from "@/components/ui/select";
 
 export interface NilaiFilterCatatan {
   cari_catatan?: string;
   label?: string;
+  rumah_sakit_catatan?: string;
+  dari_catatan?: string;
+  sampai_catatan?: string;
   [kunci: string]: string | undefined;
 }
 
@@ -20,9 +24,11 @@ const OPSI_LABEL = [
 
 export function FilterCatatan({
   nilai,
+  opsi,
   ukuran,
 }: {
   nilai: NilaiFilterCatatan;
+  opsi: { namaRumahSakit: string[] };
   ukuran: number;
 }) {
   const router = useRouter();
@@ -81,6 +87,32 @@ export function FilterCatatan({
             placeholder="Semua"
             options={OPSI_LABEL}
             className="w-full sm:w-48"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rumah_sakit_catatan">Nama Rumah Sakit</Label>
+          <Select
+            id="rumah_sakit_catatan"
+            value={nilai.rumah_sakit_catatan ?? ""}
+            onChange={(e) =>
+              terapkan({ rumah_sakit_catatan: e.target.value || undefined })
+            }
+            placeholder="Semua"
+            options={opsi.namaRumahSakit}
+            className="w-full sm:w-48"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label>Rentang Waktu Tinjauan</Label>
+          <RentangTanggal
+            dari={nilai.dari_catatan}
+            sampai={nilai.sampai_catatan}
+            onTerapkan={(dari, sampai) =>
+              terapkan({ dari_catatan: dari, sampai_catatan: sampai })
+            }
+            className="sm:w-56"
           />
         </div>
 

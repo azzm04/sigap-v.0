@@ -1,4 +1,4 @@
-import { and, desc, ilike, or, eq } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror, pengguna, tinjauan } from "../db/schema";
 import { enkripsiIdJaminan } from "./token-url";
@@ -22,6 +22,11 @@ export interface FilterSemuaTinjauan {
   ukuran?: number;
   cari?: string;
   label?: "tindak_lanjut" | "diabaikan";
+  namaRumahSakit?: string;
+  /** ISO "YYYY-MM-DD", batas bawah tanggal tinjauan (ditinjauPada, versi WIB) */
+  dari?: string;
+  /** ISO "YYYY-MM-DD", batas atas tanggal tinjauan (ditinjauPada, versi WIB) */
+  sampai?: string;
 }
 
 export interface HasilSemuaTinjauan {
@@ -53,6 +58,20 @@ export async function ambilSemuaTinjauan(
     kondisi.push(eq(tinjauan.perluTindakLanjut, true));
   } else if (filter.label === "diabaikan") {
     kondisi.push(eq(tinjauan.diabaikan, true));
+  }
+
+  if (filter.namaRumahSakit) {
+    kondisi.push(eq(glMirror.namaRumahSakit, filter.namaRumahSakit));
+  }
+
+  // ditinjauPada tersimpan timestamptz (UTC) -- dikonversi ke tanggal WIB
+  // dulu sebelum dibandingkan, supaya rentang yang dipilih petugas cocok
+  // dengan tanggal yang mereka lihat di kolom Waktu (formatWaktu() di
+  // lib/format.ts juga selalu menampilkan versi WIB, bukan UTC mentah).
+  if (filter.dari || filter.sampai) {
+    const tanggalWIB = sql`(${tinjauan.ditinjauPada} AT TIME ZONE 'Asia/Jakarta')::date`;
+    if (filter.dari) kondisi.push(gte(tanggalWIB, filter.dari));
+    if (filter.sampai) kondisi.push(lte(tanggalWIB, filter.sampai));
   }
 
   const where = kondisi.length > 0 ? and(...kondisi) : undefined;

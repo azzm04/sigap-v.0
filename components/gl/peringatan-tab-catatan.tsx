@@ -22,15 +22,21 @@ function buatUrlHalaman(nilaiFilter: NilaiFilterCatatan, ukuran: number, halaman
 export function PeringatanTabCatatan({
   hasil,
   nilaiFilter,
+  opsiNamaRumahSakit,
 }: {
   hasil: HasilSemuaTinjauan;
   nilaiFilter: NilaiFilterCatatan;
+  opsiNamaRumahSakit: string[];
 }) {
   const filterAktif = { tab: "catatan", ...nilaiFilter };
 
   return (
     <>
-      <FilterCatatan nilai={nilaiFilter} ukuran={hasil.ukuran} />
+      <FilterCatatan
+        nilai={nilaiFilter}
+        opsi={{ namaRumahSakit: opsiNamaRumahSakit }}
+        ukuran={hasil.ukuran}
+      />
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
