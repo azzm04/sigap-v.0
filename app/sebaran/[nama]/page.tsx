@@ -1,4 +1,4 @@
-import { ChevronsLeft } from "lucide-react";
+import { ChevronsLeft, Download } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
@@ -30,19 +30,28 @@ export default async function DetailRumahSakitPage({
           Kembali ke Sebaran Rumah Sakit
         </Link>
 
-        <div className="flex flex-col gap-1">
-          <h2 className="inline-flex flex-wrap items-center gap-1.5 text-lg font-semibold text-foreground md:text-xl">
-            {namaRumahSakit}
-            <BantuanInfo>
-              Rincian GL bertipe klaim GL untuk rumah sakit ini. Tabel di bawah HANYA mencakup GL
-              berstatus Active dan Unpaid, dipecah per Tahapan -- GL yang sudah Paid tidak dipecah
-              per tahapan (urusannya sudah selesai) dan hanya dijumlahkan di baris &quot;Total
-              Paid&quot;. Nominal diambil dari Nilai Disetujui, bukan Nilai Diajukan.
-            </BantuanInfo>
-          </h2>
-          <span className="text-sm text-muted-foreground">
-            Per {formatTanggal(tanggalHariIniWIB())}
-          </span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <h2 className="inline-flex flex-wrap items-center gap-1.5 text-lg font-semibold text-foreground md:text-xl">
+              {namaRumahSakit}
+              <BantuanInfo>
+                Rincian GL bertipe klaim GL untuk rumah sakit ini. Tabel di bawah HANYA mencakup GL
+                berstatus Active dan Unpaid, dipecah per Tahapan -- GL yang sudah Paid tidak dipecah
+                per tahapan (urusannya sudah selesai) dan hanya dijumlahkan di baris &quot;Total
+                Paid&quot;. Nominal diambil dari Nilai Disetujui, bukan Nilai Diajukan.
+              </BantuanInfo>
+            </h2>
+            <span className="text-sm text-muted-foreground">
+              Per {formatTanggal(tanggalHariIniWIB())}
+            </span>
+          </div>
+          <a
+            href={`/api/ekspor-sebaran-rumah-sakit?nama=${encodeURIComponent(namaRumahSakit)}`}
+            className="flex h-10 w-fit items-center justify-center gap-2 rounded-lg border border-input bg-card px-4 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            <Download className="size-4" />
+            Ekspor Data
+          </a>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
