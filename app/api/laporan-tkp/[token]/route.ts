@@ -66,20 +66,30 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     ambilTandaTangan(PEMILIK_PETUGAS_SURVEI),
   ]);
 
-  const pdfBytes = await generateLaporanSurveiTkpPdf({
-    nomorLp: laporan.nomorLp ?? "-",
-    alamatKorban: laporan.alamatKorban ?? "-",
-    uraianKesimpulan: laporan.uraianKesimpulan ?? "-",
-    namaSaksi: laporan.namaSaksi ?? "-",
-    ttdSaksi: laporan.ttdSaksi,
-    namaKorban: detail.namaKorban,
-    namaPetugasSurvei: ttdPetugasSurvei?.namaTampil?.trim() || "-",
-    lokasi: detail.lokasi,
-    tglKejadian: tglKejadianEfektif,
-    tanggalSurvei,
-    ttdKepalaCabang,
-    ttdPetugasSurvei,
-  });
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = await generateLaporanSurveiTkpPdf({
+      nomorLp: laporan.nomorLp ?? "-",
+      alamatKorban: laporan.alamatKorban ?? "-",
+      uraianKesimpulan: laporan.uraianKesimpulan ?? "-",
+      namaSaksi: laporan.namaSaksi ?? "-",
+      ttdSaksi: laporan.ttdSaksi,
+      namaKorban: detail.namaKorban,
+      namaPetugasSurvei: ttdPetugasSurvei?.namaTampil?.trim() || "-",
+      lokasi: detail.lokasi,
+      tglKejadian: tglKejadianEfektif,
+      tanggalSurvei,
+      ttdKepalaCabang,
+      ttdPetugasSurvei,
+    });
+  } catch (error) {
+    // Jangan catat data korban (aturan keras #4) -- cukup id laporan internal.
+    console.error(`Gagal membuat PDF Laporan Survei TKP (laporan.id=${laporan.id}):`, error);
+    return NextResponse.json(
+      { pesan: "Gagal membuat PDF Laporan Survei TKP. Coba periksa kembali isian Nomor LP, Alamat Korban, Uraian dan Kesimpulan, serta Nama Saksi." },
+      { status: 500 },
+    );
+  }
 
   const namaBerkas = `laporan-survei-tkp-${laporan.id}.pdf`;
 

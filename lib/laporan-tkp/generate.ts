@@ -34,6 +34,36 @@ const LEBAR_ISI = LEBAR_HALAMAN - MARGIN * 2;
 // untuk di-embed lewat fontkit -- belum dilakukan di sini.
 const UKURAN_DASAR = 7.5;
 
+// Helvetica standar pdf-lib memakai WinAnsiEncoding (Windows-1252) -- kalau
+// isian manual (Uraian, Alamat Korban, Nama Saksi, Nomor LP, dll) memuat
+// karakter di luar itu (emoji, simbol hasil copy-paste dari HP), pdf-lib
+// melempar "... cannot encode ..." saat digambar dan seluruh PDF gagal
+// dibuat. Ganti karakter semacam itu jadi "?" per-karakter supaya satu
+// karakter aneh tidak menggagalkan seluruh laporan.
+function amankanTeksUntukPdf(font: PDFFont, teks: string): string {
+  let aman = true;
+  for (const char of teks) {
+    try {
+      font.widthOfTextAtSize(char, UKURAN_DASAR);
+    } catch {
+      aman = false;
+      break;
+    }
+  }
+  if (aman) return teks;
+
+  let hasil = "";
+  for (const char of teks) {
+    try {
+      font.widthOfTextAtSize(char, UKURAN_DASAR);
+      hasil += char;
+    } catch {
+      hasil += "?";
+    }
+  }
+  return hasil;
+}
+
 function bungkusTeks(font: PDFFont, teks: string, ukuran: number, maxLebar: number): string[] {
   const kata = teks.split(/\s+/).filter(Boolean);
   const baris: string[] = [];
@@ -163,6 +193,19 @@ export async function generateLaporanSurveiTkpPdf(data: DataLaporanTkp): Promise
   const page = doc.addPage([LEBAR_HALAMAN, TINGGI_HALAMAN]);
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const fontTebal = await doc.embedFont(StandardFonts.HelveticaBold);
+
+  // Bersihkan seluruh teks bebas (manual maupun dari data GL) sebelum
+  // digambar -- lihat catatan di amankanTeksUntukPdf di atas.
+  data = {
+    ...data,
+    nomorLp: amankanTeksUntukPdf(font, data.nomorLp),
+    alamatKorban: amankanTeksUntukPdf(font, data.alamatKorban),
+    uraianKesimpulan: amankanTeksUntukPdf(font, data.uraianKesimpulan),
+    namaSaksi: amankanTeksUntukPdf(font, data.namaSaksi),
+    namaKorban: amankanTeksUntukPdf(font, data.namaKorban),
+    namaPetugasSurvei: amankanTeksUntukPdf(font, data.namaPetugasSurvei),
+    lokasi: amankanTeksUntukPdf(font, data.lokasi),
+  };
 
   const X_KANAN = MARGIN + 270;
   let y = TINGGI_HALAMAN - 50;
