@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { db } from "../db";
-import { glMirror, pengguna, tinjauan } from "../db/schema";
+import { glMirror, tinjauan } from "../db/schema";
 import { enkripsiIdJaminan } from "./token-url";
 
 export interface BarisTinjauanLengkap {
@@ -9,12 +9,15 @@ export interface BarisTinjauanLengkap {
   /** Token terenkripsi untuk URL /gl/[token] -- lihat lib/gl/token-url.ts */
   tokenUrl: string;
   namaKorban: string;
+  nomorSuratJaminan: string | null;
+  tglGl: string;
+  tahapan: string;
+  namaRumahSakit: string | null;
   catatan: string;
   perluTindakLanjut: boolean;
   diabaikan: boolean;
   alasanAbaikan: string | null;
   ditinjauPada: Date;
-  namaPengguna: string;
 }
 
 export interface FilterSemuaTinjauan {
@@ -74,15 +77,17 @@ export async function ambilSemuaTinjauan(
       id: tinjauan.id,
       idJaminan: tinjauan.idJaminan,
       namaKorban: glMirror.namaKorban,
+      nomorSuratJaminan: glMirror.nomorSuratJaminan,
+      tglGl: glMirror.tglGl,
+      tahapan: glMirror.tahapan,
+      namaRumahSakit: glMirror.namaRumahSakit,
       catatan: tinjauan.catatan,
       perluTindakLanjut: tinjauan.perluTindakLanjut,
       diabaikan: tinjauan.diabaikan,
       alasanAbaikan: tinjauan.alasanAbaikan,
       ditinjauPada: tinjauan.ditinjauPada,
-      namaPengguna: pengguna.username,
     })
     .from(tinjauan)
-    .innerJoin(pengguna, eq(tinjauan.userId, pengguna.id))
     .innerJoin(glMirror, eq(tinjauan.idJaminan, glMirror.idJaminan))
     .where(where)
     .orderBy(desc(tinjauan.ditinjauPada));

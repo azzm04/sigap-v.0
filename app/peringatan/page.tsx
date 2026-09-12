@@ -122,6 +122,18 @@ export default async function PapanPeringatanPage({
     sampai_task_force: sp.sampai_task_force,
   };
 
+  // Ekspor Data mengikuti tab yang sedang aktif DAN filter yang sedang
+  // diterapkan di tab itu -- lihat app/api/ekspor-peringatan/route.ts.
+  const nilaiFilterEkspor =
+    tabAktif === "task-force" ? nilaiFilterTaskForce : tabAktif === "catatan" ? nilaiFilterCatatan : nilaiFilterPeringatan;
+  const paramsEkspor = new URLSearchParams();
+  if (tabAktif !== "gl") paramsEkspor.set("tab", tabAktif);
+  for (const [kunci, nilai] of Object.entries(nilaiFilterEkspor)) {
+    if (nilai) paramsEkspor.set(kunci, nilai);
+  }
+  const qsEkspor = paramsEkspor.toString();
+  const urlEkspor = `/api/ekspor-peringatan${qsEkspor ? `?${qsEkspor}` : ""}`;
+
   const bannerTotal =
     tabAktif === "task-force"
       ? (hasilTaskForce?.total ?? 0)
@@ -150,7 +162,7 @@ export default async function PapanPeringatanPage({
             </div>
           </div>
           <a
-            href="/api/ekspor-peringatan"
+            href={urlEkspor}
             className="z-10 flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-input bg-card px-4 text-sm font-medium text-foreground hover:bg-muted md:w-auto"
           >
             <Download className="size-4" />

@@ -43,9 +43,6 @@ export function PeringatanTabCatatan({
           <thead className="bg-surface-table-header">
             <tr>
               <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
-                Petugas
-              </th>
-              <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
                 Waktu
               </th>
               <th className="px-3 py-2 text-left font-semibold whitespace-nowrap text-foreground">
@@ -64,7 +61,7 @@ export function PeringatanTabCatatan({
           <tbody>
             {hasil.baris.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
                   Belum ada catatan tinjauan yang sesuai filter.
                 </td>
               </tr>
@@ -74,9 +71,6 @@ export function PeringatanTabCatatan({
                 key={c.id}
                 className="border-t border-border align-top transition-colors hover:bg-muted/40"
               >
-                <td className="px-3 py-2.5 font-medium whitespace-nowrap text-foreground">
-                  {c.namaPengguna}
-                </td>
                 <td className="px-3 py-2.5 font-mono whitespace-nowrap text-muted-foreground">
                   {formatWaktu(c.ditinjauPada)}
                 </td>
