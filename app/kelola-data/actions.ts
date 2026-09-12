@@ -71,7 +71,7 @@ async function prosesSatuBerkas(berkas: File, userId: number): Promise<HasilUngg
   // 1. Coba parse sebagai data GL utama (JRCare)
   try {
     const baris = parseBerkasEkspor(arrayBuffer);
-    const hasil = await normalisasiDanSimpan(baris);
+    const hasil = await normalisasiDanSimpan(baris, userId);
 
     await db.insert(imporLog).values({
       jenis: "impor",

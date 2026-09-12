@@ -48,6 +48,41 @@ export async function tandaiBerkasSelesai(
     .where(eq(glMirror.idJaminan, idJaminan));
 }
 
+// Dipanggil dari lib/sumber-data/normalizer.ts di setiap impor JRCare biasa
+// (bukan Sentralisasi Pembayaran) saat baris yang diimpor sudah membawa
+// status_pembayaran "Paid" langsung dari sumbernya -- artinya pusat sendiri
+// sudah memprosesnya, tapi petugas belum sempat (atau lupa) mencatat "Berkas
+// Selesai" secara manual di sini. Tanpa ini, Tahap Proses di Sistem Pusat
+// bisa nyangkut selamanya di tahap lama (mis. "Berkas Belum Di Limpah")
+// walau gl_mirror sendiri sudah Paid/Done -- GL-nya jadi kelihatan
+// kontradiktif di halaman detail, dan tetap nongol di halaman Pelimpahan
+// padahal sudah tuntas.
+//
+// SENGAJA tidak seperti tandaiBerkasSelesai(): tidak menyentuh gl_mirror
+// (statusPembayaran/tahapan di sini SUDAH diisi normalizer persis dari baris
+// impor itu sendiri -- memaksa tahapan jadi "Done" di sini berisiko menimpa
+// nilai asli dari pusat kalau suatu saat ada kombinasi Paid+tahapan lain) dan
+// tidak mengunci lewat tinjauan.diabaikan (tidak perlu -- GL Paid memang
+// sudah otomatis keluar dari Peringatan PIC Pengajuan tanpa penguncian, beda
+// dari kasus Sentralisasi Pembayaran yang memang perlu memaksa Unpaid->Paid
+// dan menguncinya supaya tidak tertimpa balik oleh impor JRCare berikutnya).
+export async function catatBerkasSelesaiOtomatis(
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  idJaminan: string,
+  userId: number,
+): Promise<void> {
+  const [terkini] = await tx
+    .select({ tahap: statusProsesPusat.tahap })
+    .from(statusProsesPusat)
+    .where(eq(statusProsesPusat.idJaminan, idJaminan))
+    .orderBy(desc(statusProsesPusat.dicatatPada))
+    .limit(1);
+
+  if (terkini?.tahap === TAHAP_PEMICU_PAID) return;
+
+  await tx.insert(statusProsesPusat).values({ idJaminan, tahap: TAHAP_PEMICU_PAID, userId });
+}
+
 export interface BarisTahapProses {
   id: number;
   tahap: string;
