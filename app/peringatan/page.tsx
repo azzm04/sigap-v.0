@@ -122,9 +122,18 @@ export default async function PapanPeringatanPage({
     sampai_task_force: sp.sampai_task_force,
   };
 
-  const bannerTotal = tabAktif === "task-force" ? (hasilTaskForce?.total ?? 0) : total;
+  const bannerTotal =
+    tabAktif === "task-force"
+      ? (hasilTaskForce?.total ?? 0)
+      : tabAktif === "catatan"
+        ? (hasilCatatan?.total ?? 0)
+        : total;
   const bannerLabel =
-    tabAktif === "task-force" ? "GL menunggu Hasil kunjungan Rumah Sakit" : "GL perlu Diajukan Ke Pusat";
+    tabAktif === "task-force"
+      ? "GL menunggu Hasil kunjungan Rumah Sakit"
+      : tabAktif === "catatan"
+        ? "Catatan Tinjauan Tercatat"
+        : "GL perlu Diajukan Ke Pusat";
 
   return (
     <AppShell>

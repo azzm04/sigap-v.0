@@ -105,7 +105,7 @@ export function FilterCatatan({
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <Label>Rentang Waktu Tinjauan</Label>
+          <Label>Rentang Tgl GL</Label>
           <RentangTanggal
             dari={nilai.dari_catatan}
             sampai={nilai.sampai_catatan}
