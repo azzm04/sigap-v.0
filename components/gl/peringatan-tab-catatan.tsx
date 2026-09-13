@@ -23,10 +23,12 @@ export function PeringatanTabCatatan({
   hasil,
   nilaiFilter,
   opsiNamaRumahSakit,
+  opsiStatusPembayaran,
 }: {
   hasil: HasilSemuaTinjauan;
   nilaiFilter: NilaiFilterCatatan;
   opsiNamaRumahSakit: string[];
+  opsiStatusPembayaran: string[];
 }) {
   const filterAktif = { tab: "catatan", ...nilaiFilter };
 
@@ -34,7 +36,7 @@ export function PeringatanTabCatatan({
     <>
       <FilterCatatan
         nilai={nilaiFilter}
-        opsi={{ namaRumahSakit: opsiNamaRumahSakit }}
+        opsi={{ namaRumahSakit: opsiNamaRumahSakit, statusPembayaran: opsiStatusPembayaran }}
         ukuran={hasil.ukuran}
       />
 

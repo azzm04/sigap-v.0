@@ -88,18 +88,34 @@ export default async function DetailRumahSakitPage({
                     </td>
                   </tr>
                 )}
-                {detail.tahapan.map((t, indeks) => (
-                  <tr key={t.tahapan} className="border-t border-border">
-                    <td className="px-3 py-2.5 whitespace-nowrap">{indeks + 1}</td>
-                    <td className="px-3 py-2.5 whitespace-nowrap">{t.tahapan}</td>
-                    <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                      {t.jumlah.toLocaleString("id-ID")}
-                    </td>
-                    <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                      {formatRupiah(t.nominal)}
-                    </td>
-                  </tr>
-                ))}
+                {detail.tahapan.map((t, indeks) => {
+                  // Halaman tersendiri, BUKAN Monitoring (`/`) -- supaya
+                  // dashboard/grafik/kartu kinerja tidak ikut tampil untuk
+                  // sekadar melihat daftar GL satu rumah sakit+tahapan.
+                  // Rumah Sakit dan Tahapan sudah baku lewat segmen URL,
+                  // lihat app/sebaran/[nama]/[tahapan]/page.tsx.
+                  const hrefDetail = `/sebaran/${encodeURIComponent(namaRumahSakit)}/${encodeURIComponent(t.tahapan)}`;
+
+                  return (
+                    <tr key={t.tahapan} className="border-t border-border">
+                      <td className="px-3 py-2.5 whitespace-nowrap">{indeks + 1}</td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">
+                        <Link
+                          href={hrefDetail}
+                          className="text-primary underline-offset-2 hover:underline"
+                        >
+                          {t.tahapan}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                        {t.jumlah.toLocaleString("id-ID")}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                        {formatRupiah(t.nominal)}
+                      </td>
+                    </tr>
+                  );
+                })}
                 <tr className="border-t border-border bg-status-near-bg font-semibold text-foreground">
                   <td className="px-3 py-2.5 whitespace-nowrap" colSpan={2}>
                     Total Unpaid

@@ -26,6 +26,7 @@ export interface FilterSemuaTinjauan {
   cari?: string;
   label?: "tindak_lanjut" | "diabaikan";
   namaRumahSakit?: string;
+  statusPembayaran?: string;
   /** ISO "YYYY-MM-DD", batas bawah Tgl GL */
   dari?: string;
   /** ISO "YYYY-MM-DD", batas atas Tgl GL */
@@ -65,6 +66,10 @@ export async function ambilSemuaTinjauan(
 
   if (filter.namaRumahSakit) {
     kondisi.push(eq(glMirror.namaRumahSakit, filter.namaRumahSakit));
+  }
+
+  if (filter.statusPembayaran) {
+    kondisi.push(eq(glMirror.statusPembayaran, filter.statusPembayaran));
   }
 
   if (filter.dari) kondisi.push(gte(glMirror.tglGl, filter.dari));

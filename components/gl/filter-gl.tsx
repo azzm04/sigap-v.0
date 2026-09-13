@@ -1,6 +1,6 @@
 "use client";
 
-import { Download } from "lucide-react";
+import { Download, Lock } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -34,6 +34,7 @@ export function FilterGL({
   opsi,
   ukuran,
   basePath = "/",
+  terkunci = false,
 }: {
   nilai: NilaiFilterGL;
   opsi: {
@@ -47,6 +48,7 @@ export function FilterGL({
   };
   ukuran: number;
   basePath?: string;
+  terkunci?: boolean;
 }) {
   const router = useRouter();
   const adaFilterAktif = Object.values(nilai).some((v) => v);
@@ -74,9 +76,6 @@ export function FilterGL({
     timeoutRef.current = setTimeout(() => terapkan({ cari: nilaiBaru || undefined }), 450);
   }
 
-  // Ekspor mengikuti filter yang aktif saat ini, tanpa batas halaman
-  // (lib/gl/ekspor.ts). Tidak menyertakan halaman/ukuran karena keduanya
-  // urusan tampilan tabel, bukan cakupan data yang diekspor.
   const queryEkspor = new URLSearchParams();
   for (const [kunci, v] of Object.entries(nilai)) {
     if (v) queryEkspor.set(kunci, v);
@@ -84,6 +83,12 @@ export function FilterGL({
 
   return (
     <div className="border-b border-border bg-muted/40 p-4">
+      {terkunci && (
+        <div className="mb-3 flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Lock className="size-3.5 shrink-0" />
+          Filter Rumah Sakit dan Tahapan dikunci
+        </div>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-2">
         <div className="flex min-w-24 flex-1 flex-col gap-1.5">
           <Label className="text-sm" htmlFor="cari">
@@ -94,14 +99,21 @@ export function FilterGL({
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="tahapan">Tahapan</Label>
-          <Select
-            id="tahapan"
-            value={nilai.tahapan ?? ""}
-            onChange={(e) => terapkan({ tahapan: e.target.value || undefined })}
-            placeholder="Semua"
-            options={opsi.tahapan}
-            className="w-full sm:w-32"
-          />
+          {terkunci ? (
+            <div className="flex h-8 w-full items-center gap-1.5 truncate rounded-lg border border-input bg-muted px-2.5 text-sm text-muted-foreground sm:w-32">
+              <Lock className="size-3.5 shrink-0" />
+              <span className="truncate">{nilai.tahapan}</span>
+            </div>
+          ) : (
+            <Select
+              id="tahapan"
+              value={nilai.tahapan ?? ""}
+              onChange={(e) => terapkan({ tahapan: e.target.value || undefined })}
+              placeholder="Semua"
+              options={opsi.tahapan}
+              className="w-full sm:w-32"
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -130,14 +142,21 @@ export function FilterGL({
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="nama_rumah_sakit">Nama Rumah Sakit</Label>
-          <Select
-            id="nama_rumah_sakit"
-            value={nilai.nama_rumah_sakit ?? ""}
-            onChange={(e) => terapkan({ nama_rumah_sakit: e.target.value || undefined })}
-            placeholder="Semua"
-            options={opsi.namaRumahSakit}
-            className="w-full sm:w-48"
-          />
+          {terkunci ? (
+            <div className="flex h-8 w-full items-center gap-1.5 truncate rounded-lg border border-input bg-muted px-2.5 text-sm text-muted-foreground sm:w-48">
+              <Lock className="size-3.5 shrink-0" />
+              <span className="truncate">{nilai.nama_rumah_sakit}</span>
+            </div>
+          ) : (
+            <Select
+              id="nama_rumah_sakit"
+              value={nilai.nama_rumah_sakit ?? ""}
+              onChange={(e) => terapkan({ nama_rumah_sakit: e.target.value || undefined })}
+              placeholder="Semua"
+              options={opsi.namaRumahSakit}
+              className="w-full sm:w-48"
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-1.5">

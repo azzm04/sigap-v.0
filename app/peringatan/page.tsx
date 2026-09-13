@@ -25,6 +25,7 @@ export default async function PapanPeringatanPage({
       cari_catatan?: string;
       label?: string;
       rumah_sakit_catatan?: string;
+      status_pembayaran_catatan?: string;
       dari_catatan?: string;
       sampai_catatan?: string;
       halaman_task_force?: string;
@@ -83,6 +84,7 @@ export default async function PapanPeringatanPage({
         cari: sp.cari_catatan || undefined,
         label: labelFilter,
         namaRumahSakit: sp.rumah_sakit_catatan || undefined,
+        statusPembayaran: sp.status_pembayaran_catatan || undefined,
         dari: sp.dari_catatan || undefined,
         sampai: sp.sampai_catatan || undefined,
       })
@@ -92,6 +94,7 @@ export default async function PapanPeringatanPage({
     cari_catatan: sp.cari_catatan,
     label: sp.label,
     rumah_sakit_catatan: sp.rumah_sakit_catatan,
+    status_pembayaran_catatan: sp.status_pembayaran_catatan,
     dari_catatan: sp.dari_catatan,
     sampai_catatan: sp.sampai_catatan,
   };
@@ -196,6 +199,7 @@ export default async function PapanPeringatanPage({
                   hasil={hasilCatatan}
                   nilaiFilter={nilaiFilterCatatan}
                   opsiNamaRumahSakit={opsiFilter.namaRumahSakit}
+                  opsiStatusPembayaran={opsiFilter.statusPembayaran}
                 />
               )
             }

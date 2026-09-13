@@ -12,6 +12,7 @@ export interface NilaiFilterCatatan {
   cari_catatan?: string;
   label?: string;
   rumah_sakit_catatan?: string;
+  status_pembayaran_catatan?: string;
   dari_catatan?: string;
   sampai_catatan?: string;
   [kunci: string]: string | undefined;
@@ -28,7 +29,7 @@ export function FilterCatatan({
   ukuran,
 }: {
   nilai: NilaiFilterCatatan;
-  opsi: { namaRumahSakit: string[] };
+  opsi: { namaRumahSakit: string[]; statusPembayaran: string[] };
   ukuran: number;
 }) {
   const router = useRouter();
@@ -101,6 +102,20 @@ export function FilterCatatan({
             placeholder="Semua"
             options={opsi.namaRumahSakit}
             className="w-full sm:w-48"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="status_pembayaran_catatan">Status Pembayaran</Label>
+          <Select
+            id="status_pembayaran_catatan"
+            value={nilai.status_pembayaran_catatan ?? ""}
+            onChange={(e) =>
+              terapkan({ status_pembayaran_catatan: e.target.value || undefined })
+            }
+            placeholder="Semua"
+            options={opsi.statusPembayaran}
+            className="w-full sm:w-40"
           />
         </div>
 
