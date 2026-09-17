@@ -1,16 +1,37 @@
 import { type NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { auth } from "@/auth";
-import { formatRupiah, formatTanggal, formatTanggalOpsional, formatWaktu } from "@/lib/format";
+import {
+  formatRupiah,
+  formatTanggal,
+  formatTanggalOpsional,
+  formatWaktu,
+} from "@/lib/format";
 import { ambilPapanPeringatan } from "@/lib/gl/peringatan";
 import { ambilPeringatanTaskForce } from "@/lib/gl/peringatan-task-force";
 import { ambilSemuaTinjauan } from "@/lib/gl/semua-tinjauan";
 
 const FONT_BODY: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 12 };
-const FONT_TITLE: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 18, bold: true };
-const FONT_INFO_LABEL: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 14, bold: true };
-const FONT_INFO_VALUE: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 14 };
-const FONT_HEADER: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 12, bold: true, color: { argb: "FFFFFFFF" } };
+const FONT_TITLE: Partial<ExcelJS.Font> = {
+  name: "Times New Roman",
+  size: 18,
+  bold: true,
+};
+const FONT_INFO_LABEL: Partial<ExcelJS.Font> = {
+  name: "Times New Roman",
+  size: 14,
+  bold: true,
+};
+const FONT_INFO_VALUE: Partial<ExcelJS.Font> = {
+  name: "Times New Roman",
+  size: 14,
+};
+const FONT_HEADER: Partial<ExcelJS.Font> = {
+  name: "Times New Roman",
+  size: 12,
+  bold: true,
+  color: { argb: "FFFFFFFF" },
+};
 
 const THIN_BORDER: Partial<ExcelJS.Borders> = {
   top: { style: "thin" },
@@ -58,8 +79,16 @@ function tulisHeaderKolom(ws: ExcelJS.Worksheet, kolom: string[]) {
   const headerRow = ws.addRow(kolom);
   headerRow.eachCell((cell) => {
     cell.font = FONT_HEADER;
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F4E79" } };
-    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF1F4E79" },
+    };
+    cell.alignment = {
+      horizontal: "center",
+      vertical: "middle",
+      wrapText: true,
+    };
     cell.border = THIN_BORDER;
   });
   headerRow.height = 28;
@@ -80,7 +109,8 @@ function kirimWorkbook(workbook: ExcelJS.Workbook, namaBerkas: string) {
     (buffer) =>
       new NextResponse(new Uint8Array(buffer as ArrayBuffer), {
         headers: {
-          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Type":
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           "Content-Disposition": `attachment; filename="${namaBerkas}"`,
         },
       }),
@@ -99,7 +129,12 @@ export async function GET(request: NextRequest) {
   }
 
   const sp = request.nextUrl.searchParams;
-  const tab = sp.get("tab") === "catatan" ? "catatan" : sp.get("tab") === "task-force" ? "task-force" : "gl";
+  const tab =
+    sp.get("tab") === "catatan"
+      ? "catatan"
+      : sp.get("tab") === "task-force"
+        ? "task-force"
+        : "gl";
   const namaPengekspor = session.user.name ?? "-";
   const tanggalEkspor = formatTanggal(new Date().toISOString().slice(0, 10));
 
@@ -112,12 +147,21 @@ export async function GET(request: NextRequest) {
   return eksporGL(sp, namaPengekspor, tanggalEkspor);
 }
 
-async function eksporGL(sp: URLSearchParams, namaPengekspor: string, tanggalEkspor: string) {
+async function eksporGL(
+  sp: URLSearchParams,
+  namaPengekspor: string,
+  tanggalEkspor: string,
+) {
   const statusTinjauanRaw = sp.get("status_tinjauan");
-  const statusTinjauan = statusTinjauanRaw === "sudah" || statusTinjauanRaw === "belum" ? statusTinjauanRaw : undefined;
+  const statusTinjauan =
+    statusTinjauanRaw === "sudah" || statusTinjauanRaw === "belum"
+      ? statusTinjauanRaw
+      : undefined;
   const statusDokumenRaw = sp.get("status_dokumen");
   const statusDokumen =
-    statusDokumenRaw === "lengkap" || statusDokumenRaw === "belum_lengkap" ? statusDokumenRaw : undefined;
+    statusDokumenRaw === "lengkap" || statusDokumenRaw === "belum_lengkap"
+      ? statusDokumenRaw
+      : undefined;
   const cari = sp.get("cari") || undefined;
   const dari = sp.get("dari") || undefined;
   const sampai = sp.get("sampai") || undefined;
@@ -167,9 +211,28 @@ async function eksporGL(sp: URLSearchParams, namaPengekspor: string, tanggalEksp
       ["Status Pembayaran :", "Unpaid"],
       ["Ambang Peringatan :", `> ${ambangHari} Hari`],
       ["Pencarian :", cari ?? "Semua"],
-      ["Rentang Tgl GL :", dari || sampai ? `${dari ?? "awal"} s.d. ${sampai ?? "akhir"}` : "Semua"],
-      ["Status Tinjauan :", statusTinjauan === "sudah" ? "Sudah Ditinjau" : statusTinjauan === "belum" ? "Belum Ditinjau" : "Semua"],
-      ["Status Dokumen :", statusDokumen === "lengkap" ? "Lengkap" : statusDokumen === "belum_lengkap" ? "Belum Lengkap" : "Semua"],
+      [
+        "Rentang Tgl GL :",
+        dari || sampai
+          ? `${dari ?? "awal"} s.d. ${sampai ?? "akhir"}`
+          : "Semua",
+      ],
+      [
+        "Status Tinjauan :",
+        statusTinjauan === "sudah"
+          ? "Sudah Ditinjau"
+          : statusTinjauan === "belum"
+            ? "Belum Ditinjau"
+            : "Semua",
+      ],
+      [
+        "Status Dokumen :",
+        statusDokumen === "lengkap"
+          ? "Lengkap"
+          : statusDokumen === "belum_lengkap"
+            ? "Belum Lengkap"
+            : "Semua",
+      ],
       ["PIC Pengajuan :", picPengajuan ?? "Semua"],
       ["Jumlah Data :", String(baris.length)],
       ["Diekspor oleh :", namaPengekspor],
@@ -224,12 +287,22 @@ async function eksporGL(sp: URLSearchParams, namaPengekspor: string, tanggalEksp
     ]);
   }
 
-  return kirimWorkbook(workbook, `laporan-peringatan-pengajuan-pusat-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  return kirimWorkbook(
+    workbook,
+    `laporan-peringatan-pengajuan-pusat-${new Date().toISOString().slice(0, 10)}.xlsx`,
+  );
 }
 
-async function eksporTaskForce(sp: URLSearchParams, namaPengekspor: string, tanggalEkspor: string) {
+async function eksporTaskForce(
+  sp: URLSearchParams,
+  namaPengekspor: string,
+  tanggalEkspor: string,
+) {
   const statusTinjauanRaw = sp.get("status_tinjauan_task_force");
-  const statusTinjauan = statusTinjauanRaw === "sudah" || statusTinjauanRaw === "belum" ? statusTinjauanRaw : undefined;
+  const statusTinjauan =
+    statusTinjauanRaw === "sudah" || statusTinjauanRaw === "belum"
+      ? statusTinjauanRaw
+      : undefined;
   const cari = sp.get("cari_task_force") || undefined;
   const picTaskForce = sp.get("pic_task_force") || undefined;
   const dari = sp.get("dari_task_force") || undefined;
@@ -268,8 +341,20 @@ async function eksporTaskForce(sp: URLSearchParams, namaPengekspor: string, tang
       ["Ambang Peringatan :", `> ${ambangHari} Hari`],
       ["Pencarian :", cari ?? "Semua"],
       ["PIC Task Force :", picTaskForce ?? "Semua"],
-      ["Status Tinjauan :", statusTinjauan === "sudah" ? "Sudah Ditinjau" : statusTinjauan === "belum" ? "Belum Ditinjau" : "Semua"],
-      ["Rentang Tgl GL :", dari || sampai ? `${dari ?? "awal"} s.d. ${sampai ?? "akhir"}` : "Semua"],
+      [
+        "Status Tinjauan :",
+        statusTinjauan === "sudah"
+          ? "Sudah Ditinjau"
+          : statusTinjauan === "belum"
+            ? "Belum Ditinjau"
+            : "Semua",
+      ],
+      [
+        "Rentang Tgl GL :",
+        dari || sampai
+          ? `${dari ?? "awal"} s.d. ${sampai ?? "akhir"}`
+          : "Semua",
+      ],
       ["Jumlah Data :", String(baris.length)],
       ["Diekspor oleh :", namaPengekspor],
       ["Tanggal Ekspor :", tanggalEkspor],
@@ -299,7 +384,10 @@ async function eksporTaskForce(sp: URLSearchParams, namaPengekspor: string, tang
           ? "berdasarkan Tgl LAKA"
           : "berdasarkan Tgl GL";
     const dataBelumLengkap =
-      [!b.tanggalPulangPasien ? "Tanggal Pulang Pasien" : null, !b.lokasi ? "Lokasi LAKA" : null]
+      [
+        !b.tanggalPulangPasien ? "Tanggal Pulang Pasien" : null,
+        !b.lokasi ? "Lokasi LAKA" : null,
+      ]
         .filter((t): t is string => t !== null)
         .join(", ") || "-";
 
@@ -324,11 +412,19 @@ async function eksporTaskForce(sp: URLSearchParams, namaPengekspor: string, tang
   );
 }
 
-async function eksporCatatan(sp: URLSearchParams, namaPengekspor: string, tanggalEkspor: string) {
+async function eksporCatatan(
+  sp: URLSearchParams,
+  namaPengekspor: string,
+  tanggalEkspor: string,
+) {
   const labelRaw = sp.get("label");
-  const label = labelRaw === "tindak_lanjut" || labelRaw === "diabaikan" ? labelRaw : undefined;
+  const label =
+    labelRaw === "tindak_lanjut" || labelRaw === "diabaikan"
+      ? labelRaw
+      : undefined;
   const cari = sp.get("cari_catatan") || undefined;
   const namaRumahSakit = sp.get("rumah_sakit_catatan") || undefined;
+  const statusPembayaran = sp.get("status_pembayaran_catatan") || undefined;
   const dari = sp.get("dari_catatan") || undefined;
   const sampai = sp.get("sampai_catatan") || undefined;
 
@@ -337,6 +433,7 @@ async function eksporCatatan(sp: URLSearchParams, namaPengekspor: string, tangga
     cari,
     label,
     namaRumahSakit,
+    statusPembayaran,
     dari,
     sampai,
   });
@@ -360,9 +457,22 @@ async function eksporCatatan(sp: URLSearchParams, namaPengekspor: string, tangga
     "LAPORAN CATATAN TINJAUAN",
     [
       ["Pencarian :", cari ?? "Semua"],
-      ["Label :", label === "tindak_lanjut" ? "Perlu Tindak Lanjut" : label === "diabaikan" ? "Diabaikan (Paid Manual)" : "Semua"],
+      [
+        "Label :",
+        label === "tindak_lanjut"
+          ? "Perlu Tindak Lanjut"
+          : label === "diabaikan"
+            ? "Diabaikan (Paid Manual)"
+            : "Semua",
+      ],
       ["Nama Rumah Sakit :", namaRumahSakit ?? "Semua"],
-      ["Rentang Tgl GL :", dari || sampai ? `${dari ?? "awal"} s.d. ${sampai ?? "akhir"}` : "Semua"],
+      ["Status Pembayaran :", statusPembayaran ?? "Semua"],
+      [
+        "Rentang Tgl GL :",
+        dari || sampai
+          ? `${dari ?? "awal"} s.d. ${sampai ?? "akhir"}`
+          : "Semua",
+      ],
       ["Jumlah Data :", String(baris.length)],
       ["Diekspor oleh :", namaPengekspor],
       ["Tanggal Ekspor :", tanggalEkspor],
@@ -394,5 +504,8 @@ async function eksporCatatan(sp: URLSearchParams, namaPengekspor: string, tangga
     ]);
   }
 
-  return kirimWorkbook(workbook, `laporan-catatan-tinjauan-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  return kirimWorkbook(
+    workbook,
+    `laporan-catatan-tinjauan-${new Date().toISOString().slice(0, 10)}.xlsx`,
+  );
 }
