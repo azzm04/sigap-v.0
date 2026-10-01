@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleCheck, CircleX, FileText, Upload, X } from "lucide-react";
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { type StatusUnggah, unggahBerkas } from "@/app/kelola-data/actions";
 
@@ -21,22 +21,27 @@ export function FormUnggah() {
   const [seretMasuk, setSeretMasuk] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sinkronkan `inputRef.current.files` setiap kali `berkasList` berubah.
+  // Dijalankan lewat useEffect (bukan di dalam updater setState) supaya selalu
+  // tereksekusi SETELAH commit render — termasuk setelah `e.target.value = ""`
+  // di handler onChange native file input. Sebelumnya efek samping ini berada
+  // di dalam fungsi updater setBerkasList, yang urutan eksekusinya terhadap
+  // `e.target.value = ""` tidak terjamin oleh React, menyebabkan file yang
+  // dipilih lewat "Pilih Berkas" kadang hilang dari input asli saat submit
+  // (walau tetap tampil di UI), sementara drag-and-drop tidak kena masalah ini
+  // karena jalurnya tidak pernah menyentuh `e.target.value`.
+  useEffect(() => {
+    sinkronkanInput(inputRef.current, berkasList);
+  }, [berkasList]);
+
   function tambahBerkas(files: FileList | null) {
     if (!files || files.length === 0) return;
     const berkasBaru = Array.from(files);
-    setBerkasList((sebelumnya) => {
-      const gabungan = [...sebelumnya, ...berkasBaru];
-      sinkronkanInput(inputRef.current, gabungan);
-      return gabungan;
-    });
+    setBerkasList((sebelumnya) => [...sebelumnya, ...berkasBaru]);
   }
 
   function hapusBerkas(index: number) {
-    setBerkasList((sebelumnya) => {
-      const sisa = sebelumnya.filter((_, i) => i !== index);
-      sinkronkanInput(inputRef.current, sisa);
-      return sisa;
-    });
+    setBerkasList((sebelumnya) => sebelumnya.filter((_, i) => i !== index));
   }
 
   return (
