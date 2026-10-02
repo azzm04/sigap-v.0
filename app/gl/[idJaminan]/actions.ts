@@ -138,12 +138,20 @@ export async function catatTahapProses(
   // Syarat dokumen berbeda per tahap, dan bedanya disengaja:
   //
   //   "Berkas Belum Di Limpah"   -> KSKK saja
+  //   "Berkas Dalam Proses"      -> bebas, tidak ada syarat dokumen
   //   "Berkas Diajukan Ke Pusat" -> Laporan Survei TKP DAN KSKK
   //
   // Untuk GL pelimpahan, survei TKP dikerjakan loket tujuan (wilayahnya di
   // sana), bukan Semarang -- jadi mensyaratkan Laporan Survei TKP saat
   // melimpahkan akan membuat tahap itu mustahil dicatat. Arahan pemilik
   // proyek. Yang tetap wajib ikut berpindah tangan adalah KSKK.
+  //
+  // "Berkas Dalam Proses" sengaja TIDAK disyaratkan dokumen apa pun --
+  // dipakai justru saat berkas (mis. JRCare) masih direvisi di loket
+  // tujuan, jadi dokumennya memang belum tentu lengkap. Arahan pemilik
+  // proyek: tahap ini murni penanda "bolanya masih di kita", bukan syarat
+  // kelengkapan. GL di tahap ini tetap muncul di Papan Peringatan PIC
+  // Pengajuan (lib/gl/peringatan.ts) karena bukan TAHAP_KELUAR_PERINGATAN.
   const butuhLaporanTkp = tahap === TAHAP_KELUAR_PERINGATAN;
   if (tahap === TAHAP_BELUM_LIMPAH || tahap === TAHAP_KELUAR_PERINGATAN) {
     const [gl] = await db

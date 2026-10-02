@@ -208,7 +208,9 @@ Daftar nilai enum terbuka, wajib dibaca dari sini, bukan di-hardcode (aturan ker
 ### `status_proses_pusat`
 Riwayat tahap proses GL di **sistem pusat** -- bukan tahapan JRCare. Diisi **manual** oleh petugas di halaman detail GL, karena aplikasi tidak menyentuh sistem pusat sama sekali (aturan keras #1). Kolom: `id`, `id_jaminan`, `tahap`, `loket_pelimpahan`, `user_id`, `dicatat_pada`. Tahap terkini = baris terbaru per `id_jaminan`.
 
-Tiga tahap, urut sesuai alur kerja (`TAHAP_PROSES_PUSAT` di `lib/gl/tahap-proses.ts`): **"Berkas Belum Di Limpah"** → **"Berkas Diajukan Ke Pusat"** → **"Berkas Selesai"**.
+Empat tahap, urut sesuai alur kerja (`TAHAP_PROSES_PUSAT` di `lib/gl/tahap-proses.ts`): **"Berkas Belum Di Limpah"** → **"Berkas Dalam Proses"** → **"Berkas Diajukan Ke Pusat"** → **"Berkas Selesai"**.
+
+**"Berkas Dalam Proses"** dipakai saat pelimpahan sudah selesai tapi berkas masih direvisi di loket tujuan (mis. JRCare perlu dikoreksi ulang) -- jadi belum bisa langsung diajukan ke pusat. Berbeda dari dua tahap syarat dokumen di sekitarnya, tahap ini BEBAS dicatat tanpa syarat Laporan Survei TKP maupun KSKK (arahan pemilik proyek: murni penanda "bolanya masih di kita"). GL di tahap ini TETAP muncul di Papan Peringatan PIC Pengajuan, karena yang dikecualikan dari peringatan hanya `TAHAP_KELUAR_PERINGATAN` ("Berkas Diajukan Ke Pusat").
 
 Begitu tahap mencapai **"Berkas Selesai"**, `gl_mirror.status_pembayaran` otomatis diubah jadi `Paid` dan dikunci permanen lewat `tinjauan.diabaikan` (mekanisme yang sama seperti tombol Abaikan manual).
 

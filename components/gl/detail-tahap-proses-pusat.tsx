@@ -31,8 +31,11 @@ export function DetailTahapProsesPusat({
           Tahap boleh dipilih bebas sesuai kondisi terkini. Memilih
           &quot;Berkas Belum Di Limpah&quot; mewajibkan pilih loket cabang
           tujuan, dan GL-nya masuk ke halaman Pelimpahan sampai tahap
-          berikutnya dicatat. Dua tahap pertama sama-sama mensyaratkan
-          Laporan Survei TKP dan KSKK sudah ada. Begitu tahap &quot;Berkas
+          berikutnya dicatat. &quot;Berkas Belum Di Limpah&quot; dan
+          &quot;Berkas Diajukan Ke Pusat&quot; mensyaratkan Laporan Survei
+          TKP dan KSKK sudah ada; &quot;Berkas Dalam Proses&quot; (dipakai
+          saat pelimpahan selesai tapi berkas masih direvisi) bebas dicatat
+          tanpa syarat dokumen. Begitu tahap &quot;Berkas
           Selesai&quot; dicatat, Status Pembayaran otomatis menjadi Paid.
         </BantuanInfo>
       </h3>

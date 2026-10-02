@@ -4,14 +4,28 @@ import { glMirror, pengguna, statusProsesPusat, tinjauan } from "../db/schema";
 import { TAHAP_BELUM_LIMPAH } from "./pelimpahan";
 
 // Urutannya mewakili alur maju: berkas menunggu dilimpahkan ke loket lain,
-// lalu diajukan ke pusat, lalu selesai. TAHAP_BELUM_LIMPAH tidak wajib
+// lalu (opsional) masih diproses/direvisi di loket tujuan, lalu diajukan ke
+// pusat, lalu selesai. TAHAP_BELUM_LIMPAH dan TAHAP_DALAM_PROSES tidak wajib
 // dilalui -- cuma untuk GL yang berkasnya memang perlu berpindah loket
-// (lihat lib/gl/pelimpahan.ts).
+// (lihat lib/gl/pelimpahan.ts) dan/atau masih direvisi di loket tujuan
+// sebelum benar-benar siap diajukan ke pusat.
 export const TAHAP_PROSES_PUSAT = [
   TAHAP_BELUM_LIMPAH,
+  "Berkas Dalam Proses",
   "Berkas Diajukan Ke Pusat",
   "Berkas Selesai",
 ] as const;
+
+// Dipakai setelah pelimpahan selesai tapi berkas masih direvisi (mis.
+// JRCare perlu dikoreksi ulang) di loket tujuan -- jadi belum bisa langsung
+// diajukan ke pusat meski proses pelimpahannya sendiri sudah kelar. Arahan
+// pemilik proyek: BEBAS dicatat tanpa syarat dokumen (beda dari
+// TAHAP_BELUM_LIMPAH dan TAHAP_KELUAR_PERINGATAN di bawah yang mensyaratkan
+// KSKK dan/atau Laporan Survei TKP) -- justru dipakai saat dokumen memang
+// belum lengkap/masih direvisi. GL di tahap ini TETAP muncul di Papan
+// Peringatan PIC Pengajuan karena belum diajukan ke pusat (lihat
+// lib/gl/peringatan.ts, yang hanya mengecualikan TAHAP_KELUAR_PERINGATAN).
+export const TAHAP_DALAM_PROSES = "Berkas Dalam Proses";
 
 // Tahap yang memicu status_pembayaran otomatis jadi Paid ketika petugas mencatatnya (lihat app/gl/[idJaminan]/actions.ts, catatTahapProses)
 export const TAHAP_PEMICU_PAID = "Berkas Selesai";
