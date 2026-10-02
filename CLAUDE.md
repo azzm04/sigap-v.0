@@ -466,20 +466,22 @@ Di dashboard Monitoring, di atas Kartu Kinerja Pengajuan ke Pusat. Menjawab pert
 
 ### Kartu Kinerja Pengajuan ke Pusat
 
-Di dashboard Monitoring, di dekat Kartu Ringkasan GL. Empat kartu yang membentuk **alur/funnel** progres kerja PIC Pengajuan yang TIDAK kelihatan di kolom Tahapan bawaan JRCare (yang cuma mentok di "Verifikasi User"/"Done") — dipakai klien untuk menilai kinerja staf, termasuk per-PIC. Tiap kartu punya ikon Bantuan (`?`) berisi definisi persisnya, supaya tidak ambigu dibaca klien.
+Di dashboard Monitoring, di dekat Kartu Ringkasan GL. Enam kartu yang membentuk **alur/funnel** progres kerja PIC Pengajuan yang TIDAK kelihatan di kolom Tahapan bawaan JRCare (yang cuma mentok di "Verifikasi User"/"Done") — dipakai klien untuk menilai kinerja staf, termasuk per-PIC. Tiap kartu punya ikon Bantuan (`?`) berisi definisi persisnya, supaya tidak ambigu dibaca klien.
 
-Keempatnya SALING EKSKLUSIF (tidak ada GL yang terhitung di lebih dari satu kartu), dan urutannya mewakili tahap makin maju:
+Keenamnya SALING EKSKLUSIF (tidak ada GL yang terhitung di lebih dari satu kartu), dan urutannya mewakili tahap makin maju -- arahan pemilik proyek: Dokumen Belum Lengkap → Berkas Belum Di Limpah → Berkas Dalam Proses → Siap Diajukan ke Pusat → Sudah Diajukan ke Pusat → Done:
 
 | # | Kartu | Definisi |
 | --- | --- | --- |
-| 1 | Dokumen Belum Lengkap | `tahapan IN ("Verifikasi User", "Done")` DAN `status_pembayaran = "Unpaid"` DAN belum pernah punya baris `status_proses_pusat` (belum pernah diajukan ke pusat sama sekali) DAN Laporan Survei TKP + KSKK **belum** lengkap dua-duanya |
-| 2 | Siap Diajukan ke Pusat | Sama seperti #1, tapi dokumen **sudah** lengkap dua-duanya — tinggal menunggu PIC Pengajuan mencatat "Berkas Diajukan Ke Pusat" |
-| 3 | Sudah Diajukan ke Pusat | Tahap TERKINI di `status_proses_pusat` persis `"Berkas Diajukan Ke Pusat"` DAN `status_pembayaran` belum "Paid" |
-| 4 | Done | `tahapan = "Done"` DAN `status_pembayaran = "Paid"` — genuinely lunas, baik lewat "Berkas Selesai" di Proses Pusat MAUPUN Paid langsung dari impor JRCare tanpa pernah lewat Proses Pusat sama sekali |
+| 1 | Dokumen Belum Lengkap | `tahapan IN ("Verifikasi User", "Done")` DAN `status_pembayaran = "Unpaid"` DAN belum pernah punya baris `status_proses_pusat` (belum pernah diajukan ke pusat sama sekali) DAN tahap terkini BUKAN "Berkas Belum Di Limpah"/"Berkas Dalam Proses" DAN Laporan Survei TKP + KSKK **belum** lengkap dua-duanya |
+| 2 | Berkas Belum Di Limpah | Tahap TERKINI di `status_proses_pusat` persis `"Berkas Belum Di Limpah"` DAN `status_pembayaran` belum "Paid" — berkas masih menunggu dilimpahkan ke loket cabang lain, lihat juga halaman Pelimpahan |
+| 3 | Berkas Dalam Proses | Tahap TERKINI di `status_proses_pusat` persis `"Berkas Dalam Proses"` DAN `status_pembayaran` belum "Paid" — pelimpahan sudah selesai tapi berkas (mis. JRCare) masih direvisi, bolanya masih di kita, belum bisa diajukan ke pusat |
+| 4 | Siap Diajukan ke Pusat | Sama seperti #1, tapi dokumen **sudah** lengkap dua-duanya — tinggal menunggu PIC Pengajuan mencatat "Berkas Diajukan Ke Pusat" |
+| 5 | Sudah Diajukan ke Pusat | Tahap TERKINI di `status_proses_pusat` persis `"Berkas Diajukan Ke Pusat"` DAN `status_pembayaran` belum "Paid" |
+| 6 | Done | `tahapan = "Done"` DAN `status_pembayaran = "Paid"` — genuinely lunas, baik lewat "Berkas Selesai" di Proses Pusat MAUPUN Paid langsung dari impor JRCare tanpa pernah lewat Proses Pusat sama sekali |
 
 Cakupan dasar sama seperti kartu ringkasan lain yang sudah ada: `tipe_klaim = 'GL'`, `gl_status = 'Active'`, `dihapus_pada IS NULL`.
 
-**Catatan dari pengecekan data nyata (jangan diubah tanpa verifikasi ulang):** awalnya diduga "`tahapan = Done` tapi `status_pembayaran = Unpaid`" selalu berarti `gl_status = Cancel` -- **tidak selalu benar**. Ditemukan GL `Active` dengan kombinasi itu (dokumen belum lengkap, belum pernah diajukan ke pusat). Makanya kartu #1/#2 sengaja mencakup `tahapan IN ("Verifikasi User", "Done")` — bukan cuma "Verifikasi User" — supaya GL semacam ini tetap kehitung di kartu #1, bukan hilang tanpa kategori.
+**Catatan dari pengecekan data nyata (jangan diubah tanpa verifikasi ulang):** awalnya diduga "`tahapan = Done` tapi `status_pembayaran = Unpaid`" selalu berarti `gl_status = Cancel` -- **tidak selalu benar**. Ditemukan GL `Active` dengan kombinasi itu (dokumen belum lengkap, belum pernah diajukan ke pusat). Makanya kartu #1/#4 sengaja mencakup `tahapan IN ("Verifikasi User", "Done")` — bukan cuma "Verifikasi User" — supaya GL semacam ini tetap kehitung, bukan hilang tanpa kategori.
 
 **Dinamis mengikuti filter yang sedang aktif di dashboard** — PIC Pengajuan dan Rentang Tgl GL, filter yang SAMA dengan tabel Daftar GL di bawahnya, bukan filter terpisah. Pilih "Semua" PIC untuk lihat total keseluruhan, pilih satu PIC untuk lihat kinerja individunya.
 

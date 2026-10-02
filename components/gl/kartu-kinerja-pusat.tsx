@@ -7,6 +7,9 @@ export function persen(bagian: number, total: number): string {
   return `${Math.round((bagian / total) * 100)}% dari GL aktif`;
 }
 
+// Urutan kartu mengikuti alur kerja nyata, arahan pemilik proyek:
+// Dokumen Belum Lengkap -> Berkas Belum Di Limpah -> Berkas Dalam Proses ->
+// Siap Diajukan ke Pusat -> Sudah Diajukan ke Pusat -> Done.
 export function KartuKinerjaPengajuanPusat({
   data,
 }: {
@@ -17,7 +20,7 @@ export function KartuKinerjaPengajuanPusat({
       <h3 className="text-sm md:text-base font-semibold text-foreground">
         Kinerja Pengajuan ke Pusat
       </h3>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
         <StatCard
           label={
             <span className="inline-flex text-sm md:text-base items-center gap-1.5">
@@ -37,17 +40,17 @@ export function KartuKinerjaPengajuanPusat({
         <StatCard
           label={
             <span className="inline-flex text-sm md:text-base items-center gap-1.5">
-              Siap Diajukan ke Pusat
+              Berkas Belum Di Limpah
               <BantuanInfo>
-                Tahapan di &quot;Verifikasi User&quot; atau &quot;Done&quot;, Status
-                Pembayaran &quot;Unpaid&quot;, Laporan Survei TKP + KSKK sudah lengkap
-                dua-duanya. Siap diajukan ke Pusat, tinggal menunggu PIC Pengajuan
-                mencatat &quot;Berkas Diajukan Ke Pusat&quot; di halaman detail GL.
+                Tahap terkini persis &quot;Berkas Belum Di Limpah&quot; dan
+                belum lunas -- berkas masih menunggu dilimpahkan ke loket
+                cabang lain. Daftar lengkapnya ada di halaman Pelimpahan.
               </BantuanInfo>
             </span>
           }
-          value={data.siapDiajukanKePusat.toLocaleString("id-ID")}
-          hint={persen(data.siapDiajukanKePusat, data.totalAktif)}
+          value={data.belumDiLimpah.toLocaleString("id-ID")}
+          tone="danger"
+          hint={persen(data.belumDiLimpah, data.totalAktif)}
         />
         <StatCard
           label={
@@ -63,8 +66,23 @@ export function KartuKinerjaPengajuanPusat({
             </span>
           }
           value={data.sedangDalamProses.toLocaleString("id-ID")}
-          tone="danger"
+          tone="warn"
           hint={persen(data.sedangDalamProses, data.totalAktif)}
+        />
+        <StatCard
+          label={
+            <span className="inline-flex text-sm md:text-base items-center gap-1.5">
+              Siap Diajukan ke Pusat
+              <BantuanInfo>
+                Tahapan di &quot;Verifikasi User&quot; atau &quot;Done&quot;, Status
+                Pembayaran &quot;Unpaid&quot;, Laporan Survei TKP + KSKK sudah lengkap
+                dua-duanya. Siap diajukan ke Pusat, tinggal menunggu PIC Pengajuan
+                mencatat &quot;Berkas Diajukan Ke Pusat&quot; di halaman detail GL.
+              </BantuanInfo>
+            </span>
+          }
+          value={data.siapDiajukanKePusat.toLocaleString("id-ID")}
+          hint={persen(data.siapDiajukanKePusat, data.totalAktif)}
         />
         <StatCard
           label={

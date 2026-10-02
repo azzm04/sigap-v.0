@@ -3,6 +3,7 @@ import { db } from "../db";
 import { glMirror, laporanSurveiTkp, statusProsesPusat } from "../db/schema";
 import { TAHAPAN_DIPANTAU } from "./aturan-peringatan";
 import { ambilPapanPeringatan } from "./peringatan";
+import { TAHAP_BELUM_LIMPAH } from "./pelimpahan";
 import { ambilRumahSakitUntukPic } from "./pic";
 import { TAHAP_DALAM_PROSES, TAHAP_JRCARE_DONE, TAHAP_KELUAR_PERINGATAN, TAHAP_PEMICU_PAID } from "./tahap-proses";
 
@@ -189,6 +190,7 @@ export async function ambilTrenBulanan(): Promise<TrenBulanan[]> {
 
 export interface KinerjaPengajuanPusat {
   totalAktif: number;
+  belumDiLimpah: number;
   dokumenBelumLengkap: number;
   siapDiajukanKePusat: number;
   sedangDalamProses: number;
@@ -206,16 +208,19 @@ export interface FilterKinerjaPengajuanPusat {
 
 // Kartu "Kinerja Pengajuan ke Pusat" (CLAUDE.md bagian 7) -- dinamis
 // mengikuti filter PIC Pengajuan/Rentang Tgl GL yang sama dengan tabel
-// Daftar GL di dashboard, bukan filter terpisah. Lima kategori SALING
-// EKSKLUSIF, dievaluasi per baris (bukan 5 query COUNT terpisah) supaya
+// Daftar GL di dashboard, bukan filter terpisah. Enam kategori SALING
+// EKSKLUSIF, dievaluasi per baris (bukan 6 query COUNT terpisah) supaya
 // urutan prioritasnya eksplisit dan tidak ada GL yang dihitung dobel:
 //   1. done duluan (paling final)
 //   2. sudahDiajukanKePusat (sudah di Proses Pusat, belum lunas)
 //   3. sedangDalamProses (tahap "Berkas Dalam Proses" -- pelimpahan sudah
 //      selesai tapi berkas masih direvisi, bola masih di kita, belum siap
 //      diajukan ke pusat)
-//   4. dokumenBelumLengkap / siapDiajukanKePusat (belum pernah diajukan
-//      sama sekali -- dibedakan cuma dari kelengkapan dokumen)
+//   4. belumDiLimpah (tahap "Berkas Belum Di Limpah" -- berkas masih
+//      menunggu dilimpahkan ke loket lain, lihat halaman Pelimpahan)
+//   5. dokumenBelumLengkap / siapDiajukanKePusat (belum pernah diajukan
+//      sama sekali DAN tidak sedang menunggu pelimpahan -- dibedakan cuma
+//      dari kelengkapan dokumen)
 //
 // "tahapan Done tapi status_pembayaran Unpaid" TERNYATA bisa terjadi pada
 // GL yang gl_status-nya Active (bukan cuma Cancel seperti dugaan awal --
@@ -228,6 +233,7 @@ export async function ambilKinerjaPengajuanPusat(
 ): Promise<KinerjaPengajuanPusat> {
   const kosong: KinerjaPengajuanPusat = {
     totalAktif: 0,
+    belumDiLimpah: 0,
     dokumenBelumLengkap: 0,
     siapDiajukanKePusat: 0,
     sedangDalamProses: 0,
@@ -282,6 +288,8 @@ export async function ambilKinerjaPengajuanPusat(
       hasil.sudahDiajukanKePusat++;
     } else if (tahapTerkini === TAHAP_DALAM_PROSES && b.statusPembayaran !== "Paid") {
       hasil.sedangDalamProses++;
+    } else if (tahapTerkini === TAHAP_BELUM_LIMPAH && b.statusPembayaran !== "Paid") {
+      hasil.belumDiLimpah++;
     } else if (TAHAPAN_DIPANTAU.has(b.tahapan) && b.statusPembayaran === "Unpaid" && !sudahPernahDiajukan) {
       const dokumenLengkap = !!b.kskkNamaBerkas && b.punyaLaporanTkp;
       if (dokumenLengkap) hasil.siapDiajukanKePusat++;
