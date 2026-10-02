@@ -17,7 +17,7 @@ export function KartuKinerjaPengajuanPusat({
       <h3 className="text-sm md:text-base font-semibold text-foreground">
         Kinerja Pengajuan ke Pusat
       </h3>
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <StatCard
           label={
             <span className="inline-flex text-sm md:text-base items-center gap-1.5">
@@ -48,6 +48,23 @@ export function KartuKinerjaPengajuanPusat({
           }
           value={data.siapDiajukanKePusat.toLocaleString("id-ID")}
           hint={persen(data.siapDiajukanKePusat, data.totalAktif)}
+        />
+        <StatCard
+          label={
+            <span className="inline-flex text-sm md:text-base items-center gap-1.5">
+              Berkas Dalam Proses
+              <BantuanInfo>
+                GL yang berkasnya kemarin masih menunggu pelimpahan (tahap
+                &quot;Berkas Belum Di Limpah&quot;), lalu setelah selesai dilimpah
+                ternyata masih harus direvisi (mis. JRCare) sehingga belum bisa
+                diajukan ke pusat. Bolanya masih di kita -- tahap terkininya
+                persis &quot;Berkas Dalam Proses&quot; dan belum lunas.
+              </BantuanInfo>
+            </span>
+          }
+          value={data.sedangDalamProses.toLocaleString("id-ID")}
+          tone="danger"
+          hint={persen(data.sedangDalamProses, data.totalAktif)}
         />
         <StatCard
           label={
