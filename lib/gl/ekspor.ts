@@ -21,6 +21,7 @@ export interface BarisEkspor {
   tglPembayaran: string | null;
   nilaiDiajukan: number;
   nilaiDisetujui: number;
+  jumlahPembayaran: number;
 }
 
 // Ekspor Excel "hasil olahan": baris yang sama persis dengan yang tampil di tabel daftar GL untuk filter yang aktif, tanpa batas halaman.
@@ -42,6 +43,7 @@ export async function ambilDataUntukEkspor(filter: FilterDaftarGL): Promise<Bari
         tglPembayaran: glMirror.tglPembayaran,
         nilaiDiajukan: glMirror.nilaiDiajukan,
         nilaiDisetujui: glMirror.nilaiDisetujui,
+        jumlahPembayaran: glMirror.jumlahPembayaran,
       })
       .from(glMirror)
       .where(kondisi)
