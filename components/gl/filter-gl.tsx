@@ -21,6 +21,8 @@ export interface NilaiFilterGL {
   status_duplikat_nama?: string;
   dari?: string;
   sampai?: string;
+  dari_pembayaran?: string;
+  sampai_pembayaran?: string;
   [kunci: string]: string | undefined;
 }
 
@@ -201,6 +203,18 @@ export function FilterGL({
             dari={nilai.dari}
             sampai={nilai.sampai}
             onTerapkan={(dari, sampai) => terapkan({ dari, sampai })}
+            className="sm:w-56"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label>Rentang Tgl Pembayaran</Label>
+          <RentangTanggal
+            dari={nilai.dari_pembayaran}
+            sampai={nilai.sampai_pembayaran}
+            onTerapkan={(dari_pembayaran, sampai_pembayaran) =>
+              terapkan({ dari_pembayaran, sampai_pembayaran })
+            }
             className="sm:w-56"
           />
         </div>

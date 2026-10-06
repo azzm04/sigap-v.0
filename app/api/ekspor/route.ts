@@ -88,6 +88,8 @@ export async function GET(request: NextRequest) {
     picPengajuan: sp.get("pic_pengajuan") || undefined,
     dari: sp.get("dari") || undefined,
     sampai: sp.get("sampai") || undefined,
+    dariPembayaran: sp.get("dari_pembayaran") || undefined,
+    sampaiPembayaran: sp.get("sampai_pembayaran") || undefined,
     cari: sp.get("cari") || undefined,
     statusDuplikatNama,
   };
@@ -128,6 +130,7 @@ export async function GET(request: NextRequest) {
     ["PIC Pengajuan", filter.picPengajuan ?? "ALL"],
     ["Nama Korban", labelStatusDuplikatNama(filter.statusDuplikatNama)],
     ["Rentang Tgl GL", labelRentangTglGl(filter.dari, filter.sampai)],
+    ["Rentang Tgl Pembayaran", labelRentangTglGl(filter.dariPembayaran, filter.sampaiPembayaran)],
     ["Pencarian", filter.cari ?? "ALL"],
   ];
 

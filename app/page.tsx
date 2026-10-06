@@ -62,6 +62,8 @@ export default async function Home({
         picPengajuan: sp.pic_pengajuan || undefined,
         dari: sp.dari || undefined,
         sampai: sp.sampai || undefined,
+        dariPembayaran: sp.dari_pembayaran || undefined,
+        sampaiPembayaran: sp.sampai_pembayaran || undefined,
         cari: sp.cari || undefined,
         statusDuplikatNama,
         halaman: sp.halaman ? Number(sp.halaman) : 1,
@@ -99,6 +101,8 @@ export default async function Home({
     status_duplikat_nama: sp.status_duplikat_nama,
     dari: sp.dari,
     sampai: sp.sampai,
+    dari_pembayaran: sp.dari_pembayaran,
+    sampai_pembayaran: sp.sampai_pembayaran,
   };
 
   return (

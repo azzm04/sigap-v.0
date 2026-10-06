@@ -24,6 +24,10 @@ export interface FilterDaftarGL {
   picPengajuan?: string;
   dari?: string;
   sampai?: string;
+  /** ISO "YYYY-MM-DD", batas bawah Tgl Pembayaran -- filter terpisah dari Rentang Tgl GL (dari/sampai) */
+  dariPembayaran?: string;
+  /** ISO "YYYY-MM-DD", batas atas Tgl Pembayaran */
+  sampaiPembayaran?: string;
   cari?: string;
   statusDuplikatNama?: "duplikat" | "unik";
   halaman?: number;
@@ -116,6 +120,11 @@ export async function bangunKondisiDaftarGL(filter: FilterDaftarGL) {
   if (filter.namaRumahSakit) kondisi.push(eq(glMirror.namaRumahSakit, filter.namaRumahSakit));
   if (filter.dari) kondisi.push(gte(glMirror.tglGl, filter.dari));
   if (filter.sampai) kondisi.push(lte(glMirror.tglGl, filter.sampai));
+  // tgl_pembayaran hanya terisi untuk GL yang sudah dibayar (banyak baris
+  // NULL) -- gte/lte Drizzle otomatis mengecualikan NULL dari hasil, jadi
+  // filter ini secara alami cuma menyaring GL yang sudah punya Tgl Pembayaran.
+  if (filter.dariPembayaran) kondisi.push(gte(glMirror.tglPembayaran, filter.dariPembayaran));
+  if (filter.sampaiPembayaran) kondisi.push(lte(glMirror.tglPembayaran, filter.sampaiPembayaran));
   if (filter.cari) {
     const pola = `%${filter.cari}%`;
     const kondisiCari = or(ilike(glMirror.namaKorban, pola), ilike(glMirror.idJaminan, pola));
