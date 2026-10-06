@@ -18,6 +18,7 @@ export interface BarisEkspor {
   tahapan: string;
   glStatus: string;
   statusPembayaran: string;
+  tglPembayaran: string | null;
   nilaiDiajukan: number;
   nilaiDisetujui: number;
 }
@@ -38,6 +39,7 @@ export async function ambilDataUntukEkspor(filter: FilterDaftarGL): Promise<Bari
         tahapan: glMirror.tahapan,
         glStatus: glMirror.glStatus,
         statusPembayaran: glMirror.statusPembayaran,
+        tglPembayaran: glMirror.tglPembayaran,
         nilaiDiajukan: glMirror.nilaiDiajukan,
         nilaiDisetujui: glMirror.nilaiDisetujui,
       })

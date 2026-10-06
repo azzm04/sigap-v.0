@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { formatTanggal } from "@/lib/format";
+import { formatTanggal, formatTanggalOpsional } from "@/lib/format";
 import { ambilDataUntukEkspor } from "@/lib/gl/ekspor";
 import type { FilterDaftarGL } from "@/lib/gl/queries";
 
@@ -46,6 +46,7 @@ const JUDUL_KOLOM = [
   "Tgl GL",
   "Tahapan",
   "Status Pembayaran",
+  "Tgl Pembayaran",
   "Nilai Diajukan",
   "Nilai Disetujui",
 ];
@@ -110,6 +111,7 @@ export async function GET(request: NextRequest) {
     { width: 14 }, // Tgl GL
     { width: 24 }, // Tahapan
     { width: 18 }, // Status Pembayaran
+    { width: 16 }, // Tgl Pembayaran
     { width: 18 }, // Nilai Diajukan
     { width: 18 }, // Nilai Disetujui
   ];
@@ -170,6 +172,7 @@ export async function GET(request: NextRequest) {
       formatTanggal(b.tglGl),
       b.tahapan,
       b.statusPembayaran,
+      formatTanggalOpsional(b.tglPembayaran),
       b.nilaiDiajukan,
       b.nilaiDisetujui,
     ]);
@@ -178,8 +181,8 @@ export async function GET(request: NextRequest) {
       sel.border = THIN_BORDER;
       sel.alignment = { vertical: "middle", wrapText: true };
     });
-    barisData.getCell(11).numFmt = "#,##0";
     barisData.getCell(12).numFmt = "#,##0";
+    barisData.getCell(13).numFmt = "#,##0";
   });
 
   const buffer = await workbook.xlsx.writeBuffer();
