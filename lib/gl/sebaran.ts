@@ -1,6 +1,30 @@
-import { and, count, countDistinct, desc, eq, gte, isNull, lte, sql } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror } from "../db/schema";
+
+// Pengelompokan Tahapan GL untuk filter "Kelompok Tahapan" di halaman
+// /sebaran/[nama] -- arahan pemilik proyek. "Belum Di Klaim" = GL yang masih
+// di proses administrasi awal, "Klaim" = GL yang sudah masuk proses klaim.
+// Dipakai untuk MENYARING baris per-Tahapan (dan otomatis ikut menyaring
+// Total Unpaid karena itu hasil reduce dari baris per-Tahapan) -- TIDAK
+// menyaring Total Paid/Total Cancel/Total GL karena bucket itu bukan
+// pecahan per-Tahapan.
+export const KELOMPOK_TAHAPAN_GL = {
+  "belum-diklaim": {
+    label: "Belum Di Klaim",
+    tahapan: ["Penerimaan GL", "Surat Keterangan Kesehatan", "Surat Kuasa"],
+  },
+  klaim: {
+    label: "Klaim",
+    tahapan: ["Verifikasi User"],
+  },
+} as const;
+
+export type KunciKelompokTahapan = keyof typeof KELOMPOK_TAHAPAN_GL;
+
+export function isKunciKelompokTahapan(nilai: string | undefined): nilai is KunciKelompokTahapan {
+  return Boolean(nilai) && Object.prototype.hasOwnProperty.call(KELOMPOK_TAHAPAN_GL, nilai as string);
+}
 
 // Urutan baku tabel "Tahapan GL" di halaman /sebaran/[nama] -- arahan pemilik
 // proyek: dipaksa mengikuti alur proses, BUKAN lagi diurutkan dari jumlah GL
@@ -93,6 +117,9 @@ export interface RingkasanJumlahNominal {
 export interface FilterDetailRumahSakit {
   dari?: string;
   sampai?: string;
+  /** Kunci KELOMPOK_TAHAPAN_GL. Kalau diisi, baris per-Tahapan (dan Total
+   * Unpaid turunannya) HANYA mencakup tahapan dalam kelompok itu. */
+  kelompok?: KunciKelompokTahapan;
 }
 
 export interface DetailRumahSakit {
@@ -137,6 +164,12 @@ export async function ambilDetailRumahSakit(
     filter.dari ? gte(glMirror.tglGl, filter.dari) : undefined,
     filter.sampai ? lte(glMirror.tglGl, filter.sampai) : undefined,
   );
+  // Filter kelompok tahapan ("Belum Di Klaim" / "Klaim") HANYA diterapkan ke
+  // baris per-Tahapan (query barisTahapan di bawah) -- bucket Paid/Cancel/GL
+  // tidak dipecah per tahapan sehingga tidak relevan disaring kelompok ini.
+  const kondisiKelompok = filter.kelompok
+    ? inArray(glMirror.tahapan, [...KELOMPOK_TAHAPAN_GL[filter.kelompok].tahapan])
+    : undefined;
   // Nominal di tabel ini (per-tahapan maupun 3 baris total) menampilkan DUA
   // nilai sekaligus: Nilai Disetujui (nilai_disetujui) dan Nilai Dibayar
   // (jumlah_pembayaran) -- sesuai arahan pemilik proyek. Baris per-Tahapan
@@ -159,6 +192,7 @@ export async function ambilDetailRumahSakit(
           kondisiRentang,
           eq(glMirror.glStatus, "Active"),
           eq(glMirror.statusPembayaran, "Unpaid"),
+          kondisiKelompok,
         ),
       )
       .groupBy(glMirror.tahapan)

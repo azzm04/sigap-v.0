@@ -2,7 +2,7 @@ import ExcelJS from "exceljs";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { formatTanggal, tanggalHariIniWIB } from "@/lib/format";
-import { ambilDetailRumahSakit } from "@/lib/gl/sebaran";
+import { ambilDetailRumahSakit, isKunciKelompokTahapan, KELOMPOK_TAHAPAN_GL } from "@/lib/gl/sebaran";
 
 const FONT_BODY: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 12 };
 const FONT_TITLE: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 16, bold: true };
@@ -50,8 +50,10 @@ export async function GET(request: NextRequest) {
   }
   const dari = request.nextUrl.searchParams.get("dari") ?? undefined;
   const sampai = request.nextUrl.searchParams.get("sampai") ?? undefined;
+  const kelompokMentah = request.nextUrl.searchParams.get("kelompok") ?? undefined;
+  const kelompok = isKunciKelompokTahapan(kelompokMentah) ? kelompokMentah : undefined;
 
-  const detail = await ambilDetailRumahSakit(namaRumahSakit, { dari, sampai });
+  const detail = await ambilDetailRumahSakit(namaRumahSakit, { dari, sampai, kelompok });
 
   const workbook = new ExcelJS.Workbook();
   const ws = workbook.addWorksheet("Sebaran Rumah Sakit");
@@ -72,6 +74,7 @@ export async function GET(request: NextRequest) {
   const keterangan = [
     `Per ${formatTanggal(tanggalHariIniWIB())}`,
     dari || sampai ? `Rentang Tgl GL: ${dari ? formatTanggal(dari) : "awal"} - ${sampai ? formatTanggal(sampai) : "sekarang"}` : null,
+    kelompok ? `Kelompok Tahapan: ${KELOMPOK_TAHAPAN_GL[kelompok].label}` : null,
     `Total GL: ${detail.totalGL}`,
     `GL Berstatus Cancel: ${detail.totalCancel}`,
     `Nilai Pembayaran: ${detail.nilaiPembayaran}`,

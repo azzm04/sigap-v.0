@@ -7,25 +7,27 @@ import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { formatRupiah, formatTanggal, tanggalHariIniWIB } from "@/lib/format";
-import { ambilDetailRumahSakit } from "@/lib/gl/sebaran";
+import { ambilDetailRumahSakit, isKunciKelompokTahapan } from "@/lib/gl/sebaran";
 
 export default async function DetailRumahSakitPage({
   params,
   searchParams,
 }: {
   params: Promise<{ nama: string }>;
-  searchParams: Promise<{ dari?: string; sampai?: string }>;
+  searchParams: Promise<{ dari?: string; sampai?: string; kelompok?: string }>;
 }) {
   const { nama: namaMentah } = await params;
-  const { dari, sampai } = await searchParams;
+  const { dari, sampai, kelompok: kelompokMentah } = await searchParams;
   const namaRumahSakit = decodeURIComponent(namaMentah);
-  const detail = await ambilDetailRumahSakit(namaRumahSakit, { dari, sampai });
+  const kelompok = isKunciKelompokTahapan(kelompokMentah) ? kelompokMentah : undefined;
+  const detail = await ambilDetailRumahSakit(namaRumahSakit, { dari, sampai, kelompok });
 
   if (detail.totalGL === 0) notFound();
 
   const queryEkspor = new URLSearchParams({ nama: namaRumahSakit });
   if (dari) queryEkspor.set("dari", dari);
   if (sampai) queryEkspor.set("sampai", sampai);
+  if (kelompok) queryEkspor.set("kelompok", kelompok);
 
   // Dibawa ke halaman nested [tahapan] saat klik nama tahapan, supaya
   // filter Rentang Tgl GL yang sedang aktif di halaman ini tetap konsisten.
@@ -52,7 +54,10 @@ export default async function DetailRumahSakitPage({
                 Rincian GL bertipe klaim GL untuk rumah sakit ini. Tabel di bawah HANYA mencakup GL
                 berstatus Active dan Unpaid, dipecah per Tahapan -- GL yang sudah Paid tidak dipecah
                 per tahapan (urusannya sudah selesai) dan hanya dijumlahkan di baris &quot;Total
-                Paid&quot;. Nominal ditampilkan dua macam: Nilai Disetujui dan Nilai Dibayar.
+                Paid&quot;. Nominal ditampilkan dua macam: Nilai Disetujui dan Nilai Dibayar. Filter
+                &quot;Kelompok Tahapan&quot; menyaring tabel ini jadi &quot;Belum Di Klaim&quot;
+                (Penerimaan GL, Surat Keterangan Kesehatan, Surat Kuasa) atau &quot;Klaim&quot;
+                (Verifikasi User) -- berlaku juga saat Ekspor Data.
               </BantuanInfo>
             </h2>
             <span className="text-sm text-muted-foreground">
@@ -68,7 +73,12 @@ export default async function DetailRumahSakitPage({
           </a>
         </div>
 
-        <FilterTanggalDetailRS namaRumahSakit={namaRumahSakit} dari={dari} sampai={sampai} />
+        <FilterTanggalDetailRS
+          namaRumahSakit={namaRumahSakit}
+          dari={dari}
+          sampai={sampai}
+          kelompok={kelompok}
+        />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard label="Total GL" value={detail.totalGL.toLocaleString("id-ID")} />
