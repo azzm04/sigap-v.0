@@ -2,7 +2,12 @@ import ExcelJS from "exceljs";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { formatTanggal, tanggalHariIniWIB } from "@/lib/format";
-import { ambilDetailRumahSakit, isKunciKelompokTahapan, KELOMPOK_TAHAPAN_GL } from "@/lib/gl/sebaran";
+import {
+  ambilDetailRumahSakit,
+  ambilRincianGLRumahSakit,
+  isKunciKelompokTahapan,
+  KELOMPOK_TAHAPAN_GL,
+} from "@/lib/gl/sebaran";
 
 const FONT_BODY: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 12 };
 const FONT_TITLE: Partial<ExcelJS.Font> = { name: "Times New Roman", size: 16, bold: true };
@@ -54,6 +59,7 @@ export async function GET(request: NextRequest) {
   const kelompok = isKunciKelompokTahapan(kelompokMentah) ? kelompokMentah : undefined;
 
   const detail = await ambilDetailRumahSakit(namaRumahSakit, { dari, sampai, kelompok });
+  const rincian = await ambilRincianGLRumahSakit(namaRumahSakit, { dari, sampai, kelompok });
 
   const workbook = new ExcelJS.Workbook();
   const ws = workbook.addWorksheet("Sebaran Rumah Sakit");
@@ -156,6 +162,79 @@ export async function GET(request: NextRequest) {
     detail.totalAktif.nominalDibayar,
     FILL_AKTIF,
   );
+
+  // Tabel kedua: rincian per-record GL (bukan agregat per tahapan) --
+  // HANYA muncul di file Excel ini, TIDAK di halaman web /sebaran/[nama],
+  // sesuai permintaan pemilik proyek. Digabung jadi 1 tabel seperti contoh
+  // referensi (Lampiran 2 - Daftar GL): kolom No, Nama Korban, Nomor Surat
+  // Jaminan, Tgl GL, Tahapan, Status Pembayaran, Nilai Diajukan, Nilai
+  // Disetujui, Jumlah Pembayaran -- ikut filter Rentang Tgl GL & Kelompok
+  // Tahapan yang sama seperti tabel ringkasan di atas.
+  ws.addRow([]);
+  ws.addRow([]);
+  const JUDUL_RINCIAN = [
+    "No",
+    "Nama Korban",
+    "Nomor Surat Jaminan",
+    "Tgl GL",
+    "Tahapan",
+    "Status Pembayaran",
+    "Nilai Diajukan",
+    "Nilai Disetujui",
+    "Jumlah Pembayaran",
+  ];
+  const judulRincian = ws.addRow(["RINCIAN GL (PER RECORD)"]);
+  judulRincian.font = FONT_TITLE;
+  judulRincian.alignment = { horizontal: "center", vertical: "middle" };
+  ws.mergeCells(judulRincian.number, 1, judulRincian.number, JUDUL_RINCIAN.length);
+
+  const barisHeaderRincian = ws.addRow(JUDUL_RINCIAN);
+  barisHeaderRincian.eachCell((sel) => {
+    sel.font = FONT_HEADER;
+    sel.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F4E79" } };
+    sel.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+    sel.border = THIN_BORDER;
+  });
+
+  if (rincian.length === 0) {
+    const barisKosong = ws.addRow(["", "Tidak ada rincian GL untuk rumah sakit ini.", "", "", "", "", "", "", ""]);
+    ws.mergeCells(barisKosong.number, 2, barisKosong.number, JUDUL_RINCIAN.length);
+    barisKosong.eachCell((sel) => {
+      sel.font = FONT_BODY;
+      sel.border = THIN_BORDER;
+      sel.alignment = { horizontal: "center", vertical: "middle" };
+    });
+  }
+
+  rincian.forEach((r, indeks) => {
+    const baris = ws.addRow([
+      indeks + 1,
+      r.namaKorban,
+      r.nomorSuratJaminan ?? "-",
+      formatTanggal(r.tglGl),
+      r.tahapan,
+      r.statusPembayaran,
+      r.nilaiDiajukan,
+      r.nilaiDisetujui,
+      r.jumlahPembayaran,
+    ]);
+    baris.eachCell((sel) => {
+      sel.font = FONT_BODY;
+      sel.border = THIN_BORDER;
+      sel.alignment = { vertical: "middle", wrapText: true };
+    });
+    baris.getCell(7).numFmt = FORMAT_RUPIAH;
+    baris.getCell(8).numFmt = FORMAT_RUPIAH;
+    baris.getCell(9).numFmt = FORMAT_RUPIAH;
+  });
+
+  ws.getColumn(3).width = 24;
+  ws.getColumn(4).width = 14;
+  ws.getColumn(5).width = 26;
+  ws.getColumn(6).width = 18;
+  ws.getColumn(7).width = 18;
+  ws.getColumn(8).width = 18;
+  ws.getColumn(9).width = 18;
 
   const buffer = await workbook.xlsx.writeBuffer();
   const namaBerkas = `sebaran-${namaRumahSakit.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${new Date().toISOString().slice(0, 10)}.xlsx`;

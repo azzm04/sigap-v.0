@@ -1,4 +1,4 @@
-import { and, count, countDistinct, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror } from "../db/schema";
 import { KELOMPOK_TAHAPAN_GL, type KunciKelompokTahapan } from "./kelompok-tahapan";
@@ -99,6 +99,72 @@ export interface FilterDetailRumahSakit {
   /** Kunci KELOMPOK_TAHAPAN_GL. Kalau diisi, baris per-Tahapan (dan Total
    * Unpaid turunannya) HANYA mencakup tahapan dalam kelompok itu. */
   kelompok?: KunciKelompokTahapan;
+}
+
+export interface BarisRincianGL {
+  namaKorban: string;
+  nomorSuratJaminan: string | null;
+  tglGl: string;
+  tahapan: string;
+  statusPembayaran: string;
+  nilaiDiajukan: number;
+  nilaiDisetujui: number;
+  jumlahPembayaran: number;
+}
+
+// Rincian per-record GL (bukan agregat per tahapan) -- HANYA dipakai di
+// Ekspor Excel (/api/ekspor-sebaran-rumah-sakit), BUKAN di halaman web, atas
+// permintaan pemilik proyek. Cakupan SAMA seperti tabel "Tahapan GL": Active
+// + Unpaid, ikut filter Rentang Tgl GL dan Kelompok Tahapan yang sedang
+// aktif. Diurutkan sesuai URUTAN_TAHAPAN_GL lalu Tgl GL (lama ke baru).
+export async function ambilRincianGLRumahSakit(
+  namaRumahSakit: string,
+  filter: FilterDetailRumahSakit = {},
+): Promise<BarisRincianGL[]> {
+  const kondisiDasar = and(
+    isNull(glMirror.dihapusPada),
+    eq(glMirror.tipeKlaim, "GL"),
+    eq(glMirror.namaRumahSakit, namaRumahSakit),
+  );
+  const kondisiRentang = and(
+    kondisiDasar,
+    filter.dari ? gte(glMirror.tglGl, filter.dari) : undefined,
+    filter.sampai ? lte(glMirror.tglGl, filter.sampai) : undefined,
+  );
+  const kondisiKelompok = filter.kelompok
+    ? inArray(glMirror.tahapan, [...KELOMPOK_TAHAPAN_GL[filter.kelompok].tahapan])
+    : undefined;
+
+  const baris = await db
+    .select({
+      namaKorban: glMirror.namaKorban,
+      nomorSuratJaminan: glMirror.nomorSuratJaminan,
+      tglGl: glMirror.tglGl,
+      tahapan: glMirror.tahapan,
+      statusPembayaran: glMirror.statusPembayaran,
+      nilaiDiajukan: glMirror.nilaiDiajukan,
+      nilaiDisetujui: glMirror.nilaiDisetujui,
+      jumlahPembayaran: glMirror.jumlahPembayaran,
+    })
+    .from(glMirror)
+    .where(
+      and(
+        kondisiRentang,
+        eq(glMirror.glStatus, "Active"),
+        eq(glMirror.statusPembayaran, "Unpaid"),
+        kondisiKelompok,
+      ),
+    )
+    .orderBy(asc(glMirror.tglGl));
+
+  return [...baris].sort((a, b) => {
+    const posA = URUTAN_TAHAPAN_GL.indexOf(a.tahapan);
+    const posB = URUTAN_TAHAPAN_GL.indexOf(b.tahapan);
+    const kunciA = posA === -1 ? URUTAN_TAHAPAN_GL.length : posA;
+    const kunciB = posB === -1 ? URUTAN_TAHAPAN_GL.length : posB;
+    if (kunciA !== kunciB) return kunciA - kunciB;
+    return a.tglGl.localeCompare(b.tglGl);
+  });
 }
 
 export interface DetailRumahSakit {
