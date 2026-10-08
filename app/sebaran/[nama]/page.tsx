@@ -52,7 +52,8 @@ export default async function DetailRumahSakitPage({
                 Rincian GL bertipe klaim GL untuk rumah sakit ini. Tabel di bawah HANYA mencakup GL
                 berstatus Active dan Unpaid, dipecah per Tahapan -- GL yang sudah Paid tidak dipecah
                 per tahapan (urusannya sudah selesai) dan hanya dijumlahkan di baris &quot;Total
-                Paid&quot;. Nominal diambil dari Nilai Disetujui, bukan Nilai Diajukan.
+                Paid&quot;. Nominal diambil dari Nilai DIBAYAR (jumlah pembayaran), bukan Nilai
+                Disetujui/Diajukan.
               </BantuanInfo>
             </h2>
             <span className="text-sm text-muted-foreground">
@@ -93,7 +94,7 @@ export default async function DetailRumahSakitPage({
                     Jumlah GL
                   </th>
                   <th className="px-3 py-2 text-right font-semibold whitespace-nowrap text-foreground">
-                    Nominal (Nilai Disetujui)
+                    Nominal (Nilai Dibayar)
                   </th>
                 </tr>
               </thead>

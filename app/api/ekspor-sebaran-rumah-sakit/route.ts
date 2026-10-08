@@ -27,12 +27,14 @@ const FILL_UNPAID: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: 
 const FILL_PAID: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6F4EC" } };
 const FILL_AKTIF: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6F6FE" } };
 
-const JUDUL_KOLOM = ["No", "Tahapan GL", "Jumlah GL", "Nominal (Nilai Disetujui)"];
+const JUDUL_KOLOM = ["No", "Tahapan GL", "Jumlah GL", "Nominal (Nilai Dibayar)"];
 const FORMAT_RUPIAH = '"Rp" #,##0';
 
 // Ekspor persis mengikuti tabel di halaman /sebaran/[nama]: rincian per
 // Tahapan (Active + Unpaid saja, GL Paid tidak dipecah tahapannya) diikuti
 // tiga baris total (Unpaid/Paid/Aktif) dengan warna yang sama seperti di layar.
+// Nominal memakai Nilai DIBAYAR (jumlah_pembayaran), bukan Nilai Disetujui --
+// sesuai arahan pemilik proyek (lihat lib/gl/sebaran.ts).
 //
 // Sudah dilindungi middleware, dicek lagi di sini sebagai lapisan kedua
 // (pola sama seperti /api/ekspor-pelimpahan).

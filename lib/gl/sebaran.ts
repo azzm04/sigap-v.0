@@ -74,7 +74,7 @@ export async function ambilTotalGLAktif(): Promise<number> {
 export interface TahapanRumahSakit {
   tahapan: string;
   jumlah: number;
-  /** Jumlah Nilai Disetujui, bukan Nilai Diajukan -- sesuai arahan pemilik proyek */
+  /** Jumlah Nilai DIBAYAR (jumlah_pembayaran), bukan Nilai Disetujui/Diajukan -- sesuai arahan pemilik proyek */
   nominal: number;
 }
 
@@ -132,12 +132,15 @@ export async function ambilDetailRumahSakit(
     filter.dari ? gte(glMirror.tglGl, filter.dari) : undefined,
     filter.sampai ? lte(glMirror.tglGl, filter.sampai) : undefined,
   );
-  const nominalDisetujui = sql<string>`coalesce(sum(${glMirror.nilaiDisetujui}), 0)`;
-  const jumlahPembayaran = sql<string>`coalesce(sum(${glMirror.jumlahPembayaran}), 0)`;
+  // Nominal di tabel ini (per-tahapan maupun 3 baris total) sengaja memakai
+  // Nilai DIBAYAR (jumlah_pembayaran), BUKAN Nilai Disetujui -- sesuai arahan
+  // pemilik proyek. Baris per-Tahapan HANYA mencakup GL Unpaid, jadi
+  // nominalnya wajar Rp 0 kalau belum ada pembayaran sebagian.
+  const nominalDibayar = sql<string>`coalesce(sum(${glMirror.jumlahPembayaran}), 0)`;
 
   const [barisTahapan, [ringkasanPaid], [ringkasanCancel], [ringkasanTotal]] = await Promise.all([
     db
-      .select({ tahapan: glMirror.tahapan, jumlah: count(), nominal: nominalDisetujui })
+      .select({ tahapan: glMirror.tahapan, jumlah: count(), nominal: nominalDibayar })
       .from(glMirror)
       .where(
         and(
@@ -149,7 +152,7 @@ export async function ambilDetailRumahSakit(
       .groupBy(glMirror.tahapan)
       .orderBy(desc(count())),
     db
-      .select({ jumlah: count(), nominal: nominalDisetujui, pembayaran: jumlahPembayaran })
+      .select({ jumlah: count(), nominal: nominalDibayar, pembayaran: nominalDibayar })
       .from(glMirror)
       .where(
         and(
