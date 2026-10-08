@@ -1,30 +1,9 @@
 import { and, count, countDistinct, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import { db } from "../db";
 import { glMirror } from "../db/schema";
+import { KELOMPOK_TAHAPAN_GL, type KunciKelompokTahapan } from "./kelompok-tahapan";
 
-// Pengelompokan Tahapan GL untuk filter "Kelompok Tahapan" di halaman
-// /sebaran/[nama] -- arahan pemilik proyek. "Belum Di Klaim" = GL yang masih
-// di proses administrasi awal, "Klaim" = GL yang sudah masuk proses klaim.
-// Dipakai untuk MENYARING baris per-Tahapan (dan otomatis ikut menyaring
-// Total Unpaid karena itu hasil reduce dari baris per-Tahapan) -- TIDAK
-// menyaring Total Paid/Total Cancel/Total GL karena bucket itu bukan
-// pecahan per-Tahapan.
-export const KELOMPOK_TAHAPAN_GL = {
-  "belum-diklaim": {
-    label: "Belum Di Klaim",
-    tahapan: ["Penerimaan GL", "Surat Keterangan Kesehatan", "Surat Kuasa"],
-  },
-  klaim: {
-    label: "Klaim",
-    tahapan: ["Verifikasi User"],
-  },
-} as const;
-
-export type KunciKelompokTahapan = keyof typeof KELOMPOK_TAHAPAN_GL;
-
-export function isKunciKelompokTahapan(nilai: string | undefined): nilai is KunciKelompokTahapan {
-  return Boolean(nilai) && Object.prototype.hasOwnProperty.call(KELOMPOK_TAHAPAN_GL, nilai as string);
-}
+export { KELOMPOK_TAHAPAN_GL, isKunciKelompokTahapan, type KunciKelompokTahapan } from "./kelompok-tahapan";
 
 // Urutan baku tabel "Tahapan GL" di halaman /sebaran/[nama] -- arahan pemilik
 // proyek: dipaksa mengikuti alur proses, BUKAN lagi diurutkan dari jumlah GL

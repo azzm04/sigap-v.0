@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Label } from "@/components/ui/label";
 import { RentangTanggal } from "@/components/ui/rentang-tanggal";
 import { Select } from "@/components/ui/select";
-import { KELOMPOK_TAHAPAN_GL } from "@/lib/gl/sebaran";
+import { KELOMPOK_TAHAPAN_GL } from "@/lib/gl/kelompok-tahapan";
 
 const PILIHAN_KELOMPOK = [
   { value: "", label: "Semua Tahapan" },
