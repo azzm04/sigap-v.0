@@ -2,6 +2,7 @@ import { ChevronsLeft, Download } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { FilterTanggalDetailRS } from "@/components/gl/filter-tanggal-detail-rs";
 import { BantuanInfo } from "@/components/ui/bantuan-info";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
@@ -10,14 +11,27 @@ import { ambilDetailRumahSakit } from "@/lib/gl/sebaran";
 
 export default async function DetailRumahSakitPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ nama: string }>;
+  searchParams: Promise<{ dari?: string; sampai?: string }>;
 }) {
   const { nama: namaMentah } = await params;
+  const { dari, sampai } = await searchParams;
   const namaRumahSakit = decodeURIComponent(namaMentah);
-  const detail = await ambilDetailRumahSakit(namaRumahSakit);
+  const detail = await ambilDetailRumahSakit(namaRumahSakit, { dari, sampai });
 
   if (detail.totalGL === 0) notFound();
+
+  const queryEkspor = new URLSearchParams({ nama: namaRumahSakit });
+  if (dari) queryEkspor.set("dari", dari);
+  if (sampai) queryEkspor.set("sampai", sampai);
+
+  // Dibawa ke halaman nested [tahapan] saat klik nama tahapan, supaya
+  // filter Rentang Tgl GL yang sedang aktif di halaman ini tetap konsisten.
+  const queryEksporTahapan = new URLSearchParams();
+  if (dari) queryEksporTahapan.set("dari", dari);
+  if (sampai) queryEksporTahapan.set("sampai", sampai);
 
   return (
     <AppShell breadcrumbAkhir={namaRumahSakit}>
@@ -46,7 +60,7 @@ export default async function DetailRumahSakitPage({
             </span>
           </div>
           <a
-            href={`/api/ekspor-sebaran-rumah-sakit?nama=${encodeURIComponent(namaRumahSakit)}`}
+            href={`/api/ekspor-sebaran-rumah-sakit?${queryEkspor.toString()}`}
             className="flex h-10 w-fit items-center justify-center gap-2 rounded-lg border border-input bg-card px-4 text-sm font-medium text-foreground hover:bg-muted"
           >
             <Download className="size-4" />
@@ -54,13 +68,16 @@ export default async function DetailRumahSakitPage({
           </a>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <FilterTanggalDetailRS namaRumahSakit={namaRumahSakit} dari={dari} sampai={sampai} />
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatCard label="Total GL" value={detail.totalGL.toLocaleString("id-ID")} />
           <StatCard
             label="GL Berstatus Cancel"
             value={detail.totalCancel.toLocaleString("id-ID")}
             tone="warn"
           />
+          <StatCard label="Nilai Pembayaran" value={formatRupiah(detail.nilaiPembayaran)} />
         </div>
 
         <Card className="min-w-0">
@@ -94,7 +111,9 @@ export default async function DetailRumahSakitPage({
                   // sekadar melihat daftar GL satu rumah sakit+tahapan.
                   // Rumah Sakit dan Tahapan sudah baku lewat segmen URL,
                   // lihat app/sebaran/[nama]/[tahapan]/page.tsx.
-                  const hrefDetail = `/sebaran/${encodeURIComponent(namaRumahSakit)}/${encodeURIComponent(t.tahapan)}`;
+                  const hrefDetail = `/sebaran/${encodeURIComponent(namaRumahSakit)}/${encodeURIComponent(t.tahapan)}${
+                    queryEksporTahapan.toString() ? `?${queryEksporTahapan.toString()}` : ""
+                  }`;
 
                   return (
                     <tr key={t.tahapan} className="border-t border-border">

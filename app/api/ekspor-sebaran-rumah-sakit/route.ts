@@ -46,8 +46,10 @@ export async function GET(request: NextRequest) {
   if (!namaRumahSakit) {
     return NextResponse.json({ pesan: "Nama rumah sakit wajib diisi." }, { status: 400 });
   }
+  const dari = request.nextUrl.searchParams.get("dari") ?? undefined;
+  const sampai = request.nextUrl.searchParams.get("sampai") ?? undefined;
 
-  const detail = await ambilDetailRumahSakit(namaRumahSakit);
+  const detail = await ambilDetailRumahSakit(namaRumahSakit, { dari, sampai });
 
   const workbook = new ExcelJS.Workbook();
   const ws = workbook.addWorksheet("Sebaran Rumah Sakit");
@@ -66,10 +68,12 @@ export async function GET(request: NextRequest) {
 
   const keterangan = [
     `Per ${formatTanggal(tanggalHariIniWIB())}`,
+    dari || sampai ? `Rentang Tgl GL: ${dari ? formatTanggal(dari) : "awal"} - ${sampai ? formatTanggal(sampai) : "sekarang"}` : null,
     `Total GL: ${detail.totalGL}`,
     `GL Berstatus Cancel: ${detail.totalCancel}`,
+    `Nilai Pembayaran: ${detail.nilaiPembayaran}`,
     `Dicetak: ${formatTanggal(tanggalHariIniWIB())}`,
-  ];
+  ].filter((baris): baris is string => baris !== null);
   for (const teks of keterangan) {
     const barisInfo = ws.addRow([teks]);
     barisInfo.font = FONT_INFO;
