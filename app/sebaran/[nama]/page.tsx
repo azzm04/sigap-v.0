@@ -52,8 +52,7 @@ export default async function DetailRumahSakitPage({
                 Rincian GL bertipe klaim GL untuk rumah sakit ini. Tabel di bawah HANYA mencakup GL
                 berstatus Active dan Unpaid, dipecah per Tahapan -- GL yang sudah Paid tidak dipecah
                 per tahapan (urusannya sudah selesai) dan hanya dijumlahkan di baris &quot;Total
-                Paid&quot;. Nominal diambil dari Nilai DIBAYAR (jumlah pembayaran), bukan Nilai
-                Disetujui/Diajukan.
+                Paid&quot;. Nominal ditampilkan dua macam: Nilai Disetujui dan Nilai Dibayar.
               </BantuanInfo>
             </h2>
             <span className="text-sm text-muted-foreground">
@@ -94,6 +93,9 @@ export default async function DetailRumahSakitPage({
                     Jumlah GL
                   </th>
                   <th className="px-3 py-2 text-right font-semibold whitespace-nowrap text-foreground">
+                    Nominal (Nilai Disetujui)
+                  </th>
+                  <th className="px-3 py-2 text-right font-semibold whitespace-nowrap text-foreground">
                     Nominal (Nilai Dibayar)
                   </th>
                 </tr>
@@ -101,7 +103,7 @@ export default async function DetailRumahSakitPage({
               <tbody>
                 {detail.tahapan.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">
+                    <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">
                       Tidak ada GL Unpaid untuk rumah sakit ini.
                     </td>
                   </tr>
@@ -131,7 +133,10 @@ export default async function DetailRumahSakitPage({
                         {t.jumlah.toLocaleString("id-ID")}
                       </td>
                       <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                        {formatRupiah(t.nominal)}
+                        {formatRupiah(t.nominalDisetujui)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                        {formatRupiah(t.nominalDibayar)}
                       </td>
                     </tr>
                   );
@@ -144,7 +149,10 @@ export default async function DetailRumahSakitPage({
                     {detail.totalUnpaid.jumlah.toLocaleString("id-ID")}
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                    {formatRupiah(detail.totalUnpaid.nominal)}
+                    {formatRupiah(detail.totalUnpaid.nominalDisetujui)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                    {formatRupiah(detail.totalUnpaid.nominalDibayar)}
                   </td>
                 </tr>
                 <tr className="border-t border-border bg-status-safe-bg font-semibold text-foreground">
@@ -155,7 +163,10 @@ export default async function DetailRumahSakitPage({
                     {detail.totalPaid.jumlah.toLocaleString("id-ID")}
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                    {formatRupiah(detail.totalPaid.nominal)}
+                    {formatRupiah(detail.totalPaid.nominalDisetujui)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                    {formatRupiah(detail.totalPaid.nominalDibayar)}
                   </td>
                 </tr>
                 <tr className="border-t border-border bg-status-info-bg font-semibold text-foreground">
@@ -166,7 +177,10 @@ export default async function DetailRumahSakitPage({
                     {detail.totalAktif.jumlah.toLocaleString("id-ID")}
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
-                    {formatRupiah(detail.totalAktif.nominal)}
+                    {formatRupiah(detail.totalAktif.nominalDisetujui)}
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-mono whitespace-nowrap">
+                    {formatRupiah(detail.totalAktif.nominalDibayar)}
                   </td>
                 </tr>
               </tbody>

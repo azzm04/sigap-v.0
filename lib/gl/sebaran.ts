@@ -74,13 +74,18 @@ export async function ambilTotalGLAktif(): Promise<number> {
 export interface TahapanRumahSakit {
   tahapan: string;
   jumlah: number;
-  /** Jumlah Nilai DIBAYAR (jumlah_pembayaran), bukan Nilai Disetujui/Diajukan -- sesuai arahan pemilik proyek */
-  nominal: number;
+  /** Jumlah Nilai DISETUJUI (nilai_disetujui) */
+  nominalDisetujui: number;
+  /** Jumlah Nilai DIBAYAR (jumlah_pembayaran) */
+  nominalDibayar: number;
 }
 
 export interface RingkasanJumlahNominal {
   jumlah: number;
-  nominal: number;
+  /** Jumlah Nilai DISETUJUI (nilai_disetujui) */
+  nominalDisetujui: number;
+  /** Jumlah Nilai DIBAYAR (jumlah_pembayaran) */
+  nominalDibayar: number;
 }
 
 /** ISO "YYYY-MM-DD". Menyaring berdasarkan Tgl GL -- sama seperti filter
@@ -132,15 +137,22 @@ export async function ambilDetailRumahSakit(
     filter.dari ? gte(glMirror.tglGl, filter.dari) : undefined,
     filter.sampai ? lte(glMirror.tglGl, filter.sampai) : undefined,
   );
-  // Nominal di tabel ini (per-tahapan maupun 3 baris total) sengaja memakai
-  // Nilai DIBAYAR (jumlah_pembayaran), BUKAN Nilai Disetujui -- sesuai arahan
-  // pemilik proyek. Baris per-Tahapan HANYA mencakup GL Unpaid, jadi
-  // nominalnya wajar Rp 0 kalau belum ada pembayaran sebagian.
-  const nominalDibayar = sql<string>`coalesce(sum(${glMirror.jumlahPembayaran}), 0)`;
+  // Nominal di tabel ini (per-tahapan maupun 3 baris total) menampilkan DUA
+  // nilai sekaligus: Nilai Disetujui (nilai_disetujui) dan Nilai Dibayar
+  // (jumlah_pembayaran) -- sesuai arahan pemilik proyek. Baris per-Tahapan
+  // HANYA mencakup GL Unpaid, jadi Nilai Dibayar wajar Rp 0 kalau belum ada
+  // pembayaran sebagian.
+  const nominalDisetujuiSql = sql<string>`coalesce(sum(${glMirror.nilaiDisetujui}), 0)`;
+  const nominalDibayarSql = sql<string>`coalesce(sum(${glMirror.jumlahPembayaran}), 0)`;
 
   const [barisTahapan, [ringkasanPaid], [ringkasanCancel], [ringkasanTotal]] = await Promise.all([
     db
-      .select({ tahapan: glMirror.tahapan, jumlah: count(), nominal: nominalDibayar })
+      .select({
+        tahapan: glMirror.tahapan,
+        jumlah: count(),
+        nominalDisetujui: nominalDisetujuiSql,
+        nominalDibayar: nominalDibayarSql,
+      })
       .from(glMirror)
       .where(
         and(
@@ -152,7 +164,11 @@ export async function ambilDetailRumahSakit(
       .groupBy(glMirror.tahapan)
       .orderBy(desc(count())),
     db
-      .select({ jumlah: count(), nominal: nominalDibayar, pembayaran: nominalDibayar })
+      .select({
+        jumlah: count(),
+        nominalDisetujui: nominalDisetujuiSql,
+        nominalDibayar: nominalDibayarSql,
+      })
       .from(glMirror)
       .where(
         and(
@@ -172,17 +188,27 @@ export async function ambilDetailRumahSakit(
     barisTahapan.map((b) => ({
       tahapan: b.tahapan,
       jumlah: b.jumlah,
-      nominal: Number(b.nominal),
+      nominalDisetujui: Number(b.nominalDisetujui),
+      nominalDibayar: Number(b.nominalDibayar),
     })),
   );
   const totalUnpaid = tahapan.reduce(
-    (acc, b) => ({ jumlah: acc.jumlah + b.jumlah, nominal: acc.nominal + b.nominal }),
-    { jumlah: 0, nominal: 0 },
+    (acc, b) => ({
+      jumlah: acc.jumlah + b.jumlah,
+      nominalDisetujui: acc.nominalDisetujui + b.nominalDisetujui,
+      nominalDibayar: acc.nominalDibayar + b.nominalDibayar,
+    }),
+    { jumlah: 0, nominalDisetujui: 0, nominalDibayar: 0 },
   );
-  const totalPaid = { jumlah: ringkasanPaid.jumlah, nominal: Number(ringkasanPaid.nominal) };
+  const totalPaid = {
+    jumlah: ringkasanPaid.jumlah,
+    nominalDisetujui: Number(ringkasanPaid.nominalDisetujui),
+    nominalDibayar: Number(ringkasanPaid.nominalDibayar),
+  };
   const totalAktif = {
     jumlah: totalUnpaid.jumlah + totalPaid.jumlah,
-    nominal: totalUnpaid.nominal + totalPaid.nominal,
+    nominalDisetujui: totalUnpaid.nominalDisetujui + totalPaid.nominalDisetujui,
+    nominalDibayar: totalUnpaid.nominalDibayar + totalPaid.nominalDibayar,
   };
 
   return {
@@ -193,6 +219,6 @@ export async function ambilDetailRumahSakit(
     totalAktif,
     totalCancel: ringkasanCancel.jumlah,
     totalGL: ringkasanTotal.jumlah,
-    nilaiPembayaran: Number(ringkasanPaid.pembayaran),
+    nilaiPembayaran: totalPaid.nominalDibayar,
   };
 }

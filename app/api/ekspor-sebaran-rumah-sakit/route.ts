@@ -27,14 +27,14 @@ const FILL_UNPAID: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: 
 const FILL_PAID: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6F4EC" } };
 const FILL_AKTIF: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE6F6FE" } };
 
-const JUDUL_KOLOM = ["No", "Tahapan GL", "Jumlah GL", "Nominal (Nilai Dibayar)"];
+const JUDUL_KOLOM = ["No", "Tahapan GL", "Jumlah GL", "Nominal (Nilai Disetujui)", "Nominal (Nilai Dibayar)"];
 const FORMAT_RUPIAH = '"Rp" #,##0';
 
 // Ekspor persis mengikuti tabel di halaman /sebaran/[nama]: rincian per
 // Tahapan (Active + Unpaid saja, GL Paid tidak dipecah tahapannya) diikuti
 // tiga baris total (Unpaid/Paid/Aktif) dengan warna yang sama seperti di layar.
-// Nominal memakai Nilai DIBAYAR (jumlah_pembayaran), bukan Nilai Disetujui --
-// sesuai arahan pemilik proyek (lihat lib/gl/sebaran.ts).
+// Nominal ditampilkan dua macam: Nilai Disetujui dan Nilai Dibayar -- sesuai
+// arahan pemilik proyek (lihat lib/gl/sebaran.ts).
 //
 // Sudah dilindungi middleware, dicek lagi di sini sebagai lapisan kedua
 // (pola sama seperti /api/ekspor-pelimpahan).
@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
     { width: 36 }, // Tahapan GL
     { width: 16 }, // Jumlah GL
     { width: 22 }, // Nominal (Nilai Disetujui)
+    { width: 22 }, // Nominal (Nilai Dibayar)
   ];
 
   const judul = ws.addRow([namaRumahSakit.toUpperCase()]);
@@ -92,8 +93,8 @@ export async function GET(request: NextRequest) {
   });
 
   if (detail.tahapan.length === 0) {
-    const barisKosong = ws.addRow(["", "Tidak ada GL Unpaid untuk rumah sakit ini.", "", ""]);
-    ws.mergeCells(barisKosong.number, 2, barisKosong.number, 3);
+    const barisKosong = ws.addRow(["", "Tidak ada GL Unpaid untuk rumah sakit ini.", "", "", ""]);
+    ws.mergeCells(barisKosong.number, 2, barisKosong.number, 4);
     barisKosong.eachCell((sel) => {
       sel.font = FONT_BODY;
       sel.border = THIN_BORDER;
@@ -102,17 +103,24 @@ export async function GET(request: NextRequest) {
   }
 
   detail.tahapan.forEach((t, indeks) => {
-    const baris = ws.addRow([indeks + 1, t.tahapan, t.jumlah, t.nominal]);
+    const baris = ws.addRow([indeks + 1, t.tahapan, t.jumlah, t.nominalDisetujui, t.nominalDibayar]);
     baris.eachCell((sel) => {
       sel.font = FONT_BODY;
       sel.border = THIN_BORDER;
       sel.alignment = { vertical: "middle", wrapText: true };
     });
     baris.getCell(4).numFmt = FORMAT_RUPIAH;
+    baris.getCell(5).numFmt = FORMAT_RUPIAH;
   });
 
-  function tulisBarisTotal(label: string, jumlah: number, nominal: number, fill: ExcelJS.Fill) {
-    const baris = ws.addRow(["", label, jumlah, nominal]);
+  function tulisBarisTotal(
+    label: string,
+    jumlah: number,
+    nominalDisetujui: number,
+    nominalDibayar: number,
+    fill: ExcelJS.Fill,
+  ) {
+    const baris = ws.addRow(["", label, jumlah, nominalDisetujui, nominalDibayar]);
     ws.mergeCells(baris.number, 1, baris.number, 2);
     baris.eachCell((sel) => {
       sel.font = FONT_TOTAL;
@@ -121,11 +129,30 @@ export async function GET(request: NextRequest) {
       sel.alignment = { vertical: "middle" };
     });
     baris.getCell(4).numFmt = FORMAT_RUPIAH;
+    baris.getCell(5).numFmt = FORMAT_RUPIAH;
   }
 
-  tulisBarisTotal("Total Unpaid", detail.totalUnpaid.jumlah, detail.totalUnpaid.nominal, FILL_UNPAID);
-  tulisBarisTotal("Total Paid", detail.totalPaid.jumlah, detail.totalPaid.nominal, FILL_PAID);
-  tulisBarisTotal("Total GL Aktif", detail.totalAktif.jumlah, detail.totalAktif.nominal, FILL_AKTIF);
+  tulisBarisTotal(
+    "Total Unpaid",
+    detail.totalUnpaid.jumlah,
+    detail.totalUnpaid.nominalDisetujui,
+    detail.totalUnpaid.nominalDibayar,
+    FILL_UNPAID,
+  );
+  tulisBarisTotal(
+    "Total Paid",
+    detail.totalPaid.jumlah,
+    detail.totalPaid.nominalDisetujui,
+    detail.totalPaid.nominalDibayar,
+    FILL_PAID,
+  );
+  tulisBarisTotal(
+    "Total GL Aktif",
+    detail.totalAktif.jumlah,
+    detail.totalAktif.nominalDisetujui,
+    detail.totalAktif.nominalDibayar,
+    FILL_AKTIF,
+  );
 
   const buffer = await workbook.xlsx.writeBuffer();
   const namaBerkas = `sebaran-${namaRumahSakit.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${new Date().toISOString().slice(0, 10)}.xlsx`;
